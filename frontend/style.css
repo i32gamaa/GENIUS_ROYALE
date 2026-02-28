@@ -1,0 +1,107 @@
+/* --- style.css --- */
+
+/* 1. Estilos Globales: Fondo morado oscuro como la App */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #2D0A4E; /* Fondo morado oscuro de Genius Royale */
+    color: white;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Centrado vertical completo */
+}
+
+/* 2. Contenedor principal */
+.login-container {
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+}
+
+/* 3. Título de la App */
+.app-title {
+    font-size: 3rem;
+    margin-bottom: 2rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #FFD700; /* Dorado para el título */
+}
+
+/* 4. La caja blanca del formulario */
+.login-box {
+    background-color: rgba(255, 255, 255, 0.95); /* Blanco casi opaco */
+    color: #333; /* Texto oscuro dentro de la caja blanca */
+    padding: 30px;
+    border-radius: 15px; /* Bordes redondeados como en la App */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3); /* Sombra para dar profundidad */
+}
+
+.login-box h2 {
+    margin-top: 0;
+    color: #2D0A4E;
+}
+
+/* 5. Estilos para los campos de entrada (Inputs) */
+.input-group {
+    text-align: left;
+    margin-bottom: 15px;
+}
+
+.input-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #555;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    box-sizing: border-box; /* Importante para el padding */
+    transition: border-color 0.3s;
+}
+
+.input-group input:focus {
+    border-color: #2D0A4E; /* Cambia de color al hacer clic */
+    outline: none;
+}
+
+/* 6. Estilo para el botón de Login */
+.btn-login {
+    width: 100%;
+    padding: 12px;
+    background-color: #6200EE; /* Morado corporativo de Android/Material */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 10px;
+}
+
+.btn-login:hover {
+    background-color: #4A00B2; /* Morado más oscuro al pasar el ratón */
+}
+
+/* 7. Footer del login (¿No tienes cuenta?) */
+.login-footer {
+    margin-top: 20px;
+    font-size: 0.9rem;
+}
+
+.login-footer a {
+    color: #6200EE;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.login-footer a:hover {
+    text-decoration: underline;
+}
