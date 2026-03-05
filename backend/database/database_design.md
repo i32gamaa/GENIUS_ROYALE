@@ -24,6 +24,10 @@ Almacena la información de los jugadores registrados en la aplicación, como su
 ### Pregunta
 Contiene las preguntas que se utilizan durante las partidas del juego, incluyendo sus posibles respuestas y la dificultad.
 
+### Pregunta_Partida
+Registra las preguntas utilizadas en cada partida y las respuestas de los jugadores.
+Permite controlar el orden de las preguntas y si fueron respondidas correctamente.
+
 ### Categoria
 Permite clasificar las preguntas según su temática, por ejemplo fútbol, videojuegos o cultura general.
 
