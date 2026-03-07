@@ -24,10 +24,6 @@ Almacena la información de los jugadores registrados en la aplicación, como su
 ### Pregunta
 Contiene las preguntas que se utilizan durante las partidas del juego, incluyendo sus posibles respuestas y la dificultad.
 
-### Pregunta_Partida
-Registra las preguntas utilizadas en cada partida y las respuestas de los jugadores.
-Permite controlar el orden de las preguntas y si fueron respondidas correctamente.
-
 ### Categoria
 Permite clasificar las preguntas según su temática, por ejemplo fútbol, videojuegos o cultura general.
 
@@ -48,6 +44,22 @@ Almacena los distintos comodines disponibles en el juego, como el 50:50 o cambia
 
 ### Comodin_Usado
 Registra cuándo un jugador utiliza un comodín durante una partida.
+
+## Relaciones entre entidades
+
+Las entidades del sistema se relacionan entre sí de la siguiente manera:
+
+- Un **usuario** puede participar en múltiples **partidas**. Esta relación se gestiona mediante la tabla `Jugador_Partida`.
+
+- Una **partida** puede tener varios **jugadores**, y cada jugador puede participar en diferentes partidas.
+
+- Cada **pregunta** pertenece a una única **categoría**, lo que permite organizar las preguntas por temática.
+
+- Cada **usuario** tiene asociadas unas **estadísticas**, donde se almacenan datos como el número de partidas jugadas o respuestas correctas.
+
+- Los **usuarios** pueden establecer relaciones de amistad entre sí, las cuales se almacenan en la tabla `Amistad`.
+
+- Durante las partidas los jugadores pueden utilizar **comodines**, cuyo uso queda registrado en la tabla `Comodin_Usado`.
 ## Diagrama de la base de datos
 
 ![Diagrama de la base de datos](database_diagram.png)
