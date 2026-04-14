@@ -188,3 +188,112 @@ body {
         filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)); /* Brilla más */
     }
 }
+
+/* --- Estilos para el menú lateral --- */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 250px;
+    height: 100%;
+    background-color: #1E0135; /* Morado oscuro */
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.profile-section {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.profile-picture {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 3px solid #FFD700; /* Borde dorado */
+    margin-bottom: 10px;
+}
+
+.stats-section {
+    margin-top: 20px;
+    text-align: center;
+    background-color: #2D0A4E;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.stats-section h3 {
+    margin-bottom: 10px;
+    color: #FFD700;
+}
+
+.stats-section p {
+    margin: 5px 0;
+    color: #FFFFFF;
+}
+
+#btn-logout {
+    margin-top: auto;
+    background-color: #E91E63; /* Rosa */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#btn-logout:hover {
+    background-color: #FF4081; /* Rosa más claro */
+}
+
+/* --- Estilos para el contenido principal del menú --- */
+.menu-content {
+    margin-left: 270px; /* Espacio para el menú lateral */
+    padding: 20px;
+    text-align: center;
+}
+
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+}
+
+.btn-menu {
+    width: 200px;
+    padding: 15px;
+    font-size: 1.2rem;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-menu:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.btn-primary {
+    background-color: #E91E63; /* Rosa */
+    color: white;
+}
+
+.btn-secondary {
+    background-color: #6200EE; /* Morado */
+    color: white;
+}
+
+.btn-info {
+    background-color: #03DAC6; /* Verde agua */
+    color: black;
+}

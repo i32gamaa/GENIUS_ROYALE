@@ -1,0 +1,61 @@
+/* --- Estilos para la pantalla del juego --- */
+
+/* Contenedor principal del juego */
+.game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: #2D0A4E; /* Fondo morado oscuro */
+    color: white;
+    padding: 20px;
+}
+
+/* Estilo para la pregunta */
+.question {
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20px;
+    color: #FFD700; /* Dorado para destacar la pregunta */
+}
+
+/* Contenedor de opciones de respuesta */
+.options {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+    max-width: 500px;
+}
+
+/* Botones de las opciones */
+.option-button {
+    background-color: #6200EE; /* Morado brillante */
+    color: white;
+    border: none;
+    padding: 15px;
+    border-radius: 10px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.option-button:hover {
+    background-color: #7E3FF2; /* Morado más claro al pasar el mouse */
+}
+
+/* Temporizador */
+.timer {
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+    color: #03DAC6; /* Verde agua para el temporizador */
+}
+
+/* Marcador */
+.score {
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+    color: #E91E63; /* Rosa para el marcador */
+}

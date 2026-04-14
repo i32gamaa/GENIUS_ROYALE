@@ -83,43 +83,22 @@ loginForm.addEventListener('submit', function(event) {
     btnLogin.innerText = "Cargando...";
     btnLogin.disabled = true;
 
-    // FÍJATE AQUÍ: El backend espera "email", así que le pasamos el input como "email"
-    const datosLogin = { 
-        email: usernameInput.value, 
-        password: passwordInput.value 
+    // Simulación de inicio de sesión sin validación
+    const usuarioSimulado = {
+        username: "JugadorSimulado",
+        fotoPerfil: "images/default-profile.png"
     };
 
-    fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datosLogin)
-    })
-    .then(response => response.json())
-    .then(data => {
-        btnLogin.innerText = "Entrar";
-        btnLogin.disabled = false;
+    console.log("Inicio de sesión simulado para:", usuarioSimulado.username);
 
-        if (data.success && data.token) {
-            // Guardamos el token JWT
-            localStorage.setItem('genius_token', data.token);
-            
-            // Extraemos el nombre de usuario para el menú
-            const nombreUsuario = data.user ? data.user.username : datosLogin.email;
-            displayUsername.innerText = nombreUsuario;
-            
-            // Pasamos a la pantalla del menú
-            cambiarPantalla(screenLogin, screenMenu);
-            
-            // Conectamos WebSockets
-            conectarWebSocket(data.token);
-        } else {
-            alert("Error en login: " + data.message);
-        }
-    })
-    .catch(error => {
-        console.error("Error:", error);
-        alert("Error de conexión. Revisa la consola.");
-        btnLogin.innerText = "Entrar";
-        btnLogin.disabled = false;
-    });
+    // Redirigir al menú principal
+    displayUsername.textContent = usuarioSimulado.username;
+    cambiarPantalla(screenLogin, screenMenu);
+
+    // Inicializar el menú con el usuario simulado
+    inicializarMenu(usuarioSimulado.username, usuarioSimulado.fotoPerfil);
+
+    // Restablecer el botón de inicio de sesión
+    btnLogin.innerText = "Entrar";
+    btnLogin.disabled = false;
 });
