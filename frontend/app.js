@@ -29,7 +29,7 @@ loginForm.addEventListener('submit', function(event) {
 
     // 3. LLAMADA A LA API CON FETCH (Reemplaza a Retrofit de Android)
     // Usaremos la URL de producción que ya tienes configurada en Render
-    const API_BASE_URL = 'https://genius-royale-api.onrender.com'; 
+    const API_BASE_URL = 'https://genius-royale-backend.onrender.com'; 
 
     fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST', // Tipo de petición (igual que en Android)
