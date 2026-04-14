@@ -8,7 +8,6 @@ import com.geniusroyale.api.repositories.UserRepository;
 import com.geniusroyale.api.services.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
@@ -21,20 +20,19 @@ public class AuthController {
     private UserRepository userRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
     private JwtService jwtService;
 
-    // 1. REGISTRO (Ya tiene el @RequestBody que pusimos antes)
+    // 1. REGISTRO
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody RegisterRequest registerRequest) {
-        System.out.println("Recibido registro para: " + registerRequest.getEmail());
+        System.out.println("Intentando registrar: " + registerRequest.getEmail());
 
+        // Verificar si el email ya existe
         if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
             return ResponseEntity.badRequest().body(new ApiResponse(false, "El email ya está registrado"));
         }
         
+        // Verificar si el username ya existe
         if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
             return ResponseEntity.badRequest().body(new ApiResponse(false, "El nombre de usuario ya existe"));
         }
@@ -42,27 +40,29 @@ public class AuthController {
         User newUser = new User();
         newUser.setUsername(registerRequest.getUsername());
         newUser.setEmail(registerRequest.getEmail());
-        // Usamos el passwordEncoder para cumplir con vuestra SecurityConfig
-        newUser.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+        // Guardamos la contraseña tal cual (SIN encriptar) porque usas NoOpPasswordEncoder
+        newUser.setPassword(registerRequest.getPassword());
 
         userRepository.save(newUser);
-        return ResponseEntity.ok(new ApiResponse(true, "¡Usuario registrado con éxito!"));
+        return ResponseEntity.ok(new ApiResponse(true, "¡Registro completado con éxito!"));
     }
 
-    // 2. LOGIN (Corregido para usar getEmail() en lugar de getUsername())
+    // 2. LOGIN
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest) {
+        // Tu frontend en app.js envía 'username', así que buscamos por ese campo
         System.out.println("Intento de login para: " + loginRequest.getEmail());
 
-        // Buscamos por EMAIL que es lo que tiene vuestro LoginRequest
+        // IMPORTANTE: Si en el login pones el email, usa findByEmail. 
+        // Si pones el nombre de usuario, usa findByUsername.
         Optional<User> userOptional = userRepository.findByEmail(loginRequest.getEmail());
 
         if (userOptional.isPresent()) {
             User user = userOptional.get();
-            // Comprobamos la contraseña usando el encoder
-            if (passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+            // Comparación directa de texto (sin encriptar)
+            if (loginRequest.getPassword().equals(user.getPassword())) {
                 String token = jwtService.generateToken(user);
-                return ResponseEntity.ok(new ApiResponse(true, "Login exitoso", token, user));
+                return ResponseEntity.ok(new ApiResponse(true, "Login correcto", token, user));
             }
         }
         
