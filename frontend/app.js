@@ -1,85 +1,92 @@
 // --- app.js ---
 
-// 1. Referencia a los elementos del HTML
+// 1. VARIABLES GLOBALES Y REFERENCIAS AL HTML
+const API_BASE_URL = 'https://genius-royale-backend.onrender.com'; 
+let stompClient = null; // Guardará nuestra conexión en tiempo real
+
 const loginForm = document.getElementById('login-form');
 const usernameInput = document.getElementById('username');
 const passwordInput = document.getElementById('password');
-const btnLogin = document.querySelector('.btn-login'); // Selecciona por clase
+const btnLogin = document.querySelector('.btn-login');
 
-// 2. Escuchar el evento 'submit' (cuando se pulsa el botón Entrar o Enter)
+// Pantallas
+const screenLogin = document.getElementById('screen-login');
+const screenMenu = document.getElementById('screen-menu');
+const displayUsername = document.getElementById('display-username');
+
+// 2. FUNCIÓN DE NAVEGACIÓN (Cambiar entre pantallas)
+function cambiarPantalla(pantallaOcultar, pantallaMostrar) {
+    pantallaOcultar.classList.add('hidden');
+    pantallaMostrar.classList.remove('hidden');
+}
+
+// 3. LÓGICA DE WEBSOCKETS (El Tiempo Real)
+function conectarWebSocket(token) {
+    console.log("Intentando conectar al WebSocket del servidor...");
+    
+    // Asumimos que vuestro backend abrirá el socket en la ruta /ws o /game-websocket
+    // Dile a tu colega de Java que configure el endpoint WebSocket con este nombre
+    const socket = new SockJS(`${API_BASE_URL}/ws`);
+    stompClient = Stomp.over(socket);
+
+    // Ocultar mensajes de debug en consola para que quede más limpio
+    stompClient.debug = null; 
+
+    // Conectamos pasándole el token por si Spring Security lo pide
+    stompClient.connect({'Authorization': 'Bearer ' + token}, function (frame) {
+        console.log('✅ ¡Conectado al servidor de Genius Royale! ' + frame);
+        
+        // Aquí luego nos suscribiremos para recibir invitaciones o entrar a partida
+        
+    }, function(error) {
+        console.error('❌ Error de conexión WebSockets:', error);
+    });
+}
+
+// 4. EVENTO DE LOGIN
 loginForm.addEventListener('submit', function(event) {
-    // IMPORTANTE: Evita que la página se recargue automáticamente (comportamiento por defecto)
     event.preventDefault();
 
-    // Cambiar el texto del botón para feedback visual
     btnLogin.innerText = "Cargando...";
     btnLogin.disabled = true;
 
-    // Recoger los valores introducidos por el usuario
     const username = usernameInput.value;
     const password = passwordInput.value;
 
-    // Crear el objeto de datos (JSON)
-    const datosLogin = {
-        username: username,
-        password: password
-    };
-
-    console.log("Intentando login con:", datosLogin);
-
-    // 3. LLAMADA A LA API CON FETCH (Reemplaza a Retrofit de Android)
-    // Usaremos la URL de producción que ya tienes configurada en Render
-    const API_BASE_URL = 'https://genius-royale-backend.onrender.com'; 
+    const datosLogin = { username: username, password: password };
 
     fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST', // Tipo de petición (igual que en Android)
-        headers: {
-            'Content-Type': 'application/json' // Decimos al servidor que enviamos JSON
-        },
-        body: JSON.stringify(datosLogin) // Convertimos el objeto JS a texto JSON
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosLogin)
     })
     .then(response => {
-        // Manejo preliminar de la respuesta HTTP (200, 401, 500...)
-        if (!response.ok) {
-            // Si no es OK (ej: 401 Unauthorized), lanzamos un error para el .catch
-            throw new Error('Credenciales incorrectas o error en servidor');
-        }
-        return response.json(); // Si es OK, convertimos la respuesta a JSON
+        if (!response.ok) throw new Error('Credenciales incorrectas');
+        return response.json(); 
     })
     .then(data => {
-        // Manejo de los datos reales devueltos por tu API (ResponseDTO)
-        console.log("Respuesta del servidor:", data);
-
-        // Restaurar botón
         btnLogin.innerText = "Entrar";
         btnLogin.disabled = false;
 
-        // Suponiendo que tu API devuelve un objeto con { success: true, token: "..." }
-        // O ajusta esto según la estructura real de tu objeto de respuesta Java
         if (data.token) {
-            // LOGIN ÉXITO
-            alert("¡Login correcto!");
-            
-            // --- REEMPLAZO DE SharedPreferences (Android) ---
-            // Guardamos el token en LocalStorage del navegador para futuras peticiones
+            // Guardamos datos
             localStorage.setItem('genius_token', data.token);
             localStorage.setItem('genius_username', username);
 
-            // Redirigir a la pantalla principal del juego (que crearemos luego)
-            // window.location.href = 'menu.html'; 
-            console.log("Token guardado. Listo para redirigir a menu.html (créalo primero)");
+            // ¡MAGIA SPA! Cambiamos el nombre en el menú y pasamos de pantalla
+            displayUsername.innerText = username;
+            cambiarPantalla(screenLogin, screenMenu);
+
+            // Iniciamos la conexión en tiempo real
+            conectarWebSocket(data.token);
 
         } else {
-            // LOGIN FALLIDO (Lógica del servidor, ej: usuario no existe pero pass correcta)
-            alert("Error en login: " + (data.message || "Credenciales inválidas"));
+            alert("Error en login: " + (data.message || "Token no recibido"));
         }
     })
     .catch(error => {
-        // Manejo de errores de red o errores lanzados arriba
-        console.error("Error en la petición:", error);
-        alert("Hubo un problema al conectar con el servidor: " + error.message);
-        
-        // Restaurar botón
+        console.error("Error:", error);
+        alert("Problema con el servidor: ¿Seguro que las credenciales son correctas y el CORS está bien?");
         btnLogin.innerText = "Entrar";
         btnLogin.disabled = false;
     });

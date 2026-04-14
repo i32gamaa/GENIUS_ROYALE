@@ -3,37 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Genius Royale - Login</title>
+    <title>Genius Royale</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div class="login-container">
-        <h1 class="app-title">Genius Royale</h1>
-        
-        <div class="login-box">
-            <h2>Iniciar Sesión</h2>
-            
-            <form id="login-form">
-                <div class="input-group">
-                    <label for="username">Usuario / Email</label>
-                    <input type="text" id="username" name="username" placeholder="Introduce tu usuario" required>
+    <div id="screen-login" class="screen active">
+        <div class="login-container">
+            <img src="images/logo.jpeg" alt="Genius Royale Logo" class="app-logo">
+            <div class="login-box">
+                <h2>Iniciar Sesión</h2>
+                <form id="login-form">
+                    <div class="input-group">
+                        <label for="username">Usuario / Email</label>
+                        <input type="text" id="username" name="username" placeholder="Introduce tu usuario" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="password">Contraseña</label>
+                        <input type="password" id="password" name="password" placeholder="Introduce tu contraseña" required>
+                    </div>
+                    <button type="submit" class="btn-login">Entrar</button>
+                </form>
+                <div class="login-footer">
+                    <p>¿No tienes cuenta? <a href="#">Regístrate aquí</a></p>
                 </div>
-                
-                <div class="input-group">
-                    <label for="password">Contraseña</label>
-                    <input type="password" id="password" name="password" placeholder="Introduce tu contraseña" required>
-                </div>
-                
-                <button type="submit" class="btn-login">Entrar</button>
-            </form>
-            
-            <div class="login-footer">
-                <p>¿No tienes cuenta? <a href="registro.html">Regístrate aquí</a></p>
             </div>
         </div>
     </div>
 
+    <div id="screen-menu" class="screen hidden">
+        <div class="menu-container">
+            <h1 class="app-title">Genius Royale</h1>
+            <div class="user-info">
+                <h2>Bienvenido, <span id="display-username">Jugador</span> 👑</h2>
+            </div>
+            
+            <div class="menu-buttons">
+                <button id="btn-public-game" class="btn-menu btn-primary">⚔️ Partida Pública</button>
+                <button id="btn-private-game" class="btn-menu btn-secondary">🛡️ Partida Privada</button>
+                <button id="btn-stats" class="btn-menu btn-info">📊 Estadísticas</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-game" class="screen hidden">
+        </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    
     <script src="app.js"></script>
 </body>
 </html>
