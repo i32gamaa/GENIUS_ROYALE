@@ -1,125 +1,117 @@
-// --- ARCHIVO: js/auth.js ---
-
-// 1. REFERENCIAS DEL LOGIN
-const loginForm = document.getElementById('login-form');
-const usernameInput = document.getElementById('username'); // Aquí el usuario escribe su email
-const passwordInput = document.getElementById('password');
-const btnLogin = document.querySelector('#screen-login .btn-login');
-
-// 2. REFERENCIAS DEL REGISTRO
-const registerForm = document.getElementById('register-form');
-const regUsernameInput = document.getElementById('reg-username');
-const regEmailInput = document.getElementById('reg-email');
-const regPasswordInput = document.getElementById('reg-password');
-const btnRegister = document.querySelector('#screen-register .btn-login');
-
-// 3. REFERENCIAS PARA NAVEGAR
-const linkToRegister = document.getElementById('link-to-register');
-const linkToLogin = document.getElementById('link-to-login');
-
 // ==========================================
-// CAMBIAR ENTRE PANTALLAS (LOGIN <-> REGISTRO)
+// js/auth.js - ARCHIVO COMPLETO
 // ==========================================
-linkToRegister.addEventListener('click', (e) => {
-    e.preventDefault();
-    cambiarPantalla(screenLogin, screenRegister);
-});
 
-linkToLogin.addEventListener('click', (e) => {
-    e.preventDefault();
-    cambiarPantalla(screenRegister, screenLogin);
-});
+function inicializarAuth() {
+    // 1. REFERENCIAS DE PANTALLAS (Vienen de app.js)
+    const sLogin = document.getElementById('screen-login');
+    const sRegister = document.getElementById('screen-register');
+    const sMenu = document.getElementById('screen-menu');
 
-// ==========================================
-// LÓGICA DE REGISTRO
-// ==========================================
-registerForm.addEventListener('submit', function(event) {
-    event.preventDefault();
-    btnRegister.innerText = "Registrando...";
-    btnRegister.disabled = true;
+    // 2. REFERENCIAS PARA NAVEGAR ENTRE PANTALLAS
+    const linkToRegister = document.getElementById('link-to-register');
+    const linkToLogin = document.getElementById('link-to-login');
 
-    // Fíjate que los nombres coinciden con lo que espera Java (username, email, password)
-    const datosRegistro = {
-        username: regUsernameInput.value,
-        email: regEmailInput.value,
-        password: regPasswordInput.value
-    };
+    if (linkToRegister && sLogin && sRegister) {
+        linkToRegister.onclick = function(e) {
+            e.preventDefault();
+            console.log("Cambiando a Registro...");
+            cambiarPantalla(sLogin, sRegister);
+        };
+    }
 
-    fetch(`${API_BASE_URL}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datosRegistro)
-    })
-    .then(response => response.json())
-    .then(data => {
-        btnRegister.innerText = "Registrarse";
-        btnRegister.disabled = false;
+    if (linkToLogin && sLogin && sRegister) {
+        linkToLogin.onclick = function(e) {
+            e.preventDefault();
+            console.log("Cambiando a Login...");
+            cambiarPantalla(sRegister, sLogin);
+        };
+    }
 
-        if (data.success) {
-            alert("¡Cuenta creada con éxito! Ahora inicia sesión.");
-            // Limpiamos los campos
-            regUsernameInput.value = '';
-            regEmailInput.value = '';
-            regPasswordInput.value = '';
-            // Volvemos a la pantalla de login automáticamente
-            cambiarPantalla(screenRegister, screenLogin); 
-        } else {
-            alert("Error: " + data.message);
-        }
-    })
-    .catch(error => {
-        console.error("Error:", error);
-        alert("Problema al conectar con el servidor.");
-        btnRegister.innerText = "Registrarse";
-        btnRegister.disabled = false;
-    });
-});
+    // 3. LÓGICA DE REGISTRO
+    const registerForm = document.getElementById('register-form');
+    if (registerForm) {
+        registerForm.onsubmit = function(event) {
+            event.preventDefault();
+            const btnRegister = registerForm.querySelector('.btn-login');
+            btnRegister.innerText = "Registrando...";
+            btnRegister.disabled = true;
 
-// ==========================================
-// LÓGICA DE LOGIN
-// ==========================================
-loginForm.addEventListener('submit', function(event) {
-    event.preventDefault();
-    btnLogin.innerText = "Cargando...";
-    btnLogin.disabled = true;
+            const datosRegistro = {
+                username: document.getElementById('reg-username').value,
+                email: document.getElementById('reg-email').value,
+                password: document.getElementById('reg-password').value
+            };
 
-    // FÍJATE AQUÍ: El backend espera "email", así que le pasamos el input como "email"
-    const datosLogin = { 
-        email: usernameInput.value, 
-        password: passwordInput.value 
-    };
+            fetch(`${API_BASE_URL}/api/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datosRegistro)
+            })
+            .then(response => response.json())
+            .then(data => {
+                btnRegister.innerText = "Registrarse";
+                btnRegister.disabled = false;
+                if (data.success) {
+                    alert("¡Usuario guardado en la tabla Usuario!");
+                    cambiarPantalla(sRegister, sLogin);
+                } else {
+                    alert("Error: " + data.message);
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Error de conexión con el backend local.");
+                btnRegister.innerText = "Registrarse";
+                btnRegister.disabled = false;
+            });
+        };
+    }
 
-    fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datosLogin)
-    })
-    .then(response => response.json())
-    .then(data => {
-        btnLogin.innerText = "Entrar";
-        btnLogin.disabled = false;
+    // 4. LÓGICA DE LOGIN
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+        loginForm.onsubmit = function(event) {
+            event.preventDefault();
+            const btnLogin = loginForm.querySelector('.btn-login');
+            btnLogin.innerText = "Cargando...";
+            btnLogin.disabled = true;
 
-        if (data.success && data.token) {
-            // Guardamos el token JWT
-            localStorage.setItem('genius_token', data.token);
-            
-            // Extraemos el nombre de usuario para el menú
-            const nombreUsuario = data.user ? data.user.username : datosLogin.email;
-            displayUsername.innerText = nombreUsuario;
-            
-            // Pasamos a la pantalla del menú
-            cambiarPantalla(screenLogin, screenMenu);
-            
-            // Conectamos WebSockets
-            conectarWebSocket(data.token);
-        } else {
-            alert("Error en login: " + data.message);
-        }
-    })
-    .catch(error => {
-        console.error("Error:", error);
-        alert("Error de conexión. Revisa la consola.");
-        btnLogin.innerText = "Entrar";
-        btnLogin.disabled = false;
-    });
-});
+            const datosLogin = { 
+                email: document.getElementById('username').value, 
+                password: document.getElementById('password').value 
+            };
+
+            fetch(`${API_BASE_URL}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datosLogin)
+            })
+            .then(response => response.json())
+            .then(data => {
+                btnLogin.innerText = "Entrar";
+                btnLogin.disabled = false;
+                if (data.success && data.token) {
+                    localStorage.setItem('genius_token', data.token);
+                    const displayUser = document.getElementById('display-username');
+                    if (displayUser) displayUser.innerText = data.user.username;
+                    cambiarPantalla(sLogin, sMenu);
+                    if (typeof conectarWebSocket === "function") conectarWebSocket(data.token);
+                } else {
+                    alert("Error: " + data.message);
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Error de conexión.");
+                btnLogin.innerText = "Entrar";
+                btnLogin.disabled = false;
+            });
+        };
+    }
+}
+
+// Iniciar cuando el navegador esté listo
+document.addEventListener('DOMContentLoaded', inicializarAuth);
+// Ejecución inmediata por si acaso
+setTimeout(inicializarAuth, 100);
