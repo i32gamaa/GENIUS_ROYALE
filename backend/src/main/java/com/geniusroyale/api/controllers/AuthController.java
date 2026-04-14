@@ -28,9 +28,7 @@ public class AuthController {
     private JwtService jwtService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(RegisterRequest registerRequest) {
-        System.out.println("Recibido registro para: " + registerRequest.getEmail());
-
+    public ResponseEntity<?> registerUser(@RequestBody RegisterRequest registerRequest) {        System.out.println("Recibido registro para: " + registerRequest.getEmail());
         if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
             return ResponseEntity.badRequest().body(new ApiResponse(false, "El email ya está registrado"));
         }
