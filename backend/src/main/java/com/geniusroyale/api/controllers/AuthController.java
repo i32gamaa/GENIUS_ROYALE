@@ -22,17 +22,12 @@ public class AuthController {
     @Autowired
     private JwtService jwtService;
 
-    // 1. REGISTRO
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody RegisterRequest registerRequest) {
-        System.out.println("Intentando registrar: " + registerRequest.getEmail());
-
-        // Verificar si el email ya existe
+        // Verificamos si ya existe por email o username
         if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
             return ResponseEntity.badRequest().body(new ApiResponse(false, "El email ya está registrado"));
         }
-        
-        // Verificar si el username ya existe
         if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
             return ResponseEntity.badRequest().body(new ApiResponse(false, "El nombre de usuario ya existe"));
         }
@@ -40,32 +35,32 @@ public class AuthController {
         User newUser = new User();
         newUser.setUsername(registerRequest.getUsername());
         newUser.setEmail(registerRequest.getEmail());
-        // Guardamos la contraseña tal cual (SIN encriptar) porque usas NoOpPasswordEncoder
+        // Guardamos tal cual (sin encode) porque usas NoOpPasswordEncoder en SecurityConfig
         newUser.setPassword(registerRequest.getPassword());
 
         userRepository.save(newUser);
-        return ResponseEntity.ok(new ApiResponse(true, "¡Registro completado con éxito!"));
+        return ResponseEntity.ok(new ApiResponse(true, "¡Usuario registrado con éxito!"));
     }
 
-    // 2. LOGIN
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest) {
-        // Tu frontend en app.js envía 'username', así que buscamos por ese campo
-        System.out.println("Intento de login para: " + loginRequest.getEmail());
-
-        // IMPORTANTE: Si en el login pones el email, usa findByEmail. 
-        // Si pones el nombre de usuario, usa findByUsername.
+        // Buscamos por EMAIL que es lo que envía el frontend
         Optional<User> userOptional = userRepository.findByEmail(loginRequest.getEmail());
+        
+        // Si no está por email, probamos por username (por si acaso el usuario puso el nombre)
+        if (userOptional.isEmpty()) {
+            userOptional = userRepository.findByUsername(loginRequest.getEmail());
+        }
 
         if (userOptional.isPresent()) {
             User user = userOptional.get();
-            // Comparación directa de texto (sin encriptar)
+            // Comparación directa de texto (sin matches) para ir a lo seguro con NoOp
             if (loginRequest.getPassword().equals(user.getPassword())) {
                 String token = jwtService.generateToken(user);
-                return ResponseEntity.ok(new ApiResponse(true, "Login correcto", token, user));
+                return ResponseEntity.ok(new ApiResponse(true, "Login exitoso", token, user));
             }
         }
-        
+
         return ResponseEntity.status(401).body(new ApiResponse(false, "Credenciales inválidas"));
     }
 }
