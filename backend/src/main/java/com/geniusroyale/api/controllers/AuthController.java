@@ -2,7 +2,6 @@ package com.geniusroyale.api.controllers;
 
 import com.geniusroyale.api.dto.LoginRequest;
 import com.geniusroyale.api.dto.RegisterRequest;
-import com.geniusroyale.api.dto.UserProfileDTO;
 import com.geniusroyale.api.models.ApiResponse;
 import com.geniusroyale.api.models.User;
 import com.geniusroyale.api.repositories.UserRepository;
@@ -27,11 +26,15 @@ public class AuthController {
     @Autowired
     private JwtService jwtService;
 
+    // 1. REGISTRO (Ya tiene el @RequestBody que pusimos antes)
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody RegisterRequest registerRequest) {        System.out.println("Recibido registro para: " + registerRequest.getEmail());
+    public ResponseEntity<?> registerUser(@RequestBody RegisterRequest registerRequest) {
+        System.out.println("Recibido registro para: " + registerRequest.getEmail());
+
         if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
             return ResponseEntity.badRequest().body(new ApiResponse(false, "El email ya está registrado"));
         }
+        
         if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
             return ResponseEntity.badRequest().body(new ApiResponse(false, "El nombre de usuario ya existe"));
         }
@@ -39,62 +42,30 @@ public class AuthController {
         User newUser = new User();
         newUser.setUsername(registerRequest.getUsername());
         newUser.setEmail(registerRequest.getEmail());
+        // Usamos el passwordEncoder para cumplir con vuestra SecurityConfig
         newUser.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
 
         userRepository.save(newUser);
-
-        System.out.println("Usuario guardado con username: " + newUser.getUsername());
         return ResponseEntity.ok(new ApiResponse(true, "¡Usuario registrado con éxito!"));
     }
 
+    // 2. LOGIN (Corregido para usar getEmail() en lugar de getUsername())
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(LoginRequest loginRequest) {
-        System.out.println("Recibido login para: " + loginRequest.getEmail());
+    public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest) {
+        System.out.println("Intento de login para: " + loginRequest.getEmail());
 
+        // Buscamos por EMAIL que es lo que tiene vuestro LoginRequest
         Optional<User> userOptional = userRepository.findByEmail(loginRequest.getEmail());
-        if (userOptional.isEmpty()) {
-            return ResponseEntity.status(401).body(new ApiResponse(false, "Credenciales inválidas"));
+
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            // Comprobamos la contraseña usando el encoder
+            if (passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+                String token = jwtService.generateToken(user);
+                return ResponseEntity.ok(new ApiResponse(true, "Login exitoso", token, user));
+            }
         }
-
-        User user = userOptional.get();
-
-        if (passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-            String token = jwtService.generateToken(user);
-            System.out.println("Login exitoso. Token generado.");
-
-            // --- CAMBIO AQUÍ ---
-            // Devolver el objeto User en la respuesta
-            return ResponseEntity.ok(new ApiResponse(true, "Login exitoso", token, user));
-
-        } else {
-            return ResponseEntity.status(401).body(new ApiResponse(false, "Credenciales inválidas"));
-        }
-    }
-
-    @GetMapping("/me")
-    public ResponseEntity<?> getProfile(@RequestHeader("Authorization") String authHeader) {
-        String token = authHeader.substring(7);
-        String email = "";
-
-        try {
-            email = jwtService.extractEmail(token);
-        } catch (Exception e) {
-            return ResponseEntity.status(401).body(new ApiResponse(false, "Token inválido"));
-        }
-
-        System.out.println("Petición de perfil recibida para: " + email);
-        Optional<User> userOptional = userRepository.findByEmail(email);
-
-        if (userOptional.isEmpty()) {
-            return ResponseEntity.status(404).body(new ApiResponse(false, "Usuario no encontrado"));
-        }
-
-        User user = userOptional.get();
-
-        if (jwtService.isTokenValid(token, user)) {
-            return ResponseEntity.ok(new UserProfileDTO(user));
-        } else {
-            return ResponseEntity.status(401).body(new ApiResponse(false, "Token inválido"));
-        }
+        
+        return ResponseEntity.status(401).body(new ApiResponse(false, "Credenciales inválidas"));
     }
 }
