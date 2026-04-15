@@ -2,7 +2,6 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Genius Royale</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/auth.css">
@@ -12,148 +11,69 @@
 
     <div id="screen-login" class="screen active">
         <div class="login-container">
-            <img src="images/logo.jpeg" alt="Genius Royale Logo" class="app-logo">
             <div class="login-box">
-                <h2>Iniciar Sesión</h2>
+                <h2>Login</h2>
                 <form id="login-form">
-                    <div class="input-group">
-                        <label for="username">Usuario / Email</label>
-                        <input type="text" id="username" name="username" placeholder="Introduce tu usuario">
-                    </div>
-                    <div class="input-group">
-                        <label for="password">Contraseña</label>
-                        <input type="password" id="password" name="password" placeholder="Introduce tu contraseña">
-                    </div>
+                    <input type="text" id="username" placeholder="Email" required>
+                    <input type="password" id="password" placeholder="Pass" required>
                     <button type="submit" class="btn-login">Entrar</button>
                 </form>
-                <div class="login-footer">
-                    <p>¿No tienes cuenta? <a href="#" id="link-to-register">Regístrate aquí</a></p>
-                </div>
             </div>
         </div>
     </div>
 
-    <div id="screen-register" class="screen hidden">
-        <div class="login-container">
-            <img src="images/logo.jpeg" alt="Genius Royale Logo" class="app-logo">
-            <div class="login-box">
-                <h2>Crear Cuenta</h2>
-                <form id="register-form">
-                    <div class="input-group">
-                        <label for="reg-username">Usuario</label>
-                        <input type="text" id="reg-username" placeholder="Elige un nombre" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="reg-email">Email</label>
-                        <input type="email" id="reg-email" placeholder="Tu correo electrónico" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="reg-password">Contraseña</label>
-                        <input type="password" id="reg-password" placeholder="Crea una contraseña" required>
-                    </div>
-                    <button type="submit" class="btn-login btn-primary">Registrarse</button>
-                </form>
-                <div class="login-footer">
-                    <p>¿Ya tienes cuenta? <a href="#" id="link-to-login">Inicia sesión aquí</a></p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="screen-menu" class="screen hidden">
+    <div id="screen-menu" class="screen hidden" style="display: none;">
         <div class="sidebar">
-            <div class="profile-section">
-                <img id="profile-picture" src="images/default-profile.png" alt="Foto de perfil" class="profile-picture">
-                <h2 id="display-username">JugadorSimulado</h2>
-            </div>
-            <div class="stats-section hidden" id="stats-section">
-                <h3>📊 Estadísticas</h3>
-                <p>Partidas jugadas: <span id="stats-games-played">0</span></p>
-                <p>Partidas ganadas: <span id="stats-games-won">0</span></p>
-                <p>Puntaje total: <span id="stats-total-score">0</span></p>
-            </div>
-            <button id="btn-logout" class="btn-menu btn-secondary">Cerrar Sesión</button>
-            <button id="btn-requests" class="btn-menu btn-info" style="margin-top: 15px;">📬 Solicitudes</button>
+            <h2 id="display-username">Usuario</h2>
+            <button id="btn-requests" class="btn-menu">📬 Solicitudes</button>
+            <button id="btn-logout" class="btn-menu">Salir</button>
         </div>
-
         <div class="menu-content">
-            <h1 class="app-title">Genius Royale</h1>
-            <div class="menu-buttons">
-                <button id="btn-public-game" class="btn-menu btn-primary">⚔️ Partida Pública</button>
-                <button id="btn-private-game" class="btn-menu btn-secondary">🛡️ Partida Privada</button>
-                <button id="btn-add-friend-menu" class="btn-menu btn-info">➕ Añadir Amigo</button>
-            </div>
+            <h1>Genius Royale</h1>
+            <button id="btn-private-game" class="btn-menu btn-primary">🛡️ Partida Privada</button>
         </div>
     </div>
 
-    <div id="stats-modal" class="hidden">
-        <div class="modal-content">
-            <h2>📊 Tus Estadísticas</h2>
-            <p>Partidas jugadas: <span id="stats-games-played">0</span></p>
-            <p>Partidas ganadas: <span id="stats-games-won">0</span></p>
-            <p>Puntaje total: <span id="stats-total-score">0</span></p>
-            <button id="close-stats" class="btn-menu btn-secondary">Cerrar</button>
-        </div>
-    </div>
-
-    <div id="requests-modal" class="hidden">
-        <div class="modal-content">
-            <h2>📬 Peticiones de Amistad</h2>
-            <ul id="requests-list" class="styled-list" style="margin-bottom: 20px; color: black; max-height: 200px; overflow-y: auto;">
-                <li>Cargando...</li>
-            </ul>
-            <button id="close-requests" class="btn-menu btn-secondary">Cerrar</button>
-        </div>
-    </div>
-
-    <div id="screen-lobby" class="screen hidden">
+    <div id="screen-lobby" class="screen hidden" style="display: none;">
         <div class="lobby-container">
-            <h2 id="lobby-title">Sala de Espera</h2>
-            
-            <div class="lobby-layout">
-                <div class="lobby-config panel">
-                    <h3>Configuración</h3>
-                    <div class="input-group">
-                        <label for="game-mode">Modo de Juego:</label>
-                        <select id="game-mode">
-                            <option value="1v1">1 vs 1 (15 Preguntas)</option>
-                            <option value="BR">Battle Royale (Muerte Súbita)</option>
-                        </select>
-                    </div>
-                    <div class="input-group">
-                        <label for="game-category">Categoría:</label>
-                        <select id="game-category">
-                            <option value="0">Aleatoria</option>
-                            </select>
-                    </div>
-                    <button id="btn-start-game" class="btn-primary" disabled>Iniciar Partida</button>
-                    <button id="btn-leave-lobby" class="btn-secondary">Salir de la Sala</button>
-                </div>
-
-                <div class="lobby-players panel" id="panel-private-friends">
-                    <h3>Jugadores en Sala: <span id="player-count">1</span></h3>
-                    <ul id="players-list" class="styled-list">
-                        </ul>
-
-                    <hr>
-
-                    <h3>Invitar Amigos</h3>
-                    <div class="add-friend-box">
-                        <input type="text" id="input-friend-name" placeholder="Email de usuario...">
-                        <button id="btn-add-friend-lobby" class="btn-info">Añadir Amigo</button>
-                    </div>
-                    <ul id="friends-list" class="styled-list">
+            <div class="panel">
+                <h2>Sala de Espera</h2>
+                <div id="lobby-players-container" style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin: 20px 0;">
+                    <p>Jugadores en la sala:</p>
+                    <ul id="lobby-players-list" style="list-style: none; font-size: 1.2rem; font-weight: bold; color: #FFD700;">
                         </ul>
                 </div>
+                
+                <div class="config-row">
+                    <label>Categoría:</label>
+                    <select id="game-category"><option>Cultura General</option></select>
+                </div>
+
+                <div id="host-controls" style="display: none; margin-top: 20px;">
+                    <button id="btn-start-game-final" class="btn-primary" style="background: #4CAF50; padding: 15px 30px;">🚀 INICIAR PARTIDA</button>
+                </div>
+                
+                <p id="waiting-msg" style="font-style: italic; color: #ccc;">Esperando a que se una tu oponente...</p>
+                
+                <hr>
+                <h3>Tus Amigos</h3>
+                <ul id="friends-list" class="styled-list"></ul>
+                <button id="btn-leave-lobby" class="btn-secondary">Volver</button>
             </div>
         </div>
     </div>
 
-    <div id="screen-game" class="screen hidden"></div>
+    <div id="screen-game" class="screen hidden" style="display: none; background: #2D0A4E; height: 100vh; width: 100vw; position: fixed; top:0; left:0;">
+        <div id="game-content" style="text-align: center; padding-top: 20vh;">
+            <h1 style="color: #FFD700; font-size: 3rem;">¡DUELO INICIADO!</h1>
+            <p id="opponent-name" style="font-size: 1.5rem;"></p>
+        </div>
+    </div>
+
+    <div id="requests-modal" class="hidden"><div class="modal-content"><ul id="requests-list"></ul><button id="close-requests">Cerrar</button></div></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
-    
     <script src="js/app.js"></script>
     <script src="js/socket.js"></script>
     <script src="js/auth.js"></script>

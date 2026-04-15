@@ -3,88 +3,87 @@
 // ==========================================
 let stompClient = null;
 let currentUser = "";
+let currentHost = ""; // Guardamos quién es el host de la sala actual
 
 function conectarWebSocket(token, username) {
-    if (!token || !username) return;
-    currentUser = username; 
+    if (!token) return;
+    currentUser = username;
     
     const socket = new SockJS(`${window.API_BASE_URL}/ws`);
     stompClient = Stomp.over(socket);
     stompClient.debug = null; 
 
     stompClient.connect({'Authorization': 'Bearer ' + token}, function (frame) {
-        console.log('✅ WebSocket Conectado para:', currentUser);
+        console.log('✅ Conectado como: ' + currentUser);
 
         // 1. ESCUCHAR INVITACIONES
         stompClient.subscribe(`/topic/invites.${currentUser}`, function (message) {
             const inv = JSON.parse(message.body);
-            // Si el usuario acepta, enviamos la confirmación al servidor
-            const aceptar = confirm(`¡${inv.senderUsername} te invita a jugar!\n¿Aceptas?`);
-            if (aceptar) {
+            if (confirm(`¡${inv.senderUsername} te invita!\n¿Aceptar e ir a la sala?`)) {
+                // El invitado acepta y se mueve al lobby para esperar el inicio del Host
+                irALobbyComoInvitado(inv.senderUsername);
                 stompClient.send("/app/invite.accept", {}, JSON.stringify({ inviteId: inv.inviteId }));
             }
         });
 
-        // 2. ESCUCHAR INICIO DE PARTIDA (Esto le llega a AMBOS al mismo tiempo)
+        // 2. ESCUCHAR INICIO DE PARTIDA (Cuando el Host da al botón o el sistema confirma)
         stompClient.subscribe(`/topic/game.start.${currentUser}`, function (message) {
             const gameData = JSON.parse(message.body);
-            console.log("🎮 ¡PARTIDA CREADA EN SERVIDOR!", gameData);
+            console.log("🎮 ¡Partida confirmada!", gameData);
             
-            // Forzamos el salto a la pantalla de juego
-            iniciarPartidaAutomaticamente(gameData);
+            // Ambos saltan a la pantalla de juego real
+            irAPantallaDeJuego(gameData.opponentUsername);
+            localStorage.setItem('current_game_id', gameData.gameId);
+            
+            if (typeof inicializarJuego === "function") {
+                inicializarJuego(gameData);
+            }
         });
 
     }, function(error) {
-        console.error('❌ Error WebSocket:', error);
-        setTimeout(() => conectarWebSocket(token, username), 3000);
+        setTimeout(() => conectarWebSocket(token, username), 2000);
     });
 }
 
-function iniciarPartidaAutomaticamente(gameData) {
-    console.log("Cambiando a pantalla de juego...");
-    localStorage.setItem('current_game_id', gameData.gameId);
-    
-    // Referencias a las pantallas
+function irALobbyComoInvitado(hostName) {
+    // Cambiamos visualmente al lobby para que el invitado no se quede en el menú
     const sMenu = document.getElementById('screen-menu');
     const sLobby = document.getElementById('screen-lobby');
-    const sGame = document.getElementById('screen-game');
-    const requestsModal = document.getElementById('requests-modal');
+    const list = document.getElementById('lobby-players-list');
+    const waitingMsg = document.getElementById('waiting-msg');
+    const hostControls = document.getElementById('host-controls');
 
-    // 1. Cerramos cualquier modal que estorbe
-    if (requestsModal) requestsModal.classList.add('hidden');
-
-    // 2. Ocultamos Menú y Lobby
-    if (sMenu) { sMenu.classList.add('hidden'); sMenu.style.display = 'none'; }
-    if (sLobby) { sLobby.classList.add('hidden'); sLobby.style.display = 'none'; }
-
-    // 3. Mostramos la pantalla de Juego
-    if (sGame) {
-        sGame.classList.remove('hidden');
-        sGame.style.display = 'block';
-        sGame.innerHTML = `
-            <div class="game-container">
-                <h1 style="color: #FFD700;">¡PARTIDA INICIADA!</h1>
-                <p>Rival: <span style="color: white; font-weight: bold;">${gameData.opponentUsername}</span></p>
-                <div class="loading-spinner"></div>
-                <p>Cargando preguntas de la base de datos...</p>
-            </div>
-        `;
+    cambiarPantalla(sMenu, sLobby);
+    
+    if (list) {
+        list.innerHTML = `<li>👤 ${hostName} (Host)</li><li>⚔️ ${currentUser}</li>`;
     }
+    if (waitingMsg) waitingMsg.innerText = "Esperando a que el Host inicie la partida...";
+    if (hostControls) hostControls.style.display = 'none'; // El invitado no ve el botón de inicio
+}
 
-    // 4. Lanzamos el motor de la Fase 3
-    if (typeof inicializarJuego === "function") {
-        inicializarJuego(gameData);
+function irAPantallaDeJuego(oponente) {
+    document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+    const sGame = document.getElementById('screen-game');
+    const oppElement = document.getElementById('opponent-name');
+    if (sGame) {
+        sGame.style.display = 'block';
+        sGame.classList.remove('hidden');
+        if (oppElement) oppElement.innerText = "Contra: " + oponente;
     }
 }
 
 function enviarInvitacionJuego(amigoUsername, categoria) {
-    if (!stompClient || !stompClient.connected) {
-        alert("⚠️ Conexión de red inestable. Espera un segundo.");
-        return;
-    }
+    if (!stompClient || !stompClient.connected) return;
+    
     stompClient.send("/app/game.invite", {}, JSON.stringify({
         receiverUsername: amigoUsername,
         categoryName: categoria || "Cultura General"
     }));
-    alert("🚀 Invitación enviada. Esperando respuesta...");
+    
+    // El host ya está en el lobby, actualizamos su lista
+    const list = document.getElementById('lobby-players-list');
+    if (list) list.innerHTML = `<li>👤 ${currentUser} (Host)</li><li>⏳ Invitando a ${amigoUsername}...</li>`;
+    
+    alert("🚀 Invitación enviada!");
 }
