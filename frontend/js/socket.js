@@ -8,7 +8,6 @@ function conectarWebSocket(token, username) {
     if (!token || !username) return;
     currentUser = username; 
     
-    // Usamos la variable global de window
     const socket = new SockJS(`${window.API_BASE_URL}/ws`);
     stompClient = Stomp.over(socket);
     stompClient.debug = null; 
@@ -16,21 +15,22 @@ function conectarWebSocket(token, username) {
     stompClient.connect({'Authorization': 'Bearer ' + token}, function (frame) {
         console.log('✅ WebSocket Conectado para:', currentUser);
 
-        // Suscripción a invitaciones
+        // 1. ESCUCHAR INVITACIONES
         stompClient.subscribe(`/topic/invites.${currentUser}`, function (message) {
-            console.log("📩 ¡Invitación detectada en el canal!");
             const inv = JSON.parse(message.body);
-            const aceptar = confirm(`¡${inv.senderUsername} te invita a jugar!\n¿Aceptas el reto?`);
+            // Si el usuario acepta, enviamos la confirmación al servidor
+            const aceptar = confirm(`¡${inv.senderUsername} te invita a jugar!\n¿Aceptas?`);
             if (aceptar) {
                 stompClient.send("/app/invite.accept", {}, JSON.stringify({ inviteId: inv.inviteId }));
             }
         });
 
-        // Suscripción a inicio de partida
+        // 2. ESCUCHAR INICIO DE PARTIDA (Esto le llega a AMBOS al mismo tiempo)
         stompClient.subscribe(`/topic/game.start.${currentUser}`, function (message) {
             const gameData = JSON.parse(message.body);
-            console.log("🎮 PARTIDA RECIBIDA:", gameData);
-            alert(`¡Partida confirmada contra ${gameData.opponentUsername}!`);
+            console.log("🎮 ¡PARTIDA CREADA EN SERVIDOR!", gameData);
+            
+            // Forzamos el salto a la pantalla de juego
             iniciarPartidaAutomaticamente(gameData);
         });
 
@@ -41,28 +41,50 @@ function conectarWebSocket(token, username) {
 }
 
 function iniciarPartidaAutomaticamente(gameData) {
+    console.log("Cambiando a pantalla de juego...");
     localStorage.setItem('current_game_id', gameData.gameId);
+    
+    // Referencias a las pantallas
     const sMenu = document.getElementById('screen-menu');
     const sLobby = document.getElementById('screen-lobby');
     const sGame = document.getElementById('screen-game');
-    
-    if (sMenu) sMenu.style.display = 'none';
-    if (sLobby) sLobby.style.display = 'none';
+    const requestsModal = document.getElementById('requests-modal');
+
+    // 1. Cerramos cualquier modal que estorbe
+    if (requestsModal) requestsModal.classList.add('hidden');
+
+    // 2. Ocultamos Menú y Lobby
+    if (sMenu) { sMenu.classList.add('hidden'); sMenu.style.display = 'none'; }
+    if (sLobby) { sLobby.classList.add('hidden'); sLobby.style.display = 'none'; }
+
+    // 3. Mostramos la pantalla de Juego
     if (sGame) {
-        sGame.style.display = 'block';
         sGame.classList.remove('hidden');
-        sGame.innerHTML = `<div class="game-container"><h1>Cargando partida contra ${gameData.opponentUsername}...</h1></div>`;
+        sGame.style.display = 'block';
+        sGame.innerHTML = `
+            <div class="game-container">
+                <h1 style="color: #FFD700;">¡PARTIDA INICIADA!</h1>
+                <p>Rival: <span style="color: white; font-weight: bold;">${gameData.opponentUsername}</span></p>
+                <div class="loading-spinner"></div>
+                <p>Cargando preguntas de la base de datos...</p>
+            </div>
+        `;
+    }
+
+    // 4. Lanzamos el motor de la Fase 3
+    if (typeof inicializarJuego === "function") {
+        inicializarJuego(gameData);
     }
 }
 
 function enviarInvitacionJuego(amigoUsername, categoria) {
     if (!stompClient || !stompClient.connected) {
-        alert("⚠️ No estás conectado al servidor de juego.");
+        alert("⚠️ Conexión de red inestable. Espera un segundo.");
         return;
     }
     stompClient.send("/app/game.invite", {}, JSON.stringify({
         receiverUsername: amigoUsername,
         categoryName: categoria || "Cultura General"
     }));
-    alert("🚀 Invitación enviada a " + amigoUsername);
+    alert("🚀 Invitación enviada. Esperando respuesta...");
 }

@@ -7,6 +7,7 @@ function inicializarMenu() {
     const btnPrivate = document.getElementById('btn-private-game');
     const btnRequests = document.getElementById('btn-requests');
     const btnAddMenu = document.getElementById('btn-add-friend-menu');
+    const closeRequests = document.getElementById('close-requests');
 
     if (btnPrivate) {
         btnPrivate.onclick = () => {
@@ -17,7 +18,7 @@ function inicializarMenu() {
 
     if (btnAddMenu) {
         btnAddMenu.onclick = () => {
-            const email = prompt("Email del amigo:");
+            const email = prompt("Introduce el email del amigo:");
             if (email) {
                 fetch(`${window.API_BASE_URL}/api/amistad/solicitar`, {
                     method: 'POST',
@@ -26,7 +27,9 @@ function inicializarMenu() {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ email: email })
-                }).then(res => res.json()).then(d => alert(d.message));
+                })
+                .then(res => res.json())
+                .then(d => alert(d.message));
             }
         };
     }
@@ -37,12 +40,18 @@ function inicializarMenu() {
             actualizarBandeja();
         };
     }
+
+    if (closeRequests) {
+        closeRequests.onclick = () => {
+            document.getElementById('requests-modal').classList.add('hidden');
+        };
+    }
 }
 
 function cargarListaAmigos() {
     const list = document.getElementById('friends-list');
     if(!list) return;
-    list.innerHTML = "<li>Cargando...</li>";
+    list.innerHTML = "<li>Cargando amigos...</li>";
     
     fetch(`${window.API_BASE_URL}/api/amistad/lista`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('genius_token')}` }
@@ -50,6 +59,10 @@ function cargarListaAmigos() {
     .then(res => res.json())
     .then(amigos => {
         list.innerHTML = "";
+        if (amigos.length === 0) {
+            list.innerHTML = "<li>Aún no tienes amigos aceptados.</li>";
+            return;
+        }
         amigos.forEach(a => {
             const li = document.createElement('li');
             li.innerHTML = `<span>${a.username}</span> <button class="btn-info" onclick="invitarAmigo('${a.username}')">Invitar</button>`;
@@ -71,10 +84,10 @@ function actualizarBandeja() {
     })
     .then(res => res.json())
     .then(data => {
-        rList.innerHTML = data.length ? "" : "<li>No hay peticiones</li>";
+        rList.innerHTML = data.length ? "" : "<li>No tienes peticiones pendientes.</li>";
         data.forEach(r => {
             const li = document.createElement('li');
-            li.innerHTML = `${r.senderUsername} <button onclick="aceptarSol(${r.id})">✅</button>`;
+            li.innerHTML = `<span>${r.senderUsername}</span> <button class="btn-primary" onclick="aceptarSol(${r.id})">✅ Aceptar</button>`;
             rList.appendChild(li);
         });
     });
@@ -84,9 +97,13 @@ window.aceptarSol = function(id) {
     fetch(`${window.API_BASE_URL}/api/amistad/aceptar/${id}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('genius_token')}` }
-    }).then(() => {
-        alert("¡Aceptado!");
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert("¡Ahora sois amigos!");
+        // Ocultamos el modal y refrescamos la lista de amigos sin recargar la página
         document.getElementById('requests-modal').classList.add('hidden');
+        cargarListaAmigos();
     });
 };
 
