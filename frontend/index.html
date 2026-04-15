@@ -61,7 +61,6 @@
     </div>
 
     <div id="screen-menu" class="screen hidden">
-        <!-- Menú lateral -->
         <div class="sidebar">
             <div class="profile-section">
                 <img id="profile-picture" src="images/default-profile.png" alt="Foto de perfil" class="profile-picture">
@@ -74,20 +73,19 @@
                 <p>Puntaje total: <span id="stats-total-score">0</span></p>
             </div>
             <button id="btn-logout" class="btn-menu btn-secondary">Cerrar Sesión</button>
+            <button id="btn-requests" class="btn-menu btn-info" style="margin-top: 15px;">📬 Solicitudes</button>
         </div>
 
-        <!-- Contenido principal -->
         <div class="menu-content">
             <h1 class="app-title">Genius Royale</h1>
             <div class="menu-buttons">
                 <button id="btn-public-game" class="btn-menu btn-primary">⚔️ Partida Pública</button>
                 <button id="btn-private-game" class="btn-menu btn-secondary">🛡️ Partida Privada</button>
-                <button id="btn-add-friend" class="btn-menu btn-info">➕ Añadir Amigo</button>
+                <button id="btn-add-friend-menu" class="btn-menu btn-info">➕ Añadir Amigo</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal para estadísticas del usuario -->
     <div id="stats-modal" class="hidden">
         <div class="modal-content">
             <h2>📊 Tus Estadísticas</h2>
@@ -95,6 +93,59 @@
             <p>Partidas ganadas: <span id="stats-games-won">0</span></p>
             <p>Puntaje total: <span id="stats-total-score">0</span></p>
             <button id="close-stats" class="btn-menu btn-secondary">Cerrar</button>
+        </div>
+    </div>
+
+    <div id="requests-modal" class="hidden">
+        <div class="modal-content">
+            <h2>📬 Peticiones de Amistad</h2>
+            <ul id="requests-list" class="styled-list" style="margin-bottom: 20px; color: black; max-height: 200px; overflow-y: auto;">
+                <li>Cargando...</li>
+            </ul>
+            <button id="close-requests" class="btn-menu btn-secondary">Cerrar</button>
+        </div>
+    </div>
+
+    <div id="screen-lobby" class="screen hidden">
+        <div class="lobby-container">
+            <h2 id="lobby-title">Sala de Espera</h2>
+            
+            <div class="lobby-layout">
+                <div class="lobby-config panel">
+                    <h3>Configuración</h3>
+                    <div class="input-group">
+                        <label for="game-mode">Modo de Juego:</label>
+                        <select id="game-mode">
+                            <option value="1v1">1 vs 1 (15 Preguntas)</option>
+                            <option value="BR">Battle Royale (Muerte Súbita)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="game-category">Categoría:</label>
+                        <select id="game-category">
+                            <option value="0">Aleatoria</option>
+                            </select>
+                    </div>
+                    <button id="btn-start-game" class="btn-primary" disabled>Iniciar Partida</button>
+                    <button id="btn-leave-lobby" class="btn-secondary">Salir de la Sala</button>
+                </div>
+
+                <div class="lobby-players panel" id="panel-private-friends">
+                    <h3>Jugadores en Sala: <span id="player-count">1</span></h3>
+                    <ul id="players-list" class="styled-list">
+                        </ul>
+
+                    <hr>
+
+                    <h3>Invitar Amigos</h3>
+                    <div class="add-friend-box">
+                        <input type="text" id="input-friend-name" placeholder="Email de usuario...">
+                        <button id="btn-add-friend-lobby" class="btn-info">Añadir Amigo</button>
+                    </div>
+                    <ul id="friends-list" class="styled-list">
+                        </ul>
+                </div>
+            </div>
         </div>
     </div>
 
