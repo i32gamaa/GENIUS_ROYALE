@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Genius Royale</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/auth.css">
@@ -80,8 +80,8 @@
     </div>
 
     <div id="screen-lobby" class="screen hidden" style="display:none;">
-        <div class="lobby-container">
-            <h2 id="lobby-title">Sala Privada</h2>
+        <div class="lobby-container" style="width: 100%; max-width: 900px; margin: 0 auto; padding: 20px;">
+            <h2 id="lobby-title" style="text-align: center; color: #FFD700; font-size: 2.5rem;">Sala Privada</h2>
             
             <div class="lobby-layout">
                 <div class="lobby-config panel">
@@ -89,7 +89,7 @@
                     <div class="input-group">
                         <label for="game-mode">Modo de Juego:</label>
                         <select id="game-mode">
-                            <option value="1v1">1 vs 1 (15 Preguntas)</option>
+                            <option value="1v1">Modo Royale</option>
                         </select>
                     </div>
                     <div class="input-group">
@@ -102,9 +102,9 @@
                     <div id="host-controls" style="display: none; margin-top: 20px;">
                         <button id="btn-start-game-final" class="btn-primary" style="background: #4CAF50; width: 100%; padding:15px;">🚀 INICIAR PARTIDA</button>
                     </div>
-                    <p id="waiting-msg" style="font-style: italic; color: #ccc; margin-top: 15px;">Esperando a que se una tu oponente...</p>
+                    <p id="waiting-msg" style="font-style: italic; color: #ccc; margin-top: 15px;">Esperando a que se unan los jugadores...</p>
                     
-                    <button id="btn-leave-lobby" class="btn-secondary" style="margin-top: 20px;">Salir de la Sala</button>
+                    <button id="btn-leave-lobby" class="btn-secondary" style="margin-top: 20px; width: 100%;">Salir de la Sala</button>
                 </div>
 
                 <div class="lobby-players panel" id="panel-private-friends">
@@ -115,7 +115,7 @@
 
                     <h3>Añadir Amigo</h3>
                     <div class="add-friend-box" style="display: flex; gap: 10px; margin-bottom: 15px;">
-                        <input type="text" id="input-friend-name" placeholder="Email de tu amigo..." style="flex: 1; padding: 10px; border-radius:5px; border:none;">
+                        <input type="text" id="input-friend-name" placeholder="Email de tu amigo..." style="flex: 1; padding: 10px; border-radius:5px; border:none; width: 100%;">
                         <button id="btn-add-friend-lobby" class="btn-info" style="padding: 10px;">Añadir</button>
                     </div>
 
@@ -126,40 +126,29 @@
         </div>
     </div>
 
-    <div id="screen-game" class="screen hidden" style="display: none; background: #2D0A4E; height: 100vh; width: 100vw; position: fixed; top:0; left:0; z-index: 9999;">
+    <div id="screen-game" class="screen hidden" style="display: none; background: #2D0A4E; height: 100%; min-height: 100vh; width: 100vw; position: fixed; top:0; left:0; z-index: 9999; overflow-y: auto;">
         
-        <div id="game-loading" style="text-align: center; padding-top: 20vh;">
-            <h1 style="color: #FFD700; font-size: 3rem;">¡PREPARANDO DUELO!</h1>
+        <div id="game-loading" style="text-align: center; padding-top: 20vh; padding: 20px;">
+            <h1 class="responsive-title" style="color: #FFD700; font-size: 3rem;">¡PREPARANDO DUELO!</h1>
             <p id="opponent-name" style="font-size: 1.5rem; color: white;"></p>
             <div class="loader" style="margin: 30px auto;"></div>
         </div>
 
-        <div id="game-ui" class="game-container" style="display: none; width: 100%;">
-            <div class="score" style="font-size: 1.2rem; margin-bottom: 10px; color: #E91E63; font-weight: bold; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 10px;">Puntuación: J1: 0 | J2: 0</div>
-            <div class="timer" style="font-size: 1.5rem; margin-bottom: 20px; color: #03DAC6; font-weight: bold;">Cargando...</div>
-            <div class="question" style="font-size: 1.5rem; color: #FFD700; margin-bottom: 30px; text-align: center; padding: 0 20px;"></div>
+        <div id="game-ui" class="game-container" style="display: none; width: 100%; flex-direction: column; align-items: center; padding: 20px;">
+            <div class="score" style="font-size: 1.2rem; margin-bottom: 10px; color: #E91E63; font-weight: bold; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 10px; width: 90%; max-width: 600px; text-align: center;">Puntuación: 0</div>
+            <div class="timer" style="font-size: 1.5rem; margin-bottom: 20px; color: #03DAC6; font-weight: bold; text-align: center;">Cargando...</div>
+            <div class="question responsive-question" style="font-size: 1.5rem; color: #FFD700; margin-bottom: 30px; text-align: center; width: 100%; max-width: 600px;"></div>
             <div class="options" style="display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 600px;"></div>
         </div>
 
-        <div id="game-results" style="display: none; text-align: center; padding-top: 5vh; color: white; width: 100%; height: 100vh; overflow-y: auto;">
-            <h1 id="personal-result-title" style="font-size: 4rem; text-shadow: 0 0 20px rgba(0,0,0,0.5);">🏆 RESULTADOS 🏆</h1>
+        <div id="game-results" style="display: none; text-align: center; padding-top: 5vh; padding-bottom: 5vh; color: white; width: 100%; height: 100%; min-height: 100vh; overflow-y: auto; padding: 20px;">
+            <h1 id="personal-result-title" style="font-size: 4rem; text-shadow: 0 0 20px rgba(0,0,0,0.5); margin-top: 20px;">🏆 RESULTADOS 🏆</h1>
             <h2 id="personal-result-message" style="font-size: 2rem; margin: 10px 0; color: #EEE;"></h2>
             <h3 id="winner-announcement" style="font-size: 1.5rem; margin: 20px 0; color: #FFD700;"></h3>
             
-            <div style="display: flex; justify-content: center; gap: 30px; margin-top: 30px; flex-wrap: wrap;">
-                <div class="player-card" style="background: rgba(3, 218, 198, 0.2); padding: 30px; border-radius: 15px; border: 2px solid #03DAC6; min-width: 200px;">
-                    <h3 style="font-size: 1.5rem; margin:0;">Jugador 1</h3>
-                    <p id="res-p1-score" style="font-size: 2.5rem; font-weight: bold; color: #03DAC6; margin: 10px 0;">0 Pts</p>
-                </div>
-                <div class="player-card" style="background: rgba(233, 30, 99, 0.2); padding: 30px; border-radius: 15px; border: 2px solid #E91E63; min-width: 200px;">
-                    <h3 style="font-size: 1.5rem; margin:0;">Jugador 2</h3>
-                    <p id="res-p2-score" style="font-size: 2.5rem; font-weight: bold; color: #E91E63; margin: 10px 0;">0 Pts</p>
-                </div>
-            </div>
-            
-            <div style="margin-top: 50px; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; padding-bottom: 50px;">
-                <button id="btn-back-to-lobby" class="btn-primary" style="font-size: 1.2rem; padding: 15px 30px; background-color: #4CAF50; border: none; border-radius: 10px; cursor: pointer; color: white; font-weight: bold;">🔄 Volver a la Sala</button>
-                <button id="btn-exit-to-menu" class="btn-secondary" style="font-size: 1.2rem; padding: 15px 30px; background-color: #E91E63; border: none; border-radius: 10px; cursor: pointer; color: white; font-weight: bold;">🚪 Salir al Menú</button>
+            <div style="margin-top: 30px; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; padding-bottom: 50px;">
+                <button id="btn-back-to-lobby" class="btn-primary" style="font-size: 1.2rem; padding: 15px 30px; background-color: #4CAF50; border: none; border-radius: 10px; cursor: pointer; color: white; font-weight: bold; width: 100%; max-width: 300px;">🔄 Volver a la Sala</button>
+                <button id="btn-exit-to-menu" class="btn-secondary" style="font-size: 1.2rem; padding: 15px 30px; background-color: #E91E63; border: none; border-radius: 10px; cursor: pointer; color: white; font-weight: bold; width: 100%; max-width: 300px;">🚪 Salir al Menú</button>
             </div>
         </div>
 
@@ -179,9 +168,9 @@
             <p style="color: #555; margin-bottom: 15px;">¿Con quién quieres jugar tu próxima partida? Introduce su correo electrónico:</p>
             <input type="email" id="modal-friend-email" placeholder="ejemplo@email.com" style="width: 100%; padding: 12px; margin-bottom: 20px; border: 2px solid #ccc; border-radius: 8px; font-size: 1rem; box-sizing: border-box;">
             
-            <div style="display: flex; gap: 10px;">
-                <button id="btn-send-friend-req" class="btn-primary" style="flex: 1;">Enviar Solicitud</button>
-                <button id="btn-close-add-friend" class="btn-secondary" style="flex: 1;">Cancelar</button>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button id="btn-send-friend-req" class="btn-primary" style="flex: 1; min-width: 120px;">Enviar Solicitud</button>
+                <button id="btn-close-add-friend" class="btn-secondary" style="flex: 1; min-width: 120px;">Cancelar</button>
             </div>
         </div>
     </div>
