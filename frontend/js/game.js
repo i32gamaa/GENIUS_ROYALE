@@ -1,5 +1,5 @@
 // ==========================================
-// js/game.js - VERSIÓN FINAL "REMATCH READY"
+// js/game.js - VERSIÓN FINAL "PODIO PREMIUM"
 // ==========================================
 
 let preguntas = [];
@@ -19,7 +19,7 @@ function inicializarJuego(gameData) {
 
 function descargarPreguntasConReintento() {
     fetch(`${window.API_BASE_URL}/api/game/${gameIdActual}/questions`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('genius_token')}` }
+        headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}` }
     })
     .then(res => {
         if (!res.ok) throw new Error("Aún no se ha guardado en BD");
@@ -71,7 +71,7 @@ function mostrarPregunta() {
             boton.style.border = "3px solid #FFD700";
             document.querySelectorAll('.option-button').forEach(btn => btn.style.pointerEvents = 'none');
             if (typeof enviarRespuesta === "function") enviarRespuesta(gameIdActual, opcion);
-            timerElemento.textContent = "¡Respuesta enviada! Esperando al rival... ⏳";
+            timerElemento.textContent = "¡Respuesta enviada! Esperando a los demás... ⏳";
         });
         opcionesElemento.appendChild(boton);
     });
@@ -90,7 +90,7 @@ function iniciarTemporizador() {
                 respuestaElegida = "TIMEOUT";
                 document.querySelectorAll('.option-button').forEach(btn => btn.style.pointerEvents = 'none');
                 timerElemento.style.color = "#F44336"; 
-                timerElemento.textContent = "¡TIEMPO AGOTADO! ⏰ Esperando al rival...";
+                timerElemento.textContent = "¡TIEMPO AGOTADO! ⏰ Esperando a los demás...";
                 if (typeof enviarRespuesta === "function") enviarRespuesta(gameIdActual, "TIMEOUT");
             }
         } else if (respuestaElegida === null) {
@@ -134,11 +134,17 @@ function procesarResultadoRonda(update) {
         timerElemento.innerHTML = `¡CORRECTO! <strong>+${puntosGanados} Pts</strong> 🎉`;
     } else {
         timerElemento.style.color = '#F44336';
-        timerElemento.innerHTML = (respuestaElegida === "TIMEOUT") ? "¡MUY LENTO! ⏰ La correcta era la verde." : "¡INCORRECTO! Has fallado. 😢";
+        timerElemento.innerHTML = (respuestaElegida === "TIMEOUT") ? "¡MUY LENTO! ⏰" : "¡INCORRECTO! Has fallado. 😢";
     }
 
     const scoreElement = document.querySelector('.score');
-    if (scoreElement) scoreElement.textContent = `Puntuación: J1: ${update.playerOneScore} | J2: ${update.playerTwoScore}`; 
+    if (scoreElement && update.scores) {
+        let rankingText = Object.entries(update.scores)
+            .sort((a, b) => b[1] - a[1]) 
+            .map(([name, pts]) => `${name}: ${pts}`)
+            .join(" | ");
+        scoreElement.textContent = `🏆 Ranking: ${rankingText}`; 
+    }
 
     setTimeout(() => {
         preguntaActual++;
@@ -156,7 +162,7 @@ function mostrarPodioFinal(update) {
     const podium = document.getElementById('game-results');
     if (podium) podium.style.display = 'block';
     
-    const myUsername = localStorage.getItem('genius_username');
+    const myUsername = sessionStorage.getItem('genius_username');
     const titleText = document.getElementById('personal-result-title');
     const msgText = document.getElementById('personal-result-message');
     const winnerText = document.getElementById('winner-announcement');
@@ -164,31 +170,100 @@ function mostrarPodioFinal(update) {
     if (update.winnerUsername === "Empate") {
         titleText.textContent = "⚖️ ¡EMPATE TÉCNICO!";
         titleText.style.color = "#FF9800";
-        msgText.textContent = "¡Batalla legendaria! Nadie cede.";
+        if(msgText) msgText.textContent = "¡Batalla legendaria! Nadie cede.";
     } else if (update.winnerUsername === myUsername) {
         titleText.textContent = "🏆 ¡HAS GANADO! 🏆";
         titleText.style.color = "#4CAF50";
-        msgText.textContent = "¡Eres un genio! Has aplastado a tu rival.";
+        if(msgText) msgText.textContent = "¡Eres un genio! Has aplastado a tus rivales.";
     } else {
         titleText.textContent = "💀 ¡HAS PERDIDO! 💀";
         titleText.style.color = "#F44336";
-        msgText.textContent = "¡Otro día será! Toca estudiar un poco más.";
+        if(msgText) msgText.textContent = "¡Otro día será! Toca estudiar un poco más.";
     }
     
-    winnerText.textContent = (update.winnerUsername === "Empate") ? "" : `Ganador: ${update.winnerUsername}`;
-    document.getElementById('res-p1-score').textContent = update.playerOneScore + " Pts";
-    document.getElementById('res-p2-score').textContent = update.playerTwoScore + " Pts";
+    winnerText.textContent = (update.winnerUsername === "Empate") ? "¡Empate múltiple!" : `👑 Ganador absoluto: ${update.winnerUsername}`;
 
-    // --- LÓGICA DE BOTONES DE REVANCHA ---
+    // --- MAGIA VISUAL: OCULTAR LAS CAJAS DE 1VS1 FEAS ---
+    const p1ScoreEl = document.getElementById('res-p1-score');
+    const p2ScoreEl = document.getElementById('res-p2-score');
+    if (p1ScoreEl && p1ScoreEl.parentNode) p1ScoreEl.parentNode.style.display = 'none';
+    if (p2ScoreEl && p2ScoreEl.parentNode) p2ScoreEl.parentNode.style.display = 'none';
+
+    const cajasContainer = document.querySelector('.score-boxes') || document.querySelector('.results-grid');
+    if (cajasContainer) cajasContainer.style.display = 'none';
+
+    // --- CREAR LA CLASIFICACIÓN MULTIJUGADOR ---
+    let leaderboard = document.getElementById('royale-leaderboard');
+    if (!leaderboard) {
+        leaderboard = document.createElement('div');
+        leaderboard.id = 'royale-leaderboard';
+        
+        // Estilazo de tabla premium
+        leaderboard.style.backgroundColor = "rgba(0, 0, 0, 0.4)";
+        leaderboard.style.borderRadius = "15px";
+        leaderboard.style.padding = "20px";
+        leaderboard.style.marginTop = "20px";
+        leaderboard.style.marginBottom = "25px";
+        leaderboard.style.boxShadow = "0 4px 15px rgba(0,0,0,0.5)";
+        leaderboard.style.maxWidth = "400px";
+        leaderboard.style.margin = "20px auto";
+        
+        winnerText.parentNode.insertBefore(leaderboard, winnerText.nextSibling);
+    }
+
+    let scoresHtml = "<h3 style='color:#FFD700; margin-top:0; margin-bottom:15px; text-transform:uppercase; letter-spacing: 2px;'>Clasificación Final</h3>";
+    scoresHtml += "<ul style='list-style:none; padding:0; margin:0;'>";
+    
+    if (update.scores) {
+        // Ordenamos los puntos de mayor a menor
+        const sortedScores = Object.entries(update.scores).sort((a, b) => b[1] - a[1]);
+        
+        sortedScores.forEach(([name, pts], index) => {
+            let medalla = "👾"; 
+            let colorNombre = "white";
+            let fontWeight = "normal";
+
+            if (index === 0) medalla = "🥇";
+            else if (index === 1) medalla = "🥈";
+            else if (index === 2) medalla = "🥉";
+
+            // Resaltamos al usuario que está mirando la pantalla
+            if (name === myUsername) {
+                colorNombre = "#03DAC6"; 
+                fontWeight = "bold";
+            }
+
+            scoresHtml += `
+                <li style='
+                    display: flex; 
+                    justify-content: space-between; 
+                    align-items: center;
+                    padding: 10px 15px; 
+                    margin-bottom: 8px;
+                    background: rgba(255,255,255,0.05);
+                    border-radius: 8px;
+                    color: ${colorNombre};
+                    font-weight: ${fontWeight};
+                    font-size: 1.2rem;
+                    border-left: ${name === myUsername ? '4px solid #03DAC6' : '4px solid transparent'};
+                '>
+                    <span>${medalla} ${name}</span>
+                    <span style='color: #FFD700; font-weight: bold;'>${pts} pts</span>
+                </li>`;
+        });
+    }
+    scoresHtml += "</ul>";
+    leaderboard.innerHTML = scoresHtml;
+
+    // --- BOTONES FINALES ---
     document.getElementById('btn-back-to-lobby').onclick = () => {
         resetearVistasDeJuego();
         const sGame = document.getElementById('screen-game');
         const sLobby = document.getElementById('screen-lobby');
         
-        // Si tengo un inviteId, es que soy el Host -> Muestro mi botón de Iniciar
         const hostControls = document.getElementById('host-controls');
         const waitingMsg = document.getElementById('waiting-msg');
-        if (localStorage.getItem('current_invite_id')) {
+        if (sessionStorage.getItem('current_invite_id')) {
             if (hostControls) hostControls.style.display = 'block';
             if (waitingMsg) waitingMsg.style.display = 'none';
         } else {
@@ -203,7 +278,7 @@ function mostrarPodioFinal(update) {
         const sGame = document.getElementById('screen-game');
         const sMenu = document.getElementById('screen-menu');
         resetearVistasDeJuego();
-        localStorage.removeItem('current_invite_id'); // Limpiamos para que no crea que sigue en sala
+        sessionStorage.removeItem('current_invite_id'); 
         if (typeof cambiarPantalla === "function") cambiarPantalla(sGame, sMenu);
     };
 }

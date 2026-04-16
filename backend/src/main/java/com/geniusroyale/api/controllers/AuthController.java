@@ -1,5 +1,6 @@
 package com.geniusroyale.api.controllers;
 
+import com.geniusroyale.api.config.ActiveUserManager;
 import com.geniusroyale.api.dto.LoginRequest;
 import com.geniusroyale.api.dto.RegisterRequest;
 import com.geniusroyale.api.models.ApiResponse;
@@ -16,15 +17,12 @@ import java.util.Optional;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private JwtService jwtService;
+    @Autowired private UserRepository userRepository;
+    @Autowired private JwtService jwtService;
+    @Autowired private ActiveUserManager activeUserManager; // <-- Inyectamos la pizarra
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody RegisterRequest registerRequest) {
-        // Verificamos si ya existe por email o username
         if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
             return ResponseEntity.badRequest().body(new ApiResponse(false, "El email ya está registrado"));
         }
@@ -35,7 +33,6 @@ public class AuthController {
         User newUser = new User();
         newUser.setUsername(registerRequest.getUsername());
         newUser.setEmail(registerRequest.getEmail());
-        // Guardamos tal cual (sin encode) porque usas NoOpPasswordEncoder en SecurityConfig
         newUser.setPassword(registerRequest.getPassword());
 
         userRepository.save(newUser);
@@ -44,18 +41,22 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest) {
-        // Buscamos por EMAIL que es lo que envía el frontend
         Optional<User> userOptional = userRepository.findByEmail(loginRequest.getEmail());
         
-        // Si no está por email, probamos por username (por si acaso el usuario puso el nombre)
         if (userOptional.isEmpty()) {
             userOptional = userRepository.findByUsername(loginRequest.getEmail());
         }
 
         if (userOptional.isPresent()) {
             User user = userOptional.get();
-            // Comparación directa de texto (sin matches) para ir a lo seguro con NoOp
             if (loginRequest.getPassword().equals(user.getPassword())) {
+                
+                // --- EL ESCUDO DE DOBLE SESIÓN ---
+                if (activeUserManager.isUserActive(user.getEmail())) {
+                    return ResponseEntity.status(403).body(new ApiResponse(false, "Ya tienes una sesión iniciada en otro dispositivo o pestaña. Ciérrala primero."));
+                }
+                // ---------------------------------
+
                 String token = jwtService.generateToken(user);
                 return ResponseEntity.ok(new ApiResponse(true, "Login exitoso", token, user));
             }

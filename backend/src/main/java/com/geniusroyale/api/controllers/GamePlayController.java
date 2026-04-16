@@ -17,6 +17,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Controller
 public class GamePlayController {
@@ -26,97 +29,99 @@ public class GamePlayController {
     @Autowired private UserRepository userRepository;
     @Autowired private QuestionRepository questionRepository;
 
+    // 🔥 EL MOTOR DE RESPUESTAS EN RAM: 
+    // Inmune a colisiones aunque 10 jugadores manden TIMEOUT en el mismo milisegundo.
+    private static final Map<String, Map<String, String>> RESPUESTAS_EN_VIVO = new ConcurrentHashMap<>();
+
     @MessageMapping("/game.answer")
     @Transactional
     public void handleAnswer(Principal principal, @Payload PlayerAnswerDTO answer) {
 
-        String email = principal.getName();
-        User player = userRepository.findByEmail(email).orElseThrow();
+        String username = userRepository.findByEmail(principal.getName()).orElseThrow().getUsername();
         Game game = gameRepository.findById(answer.getGameId()).orElseThrow();
 
         if ("FINISHED".equals(game.getGameState())) return;
 
-        String playerOneTopic = "/topic/game.updates." + game.getPlayerOne().getUsername();
-        String playerTwoTopic = "/topic/game.updates." + game.getPlayerTwo().getUsername();
+        // 1. Obtenemos la "mesa" de respuestas de esta partida en la RAM
+        Map<String, String> respuestasPartida = RESPUESTAS_EN_VIVO.computeIfAbsent(game.getId(), k -> new ConcurrentHashMap<>());
 
-        boolean isPlayerOne = game.getPlayerOne().getUsername().equals(player.getUsername());
+        // 2. Si el jugador no había respondido ya, guardamos su respuesta al instante
+        if (!respuestasPartida.containsKey(username)) {
+            respuestasPartida.put(username, answer.getSelectedAnswer());
 
-        // 1. Guardar la respuesta de este jugador
-        if (isPlayerOne) {
-            if (game.getPlayerOneCurrentAnswer() != null) return;
-            game.setPlayerOneCurrentAnswer(answer.getSelectedAnswer());
+            // Avisar a los demás de que este jugador ya ha contestado (para que el reloj les lata)
             GameUpdateDTO rivalUpdate = new GameUpdateDTO();
             rivalUpdate.setType("RIVAL_ANSWERED");
-            rivalUpdate.setMessage("¡Tu rival ha contestado!");
-            messagingTemplate.convertAndSend(playerTwoTopic, rivalUpdate);
-        } else {
-            if (game.getPlayerTwoCurrentAnswer() != null) return;
-            game.setPlayerTwoCurrentAnswer(answer.getSelectedAnswer());
-            GameUpdateDTO rivalUpdate = new GameUpdateDTO();
-            rivalUpdate.setType("RIVAL_ANSWERED");
-            rivalUpdate.setMessage("¡Tu rival ha contestado!");
-            messagingTemplate.convertAndSend(playerOneTopic, rivalUpdate);
+            for (User u : game.getPlayers()) {
+                if (!u.getUsername().equals(username)) {
+                    messagingTemplate.convertAndSend("/topic/game.updates." + u.getUsername(), rivalUpdate);
+                }
+            }
         }
 
-        Game gameSaved = gameRepository.save(game); // Guardar la respuesta actual
-
-        // 2. Comprobar si AMBOS jugadores han respondido
-        String p1Answer = gameSaved.getPlayerOneCurrentAnswer();
-        String p2Answer = gameSaved.getPlayerTwoCurrentAnswer();
-
-        if (p1Answer != null && p2Answer != null) {
-
-            processRound(gameSaved);
+        // 3. ¿Han respondido TODOS los jugadores? (Con synchronized evitamos que 2 TIMEOUTS evalúen esto a la vez)
+        synchronized (respuestasPartida) {
+            if (respuestasPartida.size() >= game.getPlayers().size()) {
+                // Hacemos una copia de las respuestas y limpiamos la RAM para la siguiente ronda
+                Map<String, String> respuestasFinales = new HashMap<>(respuestasPartida);
+                respuestasPartida.clear();
+                
+                // Procesamos quién ha ganado
+                processRound(game, respuestasFinales);
+            }
         }
     }
 
-    private void processRound(Game game) {
-        String playerOneTopic = "/topic/game.updates." + game.getPlayerOne().getUsername();
-        String playerTwoTopic = "/topic/game.updates." + game.getPlayerTwo().getUsername();
-
+    private void processRound(Game game, Map<String, String> respuestasFinales) {
         String[] questionIds = game.getQuestionIds().split(",");
         int questionIndex = game.getCurrentQuestionIndex();
         Question question = questionRepository.findById(Integer.parseInt(questionIds[questionIndex])).orElseThrow();
         String correctAnswer = question.getCorrectAnswer();
+        int scorePoints = getScore(question.getDifficultyLevel());
 
-        // 1. Calcular puntuaciones
-        if (game.getPlayerOneCurrentAnswer().equals(correctAnswer)) {
-            game.setPlayerOneScore(game.getPlayerOneScore() + getScore(question.getDifficultyLevel()));
-        }
-        if (game.getPlayerTwoCurrentAnswer().equals(correctAnswer)) {
-            game.setPlayerTwoScore(game.getPlayerTwoScore() + getScore(question.getDifficultyLevel()));
+        // 1. Comprobar aciertos de todos y sumar puntos en memoria
+        for (Map.Entry<String, String> entry : respuestasFinales.entrySet()) {
+            if (correctAnswer.equals(entry.getValue())) {
+                String pName = entry.getKey();
+                int currentScore = game.getScores().getOrDefault(pName, 0);
+                game.getScores().put(pName, currentScore + scorePoints);
+            }
         }
 
-        // 2. Enviar el resultado de la ronda
+        // 2. Enviar el resultado de la ronda a todos a la vez
         GameUpdateDTO roundResult = new GameUpdateDTO();
         roundResult.setType("ROUND_RESULT");
         roundResult.setCorrectAnswer(correctAnswer);
-        roundResult.setPlayerOneScore(game.getPlayerOneScore());
-        roundResult.setPlayerTwoScore(game.getPlayerTwoScore());
-        messagingTemplate.convertAndSend(playerOneTopic, roundResult);
-        messagingTemplate.convertAndSend(playerTwoTopic, roundResult);
+        roundResult.setScores(game.getScores());
+
+        for (User u : game.getPlayers()) {
+            messagingTemplate.convertAndSend("/topic/game.updates." + u.getUsername(), roundResult);
+        }
 
         // 3. Preparar para la siguiente ronda
-        game.setPlayerOneCurrentAnswer(null);
-        game.setPlayerTwoCurrentAnswer(null);
         game.setCurrentQuestionIndex(questionIndex + 1);
 
         // 4. Comprobar si es el final de la partida
         if (game.getCurrentQuestionIndex() >= questionIds.length) {
             game.setGameState("FINISHED");
-            String winner = (game.getPlayerOneScore() > game.getPlayerTwoScore()) ? game.getPlayerOne().getUsername() : game.getPlayerTwo().getUsername();
-            if (game.getPlayerOneScore() == game.getPlayerTwoScore()) winner = "Empate";
+            
+            String winner = game.getScores().entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse("Empate");
 
             GameUpdateDTO gameOver = new GameUpdateDTO();
             gameOver.setType("GAME_OVER");
             gameOver.setWinnerUsername(winner);
-            gameOver.setPlayerOneScore(game.getPlayerOneScore());
-            gameOver.setPlayerTwoScore(game.getPlayerTwoScore());
-            messagingTemplate.convertAndSend(playerOneTopic, gameOver);
-            messagingTemplate.convertAndSend(playerTwoTopic, gameOver);
+            gameOver.setScores(game.getScores());
+            
+            for (User u : game.getPlayers()) {
+                messagingTemplate.convertAndSend("/topic/game.updates." + u.getUsername(), gameOver);
+            }
         }
 
-        gameRepository.save(game); // Guardar el avance
+        // 5. Por último, guardamos todo el progreso oficial (Puntos y Pregunta actual) en PostgreSQL
+        gameRepository.save(game);
     }
 
     private int getScore(Difficulty difficulty) {
@@ -124,7 +129,7 @@ public class GamePlayController {
             case facil: return 100;
             case intermedia: return 200;
             case dificil: return 300;
-            default: return 0;
+            default: return 100;
         }
     }
 }

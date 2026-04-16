@@ -1,5 +1,5 @@
 // ==========================================
-// js/menu.js - ARCHIVO COMPLETO Y LIMPIO
+// js/menu.js - VERSIÓN BATTLE ROYALE
 // ==========================================
 function inicializarMenu() {
     const sMenu = document.getElementById('screen-menu');
@@ -10,7 +10,6 @@ function inicializarMenu() {
     const btnLeaveLobby = document.getElementById('btn-leave-lobby');
     const btnStart = document.getElementById('btn-start-game-final');
     
-    // ... (botones modales se mantienen iguales) ...
     const btnRequests = document.getElementById('btn-requests');
     const requestsModal = document.getElementById('requests-modal');
     const closeReq = document.getElementById('close-requests');
@@ -23,62 +22,60 @@ function inicializarMenu() {
     const inputFriendName = document.getElementById('input-friend-name');
 
     if (btnLogout) {
-        btnLogout.onclick = () => {
-            localStorage.clear();
-            location.reload(); 
-        };
+        btnLogout.onclick = () => { sessionStorage.clear(); location.reload(); };
     }
 
     if (btnLeaveLobby) {
-        btnLeaveLobby.onclick = () => {
-            if (typeof cambiarPantalla === "function") cambiarPantalla(sLobby, sMenu);
-        };
+        btnLeaveLobby.onclick = () => { if (typeof cambiarPantalla === "function") cambiarPantalla(sLobby, sMenu); };
     }
 
     if (btnPrivate) {
         btnPrivate.onclick = () => {
             if (typeof cambiarPantalla === "function") cambiarPantalla(sMenu, sLobby);
             
+            // Ponemos solo al host al principio
             const list = document.getElementById('lobby-players-list');
-            if(list) list.innerHTML = `<li>👤 ${localStorage.getItem('genius_username')} (Host)</li>`;
+            if(list) list.innerHTML = `<li>👑 <strong>${sessionStorage.getItem('genius_username')} (Host)</strong></li>`;
             
             const hostControls = document.getElementById('host-controls');
             const waitingMsg = document.getElementById('waiting-msg');
             if(hostControls) hostControls.style.display = 'none';
-            if(waitingMsg) waitingMsg.style.display = 'block';
+            if(waitingMsg) {
+                waitingMsg.style.display = 'block';
+                waitingMsg.innerText = 'Esperando a que se unan los jugadores (Máx 10)...';
+            }
             
+            // Todo abierto para poder invitar a varios
+            document.querySelectorAll('#panel-private-friends hr, #panel-private-friends h3:not(:first-of-type), .add-friend-box, #friends-list').forEach(el => el.style.display = '');
+
             cargarListaAmigos();
-            cargarCategorias(); // Cargamos las temáticas desde la BD
+            cargarCategorias();
         };
     }
 
-    // EL HOST PULSA INICIAR PARTIDA
     if (btnStart) {
         btnStart.onclick = () => {
-            const inviteId = localStorage.getItem('current_invite_id');
-            // Leemos la categoría que el host haya dejado seleccionada AHORA MISMO
+            // ¡ARREGLO CRÍTICO AQUI! Mandamos el gameId, no el inviteId
+            const gameId = sessionStorage.getItem('current_game_id');
             const selectedCategory = document.getElementById('game-category').value; 
             
-            if (!inviteId) return alert("Error: No se encontró la invitación activa.");
-            
-            console.log("🚀 El Host inicia la partida con categoría: " + selectedCategory);
+            if (!gameId) return alert("Error: La sala aún no está lista.");
             
             if (stompClient && stompClient.connected) {
-                // Enviamos el ID y la Categoría al servidor para que genere las preguntas
                 stompClient.send("/app/game.start.private", {}, JSON.stringify({ 
-                    inviteId: parseInt(inviteId),
+                    gameId: gameId,
                     categoryName: selectedCategory
                 }));
             }
         };
     }
 
-    // Funciones de amistad...
+    // --- Funciones de Amistad (Intactas) ---
     function enviarSolicitud(email) {
         if (!email) return alert("Introduce un email.");
         fetch(`${window.API_BASE_URL}/api/amistad/solicitar`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('genius_token')}`, 'Content-Type': 'application/json' },
+            headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: email })
         })
         .then(res => res.json())
@@ -86,75 +83,27 @@ function inicializarMenu() {
             alert(d.message);
             if (modalFriendEmail) modalFriendEmail.value = "";
             if (inputFriendName) inputFriendName.value = "";
-            if (addFriendModal) {
-                addFriendModal.classList.add('hidden');
-                addFriendModal.style.display = 'none';
-            }
-        })
-        .catch(err => alert("Error de conexión."));
+            if (addFriendModal) { addFriendModal.classList.add('hidden'); addFriendModal.style.display = 'none'; }
+        });
     }
 
-    if (btnAddMenu) {
-        btnAddMenu.onclick = () => {
-            if (addFriendModal) {
-                addFriendModal.classList.remove('hidden');
-                addFriendModal.style.display = 'flex';
-                if (modalFriendEmail) modalFriendEmail.focus();
-            }
-        };
-    }
-    if (btnCloseAddFriend) {
-        btnCloseAddFriend.onclick = () => {
-            addFriendModal.classList.add('hidden');
-            addFriendModal.style.display = 'none';
-        };
-    }
-    if (btnSendFriendReq) {
-        btnSendFriendReq.onclick = () => enviarSolicitud(modalFriendEmail.value.trim());
-    }
-    if (btnAddLobby && inputFriendName) {
-        btnAddLobby.onclick = () => enviarSolicitud(inputFriendName.value.trim());
-    }
-
-    if (btnRequests) {
-        btnRequests.onclick = () => {
-            if (requestsModal) {
-                requestsModal.classList.remove('hidden');
-                requestsModal.style.display = 'flex';
-                actualizarBandeja();
-            }
-        };
-    }
-    if (closeReq) {
-        closeReq.onclick = () => {
-            requestsModal.classList.add('hidden');
-            requestsModal.style.display = 'none';
-        };
-    }
+    if (btnAddMenu) { btnAddMenu.onclick = () => { if (addFriendModal) { addFriendModal.classList.remove('hidden'); addFriendModal.style.display = 'flex'; if (modalFriendEmail) modalFriendEmail.focus(); } }; }
+    if (btnCloseAddFriend) { btnCloseAddFriend.onclick = () => { addFriendModal.classList.add('hidden'); addFriendModal.style.display = 'none'; }; }
+    if (btnSendFriendReq) { btnSendFriendReq.onclick = () => enviarSolicitud(modalFriendEmail.value.trim()); }
+    if (btnAddLobby && inputFriendName) { btnAddLobby.onclick = () => enviarSolicitud(inputFriendName.value.trim()); }
+    if (btnRequests) { btnRequests.onclick = () => { if (requestsModal) { requestsModal.classList.remove('hidden'); requestsModal.style.display = 'flex'; actualizarBandeja(); } }; }
+    if (closeReq) { closeReq.onclick = () => { requestsModal.classList.add('hidden'); requestsModal.style.display = 'none'; }; }
 }
 
 function cargarCategorias() {
     const catSelect = document.getElementById('game-category');
     if (!catSelect) return;
-
-    fetch(`${window.API_BASE_URL}/api/game/categories`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('genius_token')}` }
-    })
+    fetch(`${window.API_BASE_URL}/api/game/categories`, { headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}` } })
     .then(res => res.json())
     .then(categorias => {
-        catSelect.innerHTML = "";
-        const optionGeneral = document.createElement('option');
-        optionGeneral.value = "Cultura General";
-        optionGeneral.textContent = "Cultura General";
-        catSelect.appendChild(optionGeneral);
-
+        catSelect.innerHTML = "<option value='Cultura General'>Cultura General</option>";
         categorias.forEach(cat => {
-            if (cat.name !== "Cultura General") {
-                const option = document.createElement('option');
-                option.value = cat.name;
-                option.textContent = cat.name;
-                catSelect.appendChild(option);
-            }
+            if (cat.name !== "Cultura General") catSelect.innerHTML += `<option value='${cat.name}'>${cat.name}</option>`;
         });
     });
 }
@@ -162,87 +111,40 @@ function cargarCategorias() {
 function cargarListaAmigos() {
     const list = document.getElementById('friends-list');
     if (!list) return;
-    fetch(`${window.API_BASE_URL}/api/amistad/lista`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('genius_token')}` }
-    })
+    fetch(`${window.API_BASE_URL}/api/amistad/lista`, { headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}` } })
     .then(res => res.json())
     .then(amigos => {
         list.innerHTML = "";
         amigos.forEach(a => {
-            const li = document.createElement('li');
-            li.style.display = "flex";
-            li.style.justifyContent = "space-between";
-            li.style.alignItems = "center";
-            li.style.marginBottom = "8px";
-            li.innerHTML = `<span>${a.username}</span> <button class="btn-info" style="padding: 5px 10px;" onclick="window.invitar('${a.username}')">Invitar</button>`;
-            list.appendChild(li);
+            list.innerHTML += `<li style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>${a.username}</span> <button class="btn-info" style="padding: 5px 10px;" onclick="window.invitar('${a.username}')">Invitar</button></li>`;
         });
     });
 }
 
 window.invitar = function(username) {
-    if (typeof enviarInvitacionJuego === "function") {
-        enviarInvitacionJuego(username, "Cultura General"); 
-        // Ya no importa la categoría aquí, el host la elegirá antes de darle a Iniciar.
-    }
+    const catSelect = document.getElementById('game-category');
+    const categoria = catSelect ? catSelect.value : "Cultura General";
+    if (typeof enviarInvitacionJuego === "function") enviarInvitacionJuego(username, categoria);
 };
 
 window.aceptarSol = function(id) {
-    fetch(`${window.API_BASE_URL}/api/amistad/aceptar/${id}`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('genius_token')}` }
-    }).then(() => {
-        alert("¡Nuevo amigo añadido!");
-        const reqModal = document.getElementById('requests-modal');
-        if (reqModal) {
-            reqModal.style.display = 'none';
-            reqModal.classList.add('hidden');
-        }
-        cargarListaAmigos();
-    });
+    fetch(`${window.API_BASE_URL}/api/amistad/aceptar/${id}`, { method: 'POST', headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}` } }).then(() => { alert("¡Amigo añadido!"); document.getElementById('requests-modal').style.display = 'none'; cargarListaAmigos(); });
 };
 
 window.rechazarSol = function(id) {
-    fetch(`${window.API_BASE_URL}/api/amistad/rechazar/${id}`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('genius_token')}` }
-    })
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message);
-        actualizarBandeja(); 
-    });
+    fetch(`${window.API_BASE_URL}/api/amistad/rechazar/${id}`, { method: 'POST', headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}` } }).then(res => res.json()).then(data => { alert(data.message); actualizarBandeja(); });
 };
 
 function actualizarBandeja() {
     const rList = document.getElementById('requests-list');
     rList.innerHTML = "<li>Cargando...</li>";
-    
-    fetch(`${window.API_BASE_URL}/api/amistad/pendientes`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('genius_token')}` }
-    })
+    fetch(`${window.API_BASE_URL}/api/amistad/pendientes`, { headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}` } })
     .then(res => res.json())
     .then(data => {
-        if (data.length === 0) {
-            rList.innerHTML = `<li style="list-style:none; color: #555; padding: 20px 0;">No tienes peticiones pendientes.</li>`;
-            return;
-        }
+        if (data.length === 0) { rList.innerHTML = `<li style="color: #555;">No tienes peticiones pendientes.</li>`; return; }
         rList.innerHTML = "";
         data.forEach(r => {
-            const li = document.createElement('li');
-            li.style.display = "flex";
-            li.style.justifyContent = "space-between";
-            li.style.alignItems = "center";
-            li.style.padding = "10px 0";
-            li.style.borderBottom = "1px solid #eee";
-            li.innerHTML = `
-                <span style="font-weight: bold;">${r.senderUsername}</span> 
-                <div style="display:flex; gap: 5px;">
-                    <button class="btn-primary" style="padding: 5px 10px;" onclick="aceptarSol(${r.id})">✅</button>
-                    <button class="btn-secondary" style="padding: 5px 10px;" onclick="rechazarSol(${r.id})">❌</button>
-                </div>
-            `;
-            rList.appendChild(li);
+            rList.innerHTML += `<li style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;"><strong>${r.senderUsername}</strong> <div><button class="btn-primary" onclick="aceptarSol(${r.id})">✅</button> <button class="btn-secondary" onclick="rechazarSol(${r.id})">❌</button></div></li>`;
         });
     });
 }

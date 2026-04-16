@@ -1,35 +1,24 @@
 package com.geniusroyale.api.dto;
 
-import java.util.List;
+import java.util.Map;
 
 public class GameUpdateDTO {
     private String type;
     private String message;
     private String correctAnswer;
-    private int playerOneScore;
-    private int playerTwoScore;
     private String winnerUsername;
-
-    // Para el comodín 50:50
-    private List<String> removedAnswers;
+    private Map<String, Integer> scores;
 
     public GameUpdateDTO() {}
 
-    // Getters
     public String getType() { return type; }
-    public String getMessage() { return message; }
-    public String getCorrectAnswer() { return correctAnswer; }
-    public int getPlayerOneScore() { return playerOneScore; }
-    public int getPlayerTwoScore() { return playerTwoScore; }
-    public String getWinnerUsername() { return winnerUsername; }
-    public List<String> getRemovedAnswers() { return removedAnswers; }
-
-    // Setters
     public void setType(String type) { this.type = type; }
+    public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }
+    public String getCorrectAnswer() { return correctAnswer; }
     public void setCorrectAnswer(String correctAnswer) { this.correctAnswer = correctAnswer; }
-    public void setPlayerOneScore(int playerOneScore) { this.playerOneScore = playerOneScore; }
-    public void setPlayerTwoScore(int playerTwoScore) { this.playerTwoScore = playerTwoScore; }
+    public String getWinnerUsername() { return winnerUsername; }
     public void setWinnerUsername(String winnerUsername) { this.winnerUsername = winnerUsername; }
-    public void setRemovedAnswers(List<String> removedAnswers) { this.removedAnswers = removedAnswers; }
+    public Map<String, Integer> getScores() { return scores; }
+    public void setScores(Map<String, Integer> scores) { this.scores = scores; }
 }

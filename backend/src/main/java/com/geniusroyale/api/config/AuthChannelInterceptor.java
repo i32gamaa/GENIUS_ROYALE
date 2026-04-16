@@ -18,10 +18,9 @@ import java.util.ArrayList;
 @Component
 public class AuthChannelInterceptor implements ChannelInterceptor {
 
-    @Autowired
-    private JwtService jwtService;
-    @Autowired
-    private UserRepository userRepository;
+    @Autowired private JwtService jwtService;
+    @Autowired private UserRepository userRepository;
+    @Autowired private ActiveUserManager activeUserManager; // <-- Inyectamos la pizarra
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -35,7 +34,6 @@ public class AuthChannelInterceptor implements ChannelInterceptor {
                 try {
                     String email = jwtService.extractEmail(token);
                     if (email != null) {
-                        // Buscamos al usuario para validar que existe
                         User user = userRepository.findByEmail(email).orElse(null);
                         
                         if (user != null && jwtService.isTokenValid(token, user)) {
@@ -43,12 +41,14 @@ public class AuthChannelInterceptor implements ChannelInterceptor {
                                     email, null, new ArrayList<>()
                             );
                             accessor.setUser(authToken);
-                            System.out.println("✅ WebSocket: " + email + " conectado con éxito.");
+                            
+                            // ¡AQUÍ LO ANOTAMOS COMO CONECTADO!
+                            activeUserManager.addUser(email);
+                            System.out.println("✅ WebSocket Conectado: " + email);
                         }
                     }
                 } catch (Exception e) {
                     System.err.println("❌ Error Auth WebSocket: " + e.getMessage());
-                    // No bloqueamos el mensaje para evitar que el cliente pierda la conexión abruptamente
                 }
             }
         }
