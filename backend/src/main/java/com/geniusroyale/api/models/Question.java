@@ -3,35 +3,38 @@ package com.geniusroyale.api.models;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "questions") // El nombre exacto de tu tabla
+@Table(name = "pregunta") // Ajustado de 'questions' a 'pregunta'
 public class Question {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_pregunta") // Nombre exacto en PGAdmin
     private Integer id;
 
-    @Column(nullable = false)
+    @Column(name = "texto_pregunta", nullable = false)
     private String questionText;
 
-    @Enumerated(EnumType.STRING) // Le dice a JPA que guarde el texto ('Fácil')
-    @Column(name = "difficulty_level", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "dificultad", nullable = false) // Antes era 'difficulty_level'
     private Difficulty difficultyLevel;
 
-    @Column(nullable = false)
+    @Column(name = "respuesta_correcta", nullable = false)
     private String correctAnswer;
-    @Column(nullable = false)
+
+    @Column(name = "respuesta2", nullable = false) // Mapeado a tu columna real
     private String wrongAnswer1;
-    @Column(nullable = false)
+
+    @Column(name = "respuesta3", nullable = false) // Mapeado a tu columna real
     private String wrongAnswer2;
-    @Column(nullable = false)
+
+    @Column(name = "respuesta4", nullable = false) // Mapeado a tu columna real
     private String wrongAnswer3;
 
-    // Relación: Muchas preguntas pertenecen a una categoría
     @ManyToOne
-    @JoinColumn(name = "category_id", nullable = false)
+    @JoinColumn(name = "id_categoria", nullable = false) // Antes era 'category_id'
     private Category category;
 
-    // --- Getters y Setters (puedes generarlos con Alt+Insert) ---
+    // Getters y Setters
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
     public String getQuestionText() { return questionText; }

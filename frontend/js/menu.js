@@ -1,5 +1,5 @@
 // ==========================================
-// js/menu.js - ARCHIVO COMPLETO
+// js/menu.js - ARCHIVO COMPLETO Y LIMPIO
 // ==========================================
 function inicializarMenu() {
     const sMenu = document.getElementById('screen-menu');
@@ -10,20 +10,18 @@ function inicializarMenu() {
     const btnLeaveLobby = document.getElementById('btn-leave-lobby');
     const btnStart = document.getElementById('btn-start-game-final');
     
+    // ... (botones modales se mantienen iguales) ...
     const btnRequests = document.getElementById('btn-requests');
     const requestsModal = document.getElementById('requests-modal');
     const closeReq = document.getElementById('close-requests');
-
     const btnAddMenu = document.getElementById('btn-add-friend-menu');
     const addFriendModal = document.getElementById('add-friend-modal');
     const btnCloseAddFriend = document.getElementById('btn-close-add-friend');
     const btnSendFriendReq = document.getElementById('btn-send-friend-req');
     const modalFriendEmail = document.getElementById('modal-friend-email');
-
     const btnAddLobby = document.getElementById('btn-add-friend-lobby');
     const inputFriendName = document.getElementById('input-friend-name');
 
-    // Cerrar Sesión
     if (btnLogout) {
         btnLogout.onclick = () => {
             localStorage.clear();
@@ -31,16 +29,12 @@ function inicializarMenu() {
         };
     }
 
-    // Salir del Lobby
     if (btnLeaveLobby) {
         btnLeaveLobby.onclick = () => {
-            if (typeof cambiarPantalla === "function") {
-                cambiarPantalla(sLobby, sMenu);
-            }
+            if (typeof cambiarPantalla === "function") cambiarPantalla(sLobby, sMenu);
         };
     }
 
-    // Entrar a Partida Privada
     if (btnPrivate) {
         btnPrivate.onclick = () => {
             if (typeof cambiarPantalla === "function") cambiarPantalla(sMenu, sLobby);
@@ -54,18 +48,37 @@ function inicializarMenu() {
             if(waitingMsg) waitingMsg.style.display = 'block';
             
             cargarListaAmigos();
+            cargarCategorias(); // Cargamos las temáticas desde la BD
         };
     }
 
-    // Función Central para Enviar Solicitud
+    // EL HOST PULSA INICIAR PARTIDA
+    if (btnStart) {
+        btnStart.onclick = () => {
+            const inviteId = localStorage.getItem('current_invite_id');
+            // Leemos la categoría que el host haya dejado seleccionada AHORA MISMO
+            const selectedCategory = document.getElementById('game-category').value; 
+            
+            if (!inviteId) return alert("Error: No se encontró la invitación activa.");
+            
+            console.log("🚀 El Host inicia la partida con categoría: " + selectedCategory);
+            
+            if (stompClient && stompClient.connected) {
+                // Enviamos el ID y la Categoría al servidor para que genere las preguntas
+                stompClient.send("/app/game.start.private", {}, JSON.stringify({ 
+                    inviteId: parseInt(inviteId),
+                    categoryName: selectedCategory
+                }));
+            }
+        };
+    }
+
+    // Funciones de amistad...
     function enviarSolicitud(email) {
         if (!email) return alert("Introduce un email.");
         fetch(`${window.API_BASE_URL}/api/amistad/solicitar`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('genius_token')}`,
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('genius_token')}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: email })
         })
         .then(res => res.json())
@@ -81,7 +94,6 @@ function inicializarMenu() {
         .catch(err => alert("Error de conexión."));
     }
 
-    // Modal Añadir Amigo
     if (btnAddMenu) {
         btnAddMenu.onclick = () => {
             if (addFriendModal) {
@@ -104,7 +116,6 @@ function inicializarMenu() {
         btnAddLobby.onclick = () => enviarSolicitud(inputFriendName.value.trim());
     }
 
-    // Bandeja de Peticiones
     if (btnRequests) {
         btnRequests.onclick = () => {
             if (requestsModal) {
@@ -122,7 +133,32 @@ function inicializarMenu() {
     }
 }
 
-// Cargar amigos
+function cargarCategorias() {
+    const catSelect = document.getElementById('game-category');
+    if (!catSelect) return;
+
+    fetch(`${window.API_BASE_URL}/api/game/categories`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('genius_token')}` }
+    })
+    .then(res => res.json())
+    .then(categorias => {
+        catSelect.innerHTML = "";
+        const optionGeneral = document.createElement('option');
+        optionGeneral.value = "Cultura General";
+        optionGeneral.textContent = "Cultura General";
+        catSelect.appendChild(optionGeneral);
+
+        categorias.forEach(cat => {
+            if (cat.name !== "Cultura General") {
+                const option = document.createElement('option');
+                option.value = cat.name;
+                option.textContent = cat.name;
+                catSelect.appendChild(option);
+            }
+        });
+    });
+}
+
 function cargarListaAmigos() {
     const list = document.getElementById('friends-list');
     if (!list) return;
@@ -145,18 +181,12 @@ function cargarListaAmigos() {
 }
 
 window.invitar = function(username) {
-    const hostControls = document.getElementById('host-controls');
-    if (hostControls) hostControls.style.display = 'block';
-    
-    const catSelect = document.getElementById('game-category');
-    const categoria = catSelect ? catSelect.value : "Cultura General";
-
     if (typeof enviarInvitacionJuego === "function") {
-        enviarInvitacionJuego(username, categoria);
+        enviarInvitacionJuego(username, "Cultura General"); 
+        // Ya no importa la categoría aquí, el host la elegirá antes de darle a Iniciar.
     }
 };
 
-// Función global: Aceptar Petición
 window.aceptarSol = function(id) {
     fetch(`${window.API_BASE_URL}/api/amistad/aceptar/${id}`, {
         method: 'POST',
@@ -172,7 +202,6 @@ window.aceptarSol = function(id) {
     });
 };
 
-// Función global: Rechazar Petición (¡Nueva!)
 window.rechazarSol = function(id) {
     fetch(`${window.API_BASE_URL}/api/amistad/rechazar/${id}`, {
         method: 'POST',
@@ -181,11 +210,10 @@ window.rechazarSol = function(id) {
     .then(res => res.json())
     .then(data => {
         alert(data.message);
-        actualizarBandeja(); // Actualiza la lista sin cerrar la ventana
+        actualizarBandeja(); 
     });
 };
 
-// Actualizar Bandeja
 function actualizarBandeja() {
     const rList = document.getElementById('requests-list');
     rList.innerHTML = "<li>Cargando...</li>";

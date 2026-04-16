@@ -44,19 +44,14 @@ public class GameLobbyController {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + email));
 
         String categoryName = request.getCategoryName();
-        System.out.println("LOBBY: " + joiningPlayer.getUsername() + " quiere unirse a [" + categoryName + "]");
-
         Map<String, User> waitingPool = categoryWaitingPools.computeIfAbsent(categoryName, k -> new ConcurrentHashMap<>());
 
         synchronized (waitingPool) {
             if (waitingPool.isEmpty()) {
                 waitingPool.put(joiningPlayer.getUsername(), joiningPlayer);
-                System.out.println("LOBBY: " + joiningPlayer.getUsername() + " puesto en espera en [" + categoryName + "]");
             } else {
                 User playerOne = waitingPool.remove(waitingPool.keySet().iterator().next());
                 User playerTwo = joiningPlayer;
-
-                System.out.println("LOBBY: ¡Match encontrado en [" + categoryName + "]! " + playerOne.getUsername() + " vs " + playerTwo.getUsername());
 
                 List<Question> gameQuestions = generateGameQuestions(categoryName); 
                 String questionIdList = gameQuestions.stream()
@@ -70,7 +65,6 @@ public class GameLobbyController {
                 newGame.setGameState("IN_PROGRESS");
                 newGame.setQuestionIds(questionIdList);
 
-                // ESCUDO: Solo buscar la categoría si no es ni Cultura General ni Aleatoria
                 if (categoryName != null && !categoryName.equals("Cultura General") && !categoryName.equals("Aleatoria")) {
                     categoryRepository.findByName(categoryName).ifPresent(newGame::setCategory);
                 }
@@ -78,18 +72,14 @@ public class GameLobbyController {
                 gameRepository.save(newGame);
 
                 String gameId = newGame.getId();
-                String p1Username = playerOne.getUsername();
-                String p2Username = playerTwo.getUsername();
+                messagingTemplate.convertAndSend("/topic/game.start." + playerOne.getUsername(),
+                        new GameStartMessage(gameId, playerOne.getUsername(), playerTwo.getUsername(), playerTwo.getUsername()));
 
-                messagingTemplate.convertAndSend("/topic/game.start." + p1Username,
-                        new GameStartMessage(gameId, p1Username, p2Username, p2Username));
-
-                messagingTemplate.convertAndSend("/topic/game.start." + p2Username,
-                        new GameStartMessage(gameId, p1Username, p2Username, p1Username));
+                messagingTemplate.convertAndSend("/topic/game.start." + playerTwo.getUsername(),
+                        new GameStartMessage(gameId, playerOne.getUsername(), playerTwo.getUsername(), playerOne.getUsername()));
             }
         }
     }
-
 
     @MessageMapping("/game.invite")
     @Transactional
@@ -97,14 +87,11 @@ public class GameLobbyController {
         User sender = userRepository.findByEmail(principal.getName()).orElseThrow();
         User receiver = userRepository.findByUsername(request.getReceiverUsername()).orElseThrow();
 
-        System.out.println("INVITE: " + sender.getUsername() + " está invitando a " + receiver.getUsername());
-
         GameInvite invite = new GameInvite();
         invite.setSender(sender);
         invite.setReceiver(receiver);
 
         String catName = request.getCategoryName();
-        // ESCUDO: Solo la asignamos si existe realmente en la BD
         if (catName != null && !catName.equals("Cultura General") && !catName.equals("Aleatoria")) {
             Category category = categoryRepository.findByName(catName).orElse(null);
             if (category != null) {
@@ -113,11 +100,11 @@ public class GameLobbyController {
         }
 
         GameInvite savedInvite = inviteRepository.save(invite);
-
         String receiverTopic = "/topic/invites." + receiver.getUsername();
         messagingTemplate.convertAndSend(receiverTopic, new InviteNotificationDTO(savedInvite));
     }
 
+    // 1. EL INVITADO ACEPTA (Solo entran al lobby, no empieza el juego)
     @MessageMapping("/invite.accept")
     @Transactional
     public void acceptInvite(Principal principal, @Payload InviteAcceptDTO request) {
@@ -125,7 +112,6 @@ public class GameLobbyController {
         GameInvite invite = inviteRepository.findById(request.getInviteId()).orElseThrow();
 
         if (!invite.getReceiver().getUsername().equals(receiver.getUsername()) || !invite.getStatus().equals("PENDING")) {
-            System.err.println("INVITE_ACCEPT: ¡Intento de aceptar invitación fallido!");
             return;
         }
 
@@ -133,75 +119,86 @@ public class GameLobbyController {
         inviteRepository.save(invite);
 
         User sender = invite.getSender();
-        String categoryName = (invite.getCategory() != null) ? invite.getCategory().getName() : "Cultura General";
+        
+        // Avisamos al Host de que su amigo ya está en la sala listo para jugar
+        String payload = String.format("{\"guestUsername\":\"%s\", \"inviteId\":%d}", receiver.getUsername(), invite.getId());
+        messagingTemplate.convertAndSend("/topic/lobby.guest.joined." + sender.getUsername(), payload);
+    }
 
-        System.out.println("INVITE_ACCEPT: " + receiver.getUsername() + " aceptó la invitación de " + sender.getUsername());
+    // 2. EL HOST PULSA EL BOTÓN "INICIAR PARTIDA"
+    @MessageMapping("/game.start.private")
+    @Transactional
+    public void startPrivateGame(Principal principal, @Payload Map<String, Object> payload) {
+        User sender = userRepository.findByEmail(principal.getName()).orElseThrow();
+        Integer inviteId = (Integer) payload.get("inviteId");
+        String categoryName = (String) payload.get("categoryName");
 
+        GameInvite invite = inviteRepository.findById(inviteId).orElseThrow();
+        User receiver = invite.getReceiver();
+
+        // Generamos las 15 preguntas
         List<Question> gameQuestions = generateGameQuestions(categoryName); 
         String questionIdList = gameQuestions.stream()
                 .map(q -> String.valueOf(q.getId()))
                 .collect(Collectors.joining(","));
 
+        Category category = null;
+        if (categoryName != null && !categoryName.equals("Cultura General") && !categoryName.equals("Aleatoria")) {
+            category = categoryRepository.findByName(categoryName).orElse(null);
+        }
+
+        // Creamos la partida
         Game newGame = new Game();
         newGame.setId(UUID.randomUUID().toString());
         newGame.setPlayerOne(sender);
         newGame.setPlayerTwo(receiver);
         newGame.setGameState("IN_PROGRESS");
         newGame.setQuestionIds(questionIdList);
-        newGame.setCategory(invite.getCategory());
+        newGame.setCategory(category);
         gameRepository.save(newGame);
 
         String gameId = newGame.getId();
-        String p1Username = sender.getUsername();
-        String p2Username = receiver.getUsername();
+        
+        // Al Host le decimos que su rival es el Receiver
+        messagingTemplate.convertAndSend("/topic/game.start." + sender.getUsername(),
+                new GameStartMessage(gameId, sender.getUsername(), receiver.getUsername(), receiver.getUsername()));
 
-        messagingTemplate.convertAndSend("/topic/game.start." + p1Username,
-                new GameStartMessage(gameId, p1Username, p2Username, p2Username));
-
-        messagingTemplate.convertAndSend("/topic/game.start." + p2Username,
-                new GameStartMessage(gameId, p1Username, p2Username, p1Username));
+        // Al Receiver le decimos que su rival es el Host
+        messagingTemplate.convertAndSend("/topic/game.start." + receiver.getUsername(),
+                new GameStartMessage(gameId, sender.getUsername(), receiver.getUsername(), sender.getUsername()));
     }
 
     private List<Question> generateGameQuestions(String categoryName) {
         List<Question> easy, medium, hard;
 
-        // ESCUDO: Si la categoría no viene, es Aleatoria, o Cultura General, cargamos las de por defecto
         if (categoryName == null || categoryName.equals("Cultura General") || categoryName.equals("Aleatoria")) {
-            easy = questionRepository.findAllByDifficultyLevel(Difficulty.Fácil);
-            medium = questionRepository.findAllByDifficultyLevel(Difficulty.Intermedia);
-            hard = questionRepository.findAllByDifficultyLevel(Difficulty.Difícil);
+            easy = questionRepository.findAllByDifficultyLevel(Difficulty.facil);
+            medium = questionRepository.findAllByDifficultyLevel(Difficulty.intermedia);
+            hard = questionRepository.findAllByDifficultyLevel(Difficulty.dificil);
         } else {
             Category category = categoryRepository.findByName(categoryName).orElse(null);
-            
-            // ESCUDO FINAL: Si por algún motivo la categoría existía en el frontend pero no en BD, evitamos crasheo
             if (category == null) {
-                easy = questionRepository.findAllByDifficultyLevel(Difficulty.Fácil);
-                medium = questionRepository.findAllByDifficultyLevel(Difficulty.Intermedia);
-                hard = questionRepository.findAllByDifficultyLevel(Difficulty.Difícil);
+                easy = questionRepository.findAllByDifficultyLevel(Difficulty.facil);
+                medium = questionRepository.findAllByDifficultyLevel(Difficulty.intermedia);
+                hard = questionRepository.findAllByDifficultyLevel(Difficulty.dificil);
             } else {
-                easy = questionRepository.findByCategoryAndDifficultyLevel(category, Difficulty.Fácil);
-                medium = questionRepository.findByCategoryAndDifficultyLevel(category, Difficulty.Intermedia);
-                hard = questionRepository.findByCategoryAndDifficultyLevel(category, Difficulty.Difícil);
+                easy = questionRepository.findByCategoryAndDifficultyLevel(category, Difficulty.facil);
+                medium = questionRepository.findByCategoryAndDifficultyLevel(category, Difficulty.intermedia);
+                hard = questionRepository.findByCategoryAndDifficultyLevel(category, Difficulty.dificil);
             }
         }
 
-        // Si la base de datos está vacía y no hay preguntas, evitamos que el Stream explote
         if (easy.isEmpty() && medium.isEmpty() && hard.isEmpty()) {
-            throw new RuntimeException("CRÍTICO: No hay preguntas en la base de datos para iniciar la partida.");
+            throw new RuntimeException("CRÍTICO: No hay preguntas en la base de datos.");
         }
 
         Collections.shuffle(easy);
         Collections.shuffle(medium);
         Collections.shuffle(hard);
 
-        List<Question> gameQuestions = Stream.concat(
+        return Stream.concat(
                 easy.stream().limit(5),
-                Stream.concat(
-                        medium.stream().limit(5),
-                        hard.stream().limit(5)
-                )
+                Stream.concat(medium.stream().limit(5), hard.stream().limit(5))
         ).collect(Collectors.toList());
-
-        return gameQuestions;
     }
 }

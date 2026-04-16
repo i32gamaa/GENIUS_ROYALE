@@ -121,9 +121,9 @@ public class GamePlayController {
 
     private int getScore(Difficulty difficulty) {
         switch (difficulty) {
-            case Fácil: return 100;
-            case Intermedia: return 200;
-            case Difícil: return 300;
+            case facil: return 100;
+            case intermedia: return 200;
+            case dificil: return 300;
             default: return 0;
         }
     }
