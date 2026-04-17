@@ -1,5 +1,5 @@
 // ==========================================
-// js/game.js - VERSIÓN FINAL "PODIO PREMIUM"
+// js/game.js - VERSIÓN FINAL "REVANCHA INFINITA"
 // ==========================================
 
 let preguntas = [];
@@ -14,6 +14,11 @@ function inicializarJuego(gameData) {
     gameIdActual = gameData.gameId;
     preguntaActual = 0;
     gameOverData = null; 
+    
+    document.getElementById('game-loading').style.display = 'block';
+    document.getElementById('game-ui').style.display = 'none';
+    document.getElementById('game-results').style.display = 'none';
+
     setTimeout(() => { descargarPreguntasConReintento(); }, 1500); 
 }
 
@@ -183,7 +188,6 @@ function mostrarPodioFinal(update) {
     
     winnerText.textContent = (update.winnerUsername === "Empate") ? "¡Empate múltiple!" : `👑 Ganador absoluto: ${update.winnerUsername}`;
 
-    // --- MAGIA VISUAL: OCULTAR LAS CAJAS DE 1VS1 FEAS ---
     const p1ScoreEl = document.getElementById('res-p1-score');
     const p2ScoreEl = document.getElementById('res-p2-score');
     if (p1ScoreEl && p1ScoreEl.parentNode) p1ScoreEl.parentNode.style.display = 'none';
@@ -192,13 +196,11 @@ function mostrarPodioFinal(update) {
     const cajasContainer = document.querySelector('.score-boxes') || document.querySelector('.results-grid');
     if (cajasContainer) cajasContainer.style.display = 'none';
 
-    // --- CREAR LA CLASIFICACIÓN MULTIJUGADOR ---
     let leaderboard = document.getElementById('royale-leaderboard');
     if (!leaderboard) {
         leaderboard = document.createElement('div');
         leaderboard.id = 'royale-leaderboard';
         
-        // Estilazo de tabla premium
         leaderboard.style.backgroundColor = "rgba(0, 0, 0, 0.4)";
         leaderboard.style.borderRadius = "15px";
         leaderboard.style.padding = "20px";
@@ -215,7 +217,6 @@ function mostrarPodioFinal(update) {
     scoresHtml += "<ul style='list-style:none; padding:0; margin:0;'>";
     
     if (update.scores) {
-        // Ordenamos los puntos de mayor a menor
         const sortedScores = Object.entries(update.scores).sort((a, b) => b[1] - a[1]);
         
         sortedScores.forEach(([name, pts], index) => {
@@ -227,7 +228,6 @@ function mostrarPodioFinal(update) {
             else if (index === 1) medalla = "🥈";
             else if (index === 2) medalla = "🥉";
 
-            // Resaltamos al usuario que está mirando la pantalla
             if (name === myUsername) {
                 colorNombre = "#03DAC6"; 
                 fontWeight = "bold";
@@ -255,37 +255,38 @@ function mostrarPodioFinal(update) {
     scoresHtml += "</ul>";
     leaderboard.innerHTML = scoresHtml;
 
-    // --- BOTONES FINALES ---
-    document.getElementById('btn-back-to-lobby').onclick = () => {
-        resetearVistasDeJuego();
+    document.getElementById('btn-exit-to-menu').style.display = 'none';
+    
+    const btnVolver = document.getElementById('btn-back-to-lobby');
+    btnVolver.style.width = '100%';
+    btnVolver.style.maxWidth = '400px';
+
+    // 🔥 EL ARREGLO FINAL: Volvemos a la sala limpiando todo bien
+    btnVolver.onclick = () => {
+        resetearVistasDeJuego(); 
+        
         const sGame = document.getElementById('screen-game');
         const sLobby = document.getElementById('screen-lobby');
         
-        const hostControls = document.getElementById('host-controls');
-        const waitingMsg = document.getElementById('waiting-msg');
-        if (sessionStorage.getItem('current_invite_id')) {
-            if (hostControls) hostControls.style.display = 'block';
-            if (waitingMsg) waitingMsg.style.display = 'none';
-        } else {
-            if (hostControls) hostControls.style.display = 'none';
-            if (waitingMsg) waitingMsg.style.display = 'block';
-        }
+        // Obligamos al navegador a cambiar la URL
+        window.location.hash = '#screen-lobby';
+        
+        // Seguro de vida: apagamos la pantalla del juego a mano por si acaso
+        sGame.style.display = 'none';
+        sGame.classList.add('hidden');
 
         if (typeof cambiarPantalla === "function") cambiarPantalla(sGame, sLobby);
-    };
 
-    document.getElementById('btn-exit-to-menu').onclick = () => {
-        const sGame = document.getElementById('screen-game');
-        const sMenu = document.getElementById('screen-menu');
-        resetearVistasDeJuego();
-        sessionStorage.removeItem('current_invite_id'); 
-        if (typeof cambiarPantalla === "function") cambiarPantalla(sGame, sMenu);
+        // Pedimos al servidor que nos devuelva a la sala con los demás
+        if (typeof stompClient !== 'undefined' && stompClient.connected) {
+            stompClient.send("/app/lobby.sync", {}, JSON.stringify({}));
+        }
     };
 }
 
 function resetearVistasDeJuego() {
     document.getElementById('game-results').style.display = 'none';
     document.getElementById('game-ui').style.display = 'none';
-    document.getElementById('game-loading').style.display = 'block'; 
+    document.getElementById('game-loading').style.display = 'none'; 
     gameOverData = null; 
 }

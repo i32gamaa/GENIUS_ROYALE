@@ -1,6 +1,18 @@
 // ==========================================
-// js/menu.js - VERSIÓN BATTLE ROYALE
+// js/menu.js - VERSIÓN BATTLE ROYALE + RECONEXIÓN
 // ==========================================
+
+window.verificarBotonReconexion = function() {
+    const btnRejoin = document.getElementById('btn-rejoin-lobby');
+    if (btnRejoin) {
+        if (sessionStorage.getItem('last_voluntary_game_id')) {
+            btnRejoin.style.display = 'block';
+        } else {
+            btnRejoin.style.display = 'none';
+        }
+    }
+};
+
 function inicializarMenu() {
     const sMenu = document.getElementById('screen-menu');
     const sLobby = document.getElementById('screen-lobby');
@@ -9,6 +21,7 @@ function inicializarMenu() {
     const btnLogout = document.getElementById('btn-logout');
     const btnLeaveLobby = document.getElementById('btn-leave-lobby');
     const btnStart = document.getElementById('btn-start-game-final');
+    const btnRejoin = document.getElementById('btn-rejoin-lobby');
     
     const btnRequests = document.getElementById('btn-requests');
     const requestsModal = document.getElementById('requests-modal');
@@ -21,21 +34,57 @@ function inicializarMenu() {
     const btnAddLobby = document.getElementById('btn-add-friend-lobby');
     const inputFriendName = document.getElementById('input-friend-name');
 
+    window.verificarBotonReconexion(); 
+
     if (btnLogout) {
         btnLogout.onclick = () => { sessionStorage.clear(); location.reload(); };
     }
 
     if (btnLeaveLobby) {
-        btnLeaveLobby.onclick = () => { if (typeof cambiarPantalla === "function") cambiarPantalla(sLobby, sMenu); };
+        btnLeaveLobby.onclick = () => { 
+            const gameId = sessionStorage.getItem('current_game_id');
+            const hostName = sessionStorage.getItem('current_host_name');
+            const myName = sessionStorage.getItem('genius_username');
+
+            if (gameId && typeof stompClient !== 'undefined' && stompClient !== null && stompClient.connected) {
+                stompClient.send("/app/lobby.leave", {}, JSON.stringify({ gameId: gameId }));
+                
+                if (hostName !== myName) {
+                    sessionStorage.setItem('last_voluntary_game_id', gameId);
+                } else {
+                    sessionStorage.removeItem('last_voluntary_game_id');
+                }
+            }
+            
+            sessionStorage.removeItem('current_game_id');
+            sessionStorage.removeItem('current_host_name');
+            window.verificarBotonReconexion(); 
+            if (typeof cambiarPantalla === "function") cambiarPantalla(sLobby, sMenu); 
+        };
+    }
+
+    if (btnRejoin) {
+        btnRejoin.onclick = () => {
+            const lastGameId = sessionStorage.getItem('last_voluntary_game_id');
+            if (lastGameId && stompClient && stompClient.connected) {
+                if (typeof cambiarPantalla === "function") cambiarPantalla(sMenu, sLobby);
+                
+                const waitingMsg = document.getElementById('waiting-msg');
+                if (waitingMsg) {
+                    waitingMsg.innerText = "Reconectando con tu sala...";
+                    waitingMsg.style.display = 'block';
+                }
+                stompClient.send("/app/lobby.rejoin", {}, JSON.stringify({ gameId: lastGameId }));
+            }
+        };
     }
 
     if (btnPrivate) {
         btnPrivate.onclick = () => {
             if (typeof cambiarPantalla === "function") cambiarPantalla(sMenu, sLobby);
             
-            // Ponemos solo al host al principio
             const list = document.getElementById('lobby-players-list');
-            if(list) list.innerHTML = `<li>👑 <strong>${sessionStorage.getItem('genius_username')} (Host)</strong></li>`;
+            if(list) list.innerHTML = `<li style="margin-bottom:10px;">👑 <strong style="color:#FFD700">${sessionStorage.getItem('genius_username')} (Host)</strong></li>`;
             
             const hostControls = document.getElementById('host-controls');
             const waitingMsg = document.getElementById('waiting-msg');
@@ -45,8 +94,9 @@ function inicializarMenu() {
                 waitingMsg.innerText = 'Esperando a que se unan los jugadores (Máx 10)...';
             }
             
-            // Todo abierto para poder invitar a varios
             document.querySelectorAll('#panel-private-friends hr, #panel-private-friends h3:not(:first-of-type), .add-friend-box, #friends-list').forEach(el => el.style.display = '');
+
+            sessionStorage.setItem('current_host_name', sessionStorage.getItem('genius_username'));
 
             cargarListaAmigos();
             cargarCategorias();
@@ -55,7 +105,12 @@ function inicializarMenu() {
 
     if (btnStart) {
         btnStart.onclick = () => {
-            // ¡ARREGLO CRÍTICO AQUI! Mandamos el gameId, no el inviteId
+            // 🔥 ESCUDO 1: BLOQUEO VISUAL SI HAY AUSENTES
+            const listaJugadoresTexto = document.getElementById('lobby-players-list').innerText;
+            if (listaJugadoresTexto.includes('(Ausente)')) {
+                return alert("⚠️ ¡ALTO AHÍ! Hay jugadores AUSENTES en la sala. Espera a que vuelvan o expúlsalos (❌) para poder iniciar la partida.");
+            }
+
             const gameId = sessionStorage.getItem('current_game_id');
             const selectedCategory = document.getElementById('game-category').value; 
             
@@ -70,7 +125,6 @@ function inicializarMenu() {
         };
     }
 
-    // --- Funciones de Amistad (Intactas) ---
     function enviarSolicitud(email) {
         if (!email) return alert("Introduce un email.");
         fetch(`${window.API_BASE_URL}/api/amistad/solicitar`, {

@@ -1,5 +1,5 @@
 // ==========================================
-// js/socket.js - VERSIÓN ROYALE DEFINITIVA CON SYNC F5
+// js/socket.js - VERSIÓN ROYALE ADMINISTRADOR
 // ==========================================
 let stompClient = null;
 let currentUser = "";
@@ -17,30 +17,74 @@ function conectarWebSocket(token, username) {
 
         stompClient.subscribe(`/topic/invites.${currentUser}`, function (message) {
             const inv = JSON.parse(message.body);
-            if (confirm(`¡${inv.senderUsername} te invita a un Royale!\n¿Aceptar e ir a la sala?`)) {
-                irALobbyComoInvitado(inv.senderUsername);
-                stompClient.send("/app/invite.accept", {}, JSON.stringify({ inviteId: inv.inviteId }));
+            const idInv = inv.inviteId || inv.id;
+            const senderName = inv.senderUsername || inv.sender || "Un amigo";
+
+            if (confirm(`¡${senderName} te invita a un Royale!\n¿Aceptar e ir a la sala?`)) {
+                irALobbyComoInvitado(senderName);
+                stompClient.send("/app/invite.accept", {}, JSON.stringify({ inviteId: idInv }));
             }
         });
 
-        // ESCUCHAR CUANDO ALGUIEN ENTRA O CUANDO PEDIMOS SINCRONIZAR POR F5
         stompClient.subscribe(`/topic/lobby.guest.joined.${currentUser}`, function (message) {
             const data = JSON.parse(message.body);
             
+            if (data.type === "KICKED") {
+                alert("❌ Has sido expulsado de la sala por el anfitrión.");
+                sessionStorage.removeItem('current_game_id');
+                sessionStorage.removeItem('current_host_name');
+                sessionStorage.removeItem('last_voluntary_game_id'); 
+                const sMenu = document.getElementById('screen-menu');
+                const sLobby = document.getElementById('screen-lobby');
+                if (typeof cambiarPantalla === "function") cambiarPantalla(sLobby, sMenu);
+                if (typeof verificarBotonReconexion === "function") verificarBotonReconexion();
+                return; 
+            }
+
+            if (data.type === "ROOM_CLOSED") {
+                const nombreDelHost = data.hostName ? data.hostName : "El anfitrión";
+                alert(`❌ ${nombreDelHost} ha cerrado la sala.`); 
+                
+                sessionStorage.removeItem('current_game_id');
+                sessionStorage.removeItem('current_host_name');
+                sessionStorage.removeItem('last_voluntary_game_id'); 
+                const sMenu = document.getElementById('screen-menu');
+                const sLobby = document.getElementById('screen-lobby');
+                
+                if (typeof cambiarPantalla === "function") cambiarPantalla(sLobby, sMenu);
+                if (typeof verificarBotonReconexion === "function") verificarBotonReconexion();
+                return; 
+            }
+
             if (data.type === "LOBBY_UPDATE") {
                 const list = document.getElementById('lobby-players-list');
                 
-                if (list && data.players) {
-                    list.innerHTML = ""; // Limpiamos la lista vieja
+                if (list && data.playersInfo) {
+                    list.innerHTML = ""; 
                     
-                    data.players.forEach((name) => {
-                        const isHost = (name === data.hostName); 
+                    data.playersInfo.forEach((p) => {
                         const li = document.createElement('li');
+                        li.style.display = "flex";
+                        li.style.justifyContent = "space-between";
+                        li.style.alignItems = "center";
+                        li.style.marginBottom = "10px";
                         
-                        li.innerHTML = isHost ? `👑 <strong>${name} (Host)</strong>` : `👤 ${name} (Listo)`;
-                        if (name === currentUser && !isHost) li.style.color = "#03DAC6"; 
+                        let statusHtml = p.status === "Ausente" 
+                            ? `<span style="color: #F44336; font-size: 0.8em; margin-left: 5px;">(Ausente)</span>` 
+                            : `<span style="color: #4CAF50; font-size: 0.8em; margin-left: 5px;">(Listo)</span>`;
+
+                        let nameHtml = p.isHost 
+                            ? `<div>👑 <strong style="color: #FFD700">${p.username} (Host)</strong></div>` 
+                            : `<div>👤 <span style="color: ${p.username === currentUser ? '#03DAC6' : 'white'}">${p.username}</span> ${statusHtml}</div>`;
                         
-                        if (isHost) list.prepend(li); 
+                        let kickBtnHtml = "";
+                        if (data.hostName === currentUser && !p.isHost) {
+                            kickBtnHtml = `<button onclick="window.expulsarJugador('${p.username}')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; transition: transform 0.2s;" title="Expulsar jugador">❌</button>`;
+                        }
+
+                        li.innerHTML = `${nameHtml} ${kickBtnHtml}`;
+                        
+                        if (p.isHost) list.prepend(li); 
                         else list.appendChild(li); 
                     });
                 }
@@ -48,13 +92,11 @@ function conectarWebSocket(token, username) {
                 const waitingMsg = document.getElementById('waiting-msg');
                 const hostControls = document.getElementById('host-controls');
 
-                // Si soy el Host real, muestro el botón de iniciar
                 if (data.hostName === currentUser) {
                     if (data.players.length >= 2) {
                         if (hostControls) hostControls.style.display = 'block';
                         if (waitingMsg) waitingMsg.style.display = 'none';
                     } else {
-                        // Si soy el host pero estoy solo (porque expulsé a alguien o acabo de crear sala)
                         if (hostControls) hostControls.style.display = 'none';
                         if (waitingMsg) {
                             waitingMsg.innerText = `Esperando a que se unan los jugadores (Máx 10)...`;
@@ -69,11 +111,13 @@ function conectarWebSocket(token, username) {
                     if (hostControls) hostControls.style.display = 'none';
                 }
                 sessionStorage.setItem('current_game_id', data.gameId);
+                sessionStorage.setItem('current_host_name', data.hostName);
             }
         });
 
         stompClient.subscribe(`/topic/game.start.${currentUser}`, function (message) {
             const gameData = JSON.parse(message.body);
+            sessionStorage.removeItem('last_voluntary_game_id'); 
             irAPantallaDeJuego(gameData.players); 
             sessionStorage.setItem('current_game_id', gameData.gameId);
             if (typeof inicializarJuego === "function") inicializarJuego(gameData);
@@ -86,35 +130,39 @@ function conectarWebSocket(token, username) {
             } else if (update.type === "ROUND_RESULT") {
                 if (typeof procesarResultadoRonda === "function") procesarResultadoRonda(update);
             } else if (update.type === "GAME_OVER") {
+                sessionStorage.removeItem('last_voluntary_game_id');
                 if (typeof finalizarJuego === "function") finalizarJuego(update);
             }
         });
 
-        // 🔥 EL ARREGLO DEL F5: 
         setTimeout(() => {
             if (window.location.hash === '#screen-lobby') {
-                console.log("🔄 Recarga detectada en el Lobby. Restaurando sala y amigos...");
-                
-                // 1. PRE-PINTAMOS AL USUARIO como Host para que no se vea vacío ni un segundo
                 const list = document.getElementById('lobby-players-list');
                 if (list && list.children.length === 0) {
-                    list.innerHTML = `<li>👑 <strong>${currentUser} (Host)</strong></li>`;
+                    list.innerHTML = `<li style="margin-bottom:10px;">👑 <strong style="color: #FFD700">${currentUser} (Host)</strong></li>`;
                 }
-
-                // 2. Pedimos al servidor la lista real (por si estábamos con más gente). 
-                // Al darle más retraso (1200ms), aseguramos que el buzón del WebSocket está abierto.
                 stompClient.send("/app/lobby.sync", {}, JSON.stringify({}));
-                
-                // 3. Disparamos la recarga de amigos y categorías
                 if (typeof cargarListaAmigos === "function") cargarListaAmigos();
                 if (typeof cargarCategorias === "function") cargarCategorias();
             }
-        }, 1200); // 1.2 segundos de paciencia para evitar la Condición de Carrera
+        }, 1200); 
 
     }, function(error) {
         setTimeout(() => conectarWebSocket(token, username), 2000);
     });
 }
+
+window.expulsarJugador = function(usernameTarget) {
+    if (confirm(`¿Seguro que quieres expulsar a ${usernameTarget} de la sala?`)) {
+        const gameId = sessionStorage.getItem('current_game_id');
+        if (stompClient && stompClient.connected && gameId) {
+            stompClient.send("/app/lobby.kick", {}, JSON.stringify({
+                gameId: gameId,
+                usernameToKick: usernameTarget
+            }));
+        }
+    }
+};
 
 function irALobbyComoInvitado(hostName) {
     const sMenu = document.getElementById('screen-menu');
@@ -132,16 +180,18 @@ function irALobbyComoInvitado(hostName) {
 }
 
 function irAPantallaDeJuego(players) {
-    document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+    // 🔥 EL ARREGLO: Forzamos al Enrutador a cambiar la URL a #screen-game
+    const sLobby = document.getElementById('screen-lobby');
     const sGame = document.getElementById('screen-game');
+    
+    if (typeof cambiarPantalla === "function") {
+        cambiarPantalla(sLobby, sGame);
+    }
+    
     const oppElement = document.getElementById('opponent-name');
-    if (sGame) {
-        sGame.style.display = 'block'; 
-        sGame.classList.remove('hidden');
-        if (oppElement) {
-            let num = Array.isArray(players) ? players.length : 2;
-            oppElement.innerText = `🏆 MODO ROYALE: ${num} Jugadores`;
-        }
+    if (oppElement) {
+        let num = Array.isArray(players) ? players.length : 2;
+        oppElement.innerText = `🏆 MODO ROYALE: ${num} Jugadores`;
     }
 }
 
