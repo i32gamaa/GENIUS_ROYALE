@@ -1,5 +1,5 @@
 // ==========================================
-// js/socket.js - VERSIÓN ROYALE DEFINITIVA
+// js/socket.js - VERSIÓN ROYALE DEFINITIVA CON SYNC F5
 // ==========================================
 let stompClient = null;
 let currentUser = "";
@@ -23,7 +23,7 @@ function conectarWebSocket(token, username) {
             }
         });
 
-        // ESCUCHAR CUANDO ALGUIEN ENTRA (MAGIA MULTIJUGADOR)
+        // ESCUCHAR CUANDO ALGUIEN ENTRA O CUANDO PEDIMOS SINCRONIZAR POR F5
         stompClient.subscribe(`/topic/lobby.guest.joined.${currentUser}`, function (message) {
             const data = JSON.parse(message.body);
             
@@ -33,7 +33,6 @@ function conectarWebSocket(token, username) {
                 if (list && data.players) {
                     list.innerHTML = ""; // Limpiamos la lista vieja
                     
-                    // Dibujamos a TODOS los jugadores que nos manda el servidor
                     data.players.forEach((name) => {
                         const isHost = (name === data.hostName); 
                         const li = document.createElement('li');
@@ -41,8 +40,8 @@ function conectarWebSocket(token, username) {
                         li.innerHTML = isHost ? `👑 <strong>${name} (Host)</strong>` : `👤 ${name} (Listo)`;
                         if (name === currentUser && !isHost) li.style.color = "#03DAC6"; 
                         
-                        if (isHost) list.prepend(li); // Host siempre arriba
-                        else list.appendChild(li); // Invitados debajo
+                        if (isHost) list.prepend(li); 
+                        else list.appendChild(li); 
                     });
                 }
 
@@ -54,6 +53,13 @@ function conectarWebSocket(token, username) {
                     if (data.players.length >= 2) {
                         if (hostControls) hostControls.style.display = 'block';
                         if (waitingMsg) waitingMsg.style.display = 'none';
+                    } else {
+                        // Si soy el host pero estoy solo (porque expulsé a alguien o acabo de crear sala)
+                        if (hostControls) hostControls.style.display = 'none';
+                        if (waitingMsg) {
+                            waitingMsg.innerText = `Esperando a que se unan los jugadores (Máx 10)...`;
+                            waitingMsg.style.display = 'block';
+                        }
                     }
                 } else {
                     if (waitingMsg) {
@@ -83,6 +89,27 @@ function conectarWebSocket(token, username) {
                 if (typeof finalizarJuego === "function") finalizarJuego(update);
             }
         });
+
+        // 🔥 EL ARREGLO DEL F5: 
+        setTimeout(() => {
+            if (window.location.hash === '#screen-lobby') {
+                console.log("🔄 Recarga detectada en el Lobby. Restaurando sala y amigos...");
+                
+                // 1. PRE-PINTAMOS AL USUARIO como Host para que no se vea vacío ni un segundo
+                const list = document.getElementById('lobby-players-list');
+                if (list && list.children.length === 0) {
+                    list.innerHTML = `<li>👑 <strong>${currentUser} (Host)</strong></li>`;
+                }
+
+                // 2. Pedimos al servidor la lista real (por si estábamos con más gente). 
+                // Al darle más retraso (1200ms), aseguramos que el buzón del WebSocket está abierto.
+                stompClient.send("/app/lobby.sync", {}, JSON.stringify({}));
+                
+                // 3. Disparamos la recarga de amigos y categorías
+                if (typeof cargarListaAmigos === "function") cargarListaAmigos();
+                if (typeof cargarCategorias === "function") cargarCategorias();
+            }
+        }, 1200); // 1.2 segundos de paciencia para evitar la Condición de Carrera
 
     }, function(error) {
         setTimeout(() => conectarWebSocket(token, username), 2000);

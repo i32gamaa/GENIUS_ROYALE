@@ -101,7 +101,6 @@ public class GameLobbyController {
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    // 🔥 ¡AQUÍ ESTÁ LA MAGIA! El @Transactional obliga a la BD a guardar todo perfecto sin cancelar a medias.
     @MessageMapping("/game.start.private")
     @Transactional 
     public void startPrivateGame(Principal principal, @Payload Map<String, Object> payload) {
@@ -144,7 +143,6 @@ public class GameLobbyController {
                 categoryRepository.findByName(categoryName).ifPresent(dbGame::setCategory);
             }
 
-            // Al estar dentro de @Transactional, esto es un bloque inquebrantable
             gameRepository.save(dbGame);
 
         } catch (Exception e) {
@@ -165,6 +163,52 @@ public class GameLobbyController {
         }
     }
 
+    // 🔥 EL NUEVO MÉTODO PARA RECUPERAR LA SALA TRAS UN F5
+    @MessageMapping("/lobby.sync")
+    public void syncLobby(Principal principal) {
+        try {
+            User user = userRepository.findByEmail(principal.getName()).orElse(null);
+            if (user == null) return;
+
+            boolean inRoom = false;
+            
+            // 1. Buscamos si el usuario estaba en alguna sala activa en la RAM
+            for (Game sala : SALAS_EN_VIVO.values()) {
+                if (sala.getPlayers().stream().anyMatch(p -> p.getId().equals(user.getId()))) {
+                    List<String> names = sala.getPlayers().stream().map(User::getUsername).collect(Collectors.toList());
+                    String hostName = sala.getPlayers().get(0).getUsername(); 
+
+                    Map<String, Object> lobbyUpdate = new HashMap<>();
+                    lobbyUpdate.put("type", "LOBBY_UPDATE");
+                    lobbyUpdate.put("players", names);
+                    lobbyUpdate.put("gameId", sala.getId());
+                    lobbyUpdate.put("hostName", hostName);
+
+                    messagingTemplate.convertAndSend("/topic/lobby.guest.joined." + user.getUsername(), lobbyUpdate);
+                    inRoom = true;
+                    break;
+                }
+            }
+
+            // 🔥 2. Si ha recargado y está SOLO (la sala RAM aún no existe), lo dibujamos como Host igualmente.
+            if (!inRoom) {
+                List<String> names = new ArrayList<>();
+                names.add(user.getUsername());
+
+                Map<String, Object> lobbyUpdate = new HashMap<>();
+                lobbyUpdate.put("type", "LOBBY_UPDATE");
+                lobbyUpdate.put("players", names);
+                lobbyUpdate.put("gameId", ""); 
+                lobbyUpdate.put("hostName", user.getUsername());
+
+                messagingTemplate.convertAndSend("/topic/lobby.guest.joined." + user.getUsername(), lobbyUpdate);
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private List<Question> getBalancedQuestions(String categoryName) {
         List<Question> easy, medium, hard;
         if (categoryName == null || categoryName.equals("Cultura General")) {
@@ -178,6 +222,11 @@ public class GameLobbyController {
             hard = questionRepository.findByCategoryAndDifficultyLevel(cat, Difficulty.dificil);
         }
         Collections.shuffle(easy); Collections.shuffle(medium); Collections.shuffle(hard);
-        return Stream.concat(easy.stream().limit(1), Stream.concat(medium.stream().limit(1), hard.stream().limit(1))).collect(Collectors.toList());
+        
+        // MODO PRUEBAS (1 Fácil, 1 Media)
+        return Stream.concat(
+                easy.stream().limit(1), 
+                Stream.concat(medium.stream().limit(1), hard.stream().limit(0))
+        ).collect(Collectors.toList());
     }
 }

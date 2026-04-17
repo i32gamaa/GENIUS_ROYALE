@@ -3,14 +3,14 @@
 /* 1. Estilos Globales: Fondo morado oscuro como la App */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #2D0A4E; /* Fondo morado oscuro de Genius Royale */
+    background-color: #2D0A4E;
     color: white;
     margin: 0;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh; /* Cambiado a min-height para que se expanda en móviles */
-    overflow-x: hidden; /* Evita scrolls horizontales feos */
+    min-height: 100vh;
+    overflow-x: hidden;
 }
 
 /* 2. Contenedor principal */
@@ -23,21 +23,22 @@ body {
 }
 
 /* 3. Título de la App */
-.app-title {
+.app-title-main {
     font-size: 3rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     text-transform: uppercase;
-    letter-spacing: 2px;
-    color: #FFD700; /* Dorado para el título */
+    letter-spacing: 3px;
+    color: #FFD700;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
 }
 
 /* 4. La caja blanca del formulario */
 .login-box {
-    background-color: rgba(255, 255, 255, 0.95); /* Blanco casi opaco */
-    color: #333; /* Texto oscuro dentro de la caja blanca */
+    background-color: rgba(255, 255, 255, 0.95);
+    color: #333;
     padding: 30px;
-    border-radius: 15px; /* Bordes redondeados como en la App */
-    box-shadow: 0 10px 25px rgba(0,0,0,0.3); /* Sombra para dar profundidad */
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
 }
 
 .login-box h2 {
@@ -45,7 +46,7 @@ body {
     color: #2D0A4E;
 }
 
-/* 5. Estilos para los campos de entrada (Inputs) */
+/* 5. Inputs */
 .input-group {
     text-align: left;
     margin-bottom: 15px;
@@ -66,21 +67,21 @@ body {
     border: 2px solid #ddd;
     border-radius: 8px;
     font-size: 1rem;
-    box-sizing: border-box; /* Importante para el padding */
+    box-sizing: border-box;
     transition: border-color 0.3s;
 }
 
 .input-group input:focus,
 .input-group select:focus {
-    border-color: #2D0A4E; /* Cambia de color al hacer clic */
+    border-color: #2D0A4E;
     outline: none;
 }
 
-/* 6. Estilo para el botón de Login */
+/* 6. Botones Generales */
 .btn-login {
     width: 100%;
     padding: 12px;
-    background-color: #6200EE; /* Morado corporativo de Android/Material */
+    background-color: #6200EE;
     color: white;
     border: none;
     border-radius: 8px;
@@ -92,10 +93,9 @@ body {
 }
 
 .btn-login:hover {
-    background-color: #4A00B2; /* Morado más oscuro al pasar el ratón */
+    background-color: #4A00B2;
 }
 
-/* 7. Footer del login (¿No tienes cuenta?) */
 .login-footer {
     margin-top: 20px;
     font-size: 0.9rem;
@@ -107,11 +107,7 @@ body {
     font-weight: bold;
 }
 
-.login-footer a:hover {
-    text-decoration: underline;
-}
-
-/* Clases para controlar la visibilidad de las pantallas (SPA) */
+/* SPA */
 .screen {
     display: flex;
     justify-content: center;
@@ -126,125 +122,122 @@ body {
     display: none !important;
 }
 
-/* Estilos del Menú Principal */
-.menu-container {
-    text-align: center;
-    background-color: rgba(255, 255, 255, 0.1);
-    padding: 40px;
-    border-radius: 20px;
-    backdrop-filter: blur(10px); /* Efecto cristal muy pro */
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    width: 90%;
-    max-width: 500px;
-}
-
-.user-info h2 {
-    color: #FFD700;
-    margin-bottom: 30px;
-}
-
-.menu-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    align-items: center;
-    width: 100%;
-}
-
-.btn-menu {
-    width: 100%;
-    max-width: 250px;
-    padding: 15px;
-    font-size: 1.2rem;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    font-weight: bold;
-}
-
-.btn-menu:hover {
-    transform: scale(1.05);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-}
-
-.btn-primary { background-color: #E91E63; color: white; } /* Rosa */
-.btn-secondary { background-color: #6200EE; color: white; } /* Morado */
-.btn-info { background-color: #03DAC6; color: black; } /* Verde agua */
-
-/* --- ESTILOS PARA EL LOGO LLAMATIVO --- */
+/* --- LOGO --- */
 .app-logo {
     display: block;
     margin: 0 auto 30px auto; 
     max-width: 180px;         
     height: auto;             
-    filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5)); 
+    border-radius: 50%;
+    filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.5)); 
     animation: pulso-logo 3s ease-in-out infinite;
 }
 
-@keyframes pulso-logo {
-    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5)); }
-    50% { transform: scale(1.05); filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)); }
+.app-logo-menu {
+    max-width: 130px;
+    border-radius: 50%;
+    margin-bottom: 15px;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
 }
 
-/* --- Estilos para el menú lateral --- */
+@keyframes pulso-logo {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.5)); }
+    50% { transform: scale(1.05); filter: drop-shadow(0 0 25px rgba(255, 215, 0, 0.8)); }
+}
+
+/* --- SIDEBAR --- */
 .sidebar {
     position: fixed;
     top: 0;
     left: 0;
     width: 250px;
     height: 100vh;
-    background-color: #1E0135; /* Morado oscuro */
+    background-color: #1A0530;
     color: white;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 20px;
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+    padding: 30px 20px;
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.5);
     z-index: 1000;
     box-sizing: border-box;
 }
 
 .profile-section {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
 }
 
 .profile-picture {
     width: 100px;
     height: 100px;
     border-radius: 50%;
-    border: 3px solid #FFD700; /* Borde dorado */
+    border: 3px solid #FFD700;
     margin-bottom: 10px;
 }
 
-#btn-logout {
-    margin-top: auto;
-    background-color: #E91E63; /* Rosa */
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background-color 0.3s;
+.sidebar-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
     width: 100%;
+    margin-top: auto;
 }
 
-#btn-logout:hover {
-    background-color: #FF4081; /* Rosa más claro */
-}
-
-/* --- Estilos para el contenido principal del menú --- */
+/* --- CONTENIDO DEL MENÚ (CAJA DE CRISTAL) --- */
 .menu-content {
-    margin-left: 270px; /* Espacio para el menú lateral en PC */
-    padding: 20px;
-    text-align: center;
+    margin-left: 250px; /* Deja espacio al sidebar en PC */
+    display: flex;
+    justify-content: center;
+    align-items: center;
     width: 100%;
     box-sizing: border-box;
 }
 
-/* --- Layout del Lobby --- */
+.menu-glass-box {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 40px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 450px;
+}
+
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+}
+
+.btn-menu {
+    width: 100%;
+    padding: 15px;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    font-weight: bold;
+    color: white;
+}
+
+.btn-menu:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.btn-primary { background-color: #E91E63; }
+.btn-secondary { background-color: #6200EE; }
+.btn-info { background-color: #03DAC6; color: black; }
+.btn-danger { background-color: #cf6679; color: black; }
+
+/* --- LOBBY Y PANELES --- */
 .lobby-layout {
     display: flex;
     gap: 30px;
@@ -255,27 +248,47 @@ body {
 
 .panel {
     background: rgba(255, 255, 255, 0.1);
-    padding: 20px;
+    padding: 25px;
     border-radius: 15px;
     border: 1px solid rgba(255, 255, 255, 0.2);
     flex: 1;
-    min-width: 250px;
+    min-width: 280px;
+}
+
+/* 🔥 BOTÓN SALIR DE SALA MEJORADO 🔥 */
+#btn-leave-lobby {
+    background: linear-gradient(135deg, #E91E63, #C2185B); /* Rojo/Rosa potente */
+    color: white;
+    border: none;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 25px;
+    box-shadow: 0 5px 15px rgba(233, 30, 99, 0.4);
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+}
+
+#btn-leave-lobby:hover {
+    background: linear-gradient(135deg, #FF4081, #E91E63);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(233, 30, 99, 0.6);
 }
 
 /* ========================================================
-   📱 MAGIA RESPONSIVE: ADAPTACIÓN AUTOMÁTICA A MÓVILES
+   📱 SOLUCIÓN MÓVIL (SOLO SE APLICA EN PANTALLAS PEQUEÑAS)
    ======================================================== */
-
 @media screen and (max-width: 768px) {
-    /* 1. Cambiamos la estructura de la pantalla para que se pueda hacer scroll */
     .screen {
         align-items: flex-start;
         padding-top: 20px;
-        height: auto;
         min-height: 100vh;
     }
 
-    /* 2. El menú lateral (Sidebar) pasa a ser una caja superior */
+    /* La barra lateral se vuelve una cabecera superior */
     .sidebar {
         position: relative;
         width: 90%;
@@ -285,8 +298,8 @@ body {
         align-items: center;
         border-radius: 15px;
         margin: 0 auto 20px auto;
-        padding: 15px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        padding: 15px 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }
 
     .profile-section {
@@ -294,12 +307,11 @@ body {
         display: flex;
         align-items: center;
         gap: 15px;
-        text-align: left;
     }
 
     .profile-picture {
-        width: 60px;
-        height: 60px;
+        width: 50px;
+        height: 50px;
         margin-bottom: 0;
     }
 
@@ -308,28 +320,28 @@ body {
         margin: 0;
     }
 
-    .sidebar button {
-        margin-top: 0 !important;
+    .sidebar-actions {
+        flex-direction: row;
         width: auto;
-        padding: 8px 15px;
-        font-size: 0.9rem;
-    }
-
-    #btn-logout {
         margin-top: 0;
     }
 
-    /* 3. Centramos el menú de botones */
+    .sidebar-actions button {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+    }
+
+    /* Ajustamos el margen del menú principal */
     .menu-content {
         margin-left: 0;
-        padding: 10px;
+        padding: 10px 20px;
     }
 
-    .app-title {
-        font-size: 2.2rem; /* Título más pequeño */
+    .app-title-main {
+        font-size: 2.2rem;
     }
 
-    /* 4. Apilamos el Lobby (Configuración arriba, jugadores abajo) */
+    /* El Lobby se apila (Configuración arriba, jugadores abajo) */
     .lobby-layout {
         flex-direction: column;
         gap: 20px;
@@ -339,28 +351,5 @@ body {
     .panel {
         width: 100%;
         box-sizing: border-box;
-    }
-
-    /* 5. Ajustamos los textos gigantes de los resultados */
-    #personal-result-title {
-        font-size: 2.5rem !important; /* De 4rem a 2.5rem */
-    }
-
-    #personal-result-message {
-        font-size: 1.2rem !important;
-    }
-
-    .responsive-title {
-        font-size: 2rem !important;
-    }
-
-    .responsive-question {
-        font-size: 1.2rem !important;
-    }
-
-    /* Botones grandes de juego */
-    .options .option-button {
-        padding: 15px;
-        font-size: 1rem;
     }
 }

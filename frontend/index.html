@@ -10,7 +10,7 @@
 </head>
 <body>
 
-    <div id="screen-login" class="screen active">
+    <div id="screen-login" class="screen hidden" style="display:none;">
         <div class="login-container">
             <img src="images/logo.jpeg" alt="Genius Royale Logo" class="app-logo">
             <div class="login-box">
@@ -64,17 +64,23 @@
         <div class="sidebar">
             <div class="profile-section">
                 <img id="profile-picture" src="images/default-profile.png" alt="Perfil" class="profile-picture">
-                <h2 id="display-username">Usuario</h2>
+                <h2 id="display-username"></h2>
             </div>
-            <button id="btn-requests" class="btn-menu btn-info" style="margin-top: 15px;">📬 Solicitudes</button>
-            <button id="btn-logout" class="btn-menu btn-secondary" style="margin-top: 15px;">Cerrar Sesión</button>
+            <div class="sidebar-actions">
+                <button id="btn-requests" class="btn-menu btn-info">📬 Solicitudes</button>
+                <button id="btn-logout" class="btn-menu btn-danger">Cerrar Sesión</button>
+            </div>
         </div>
+        
         <div class="menu-content">
-            <h1 class="app-title">Genius Royale</h1>
-            <div class="menu-buttons">
-                <button id="btn-public-game" class="btn-menu btn-primary">⚔️ Partida Pública</button>
-                <button id="btn-private-game" class="btn-menu btn-secondary">🛡️ Partida Privada</button>
-                <button id="btn-add-friend-menu" class="btn-menu btn-info">➕ Añadir Amigo</button>
+            <div class="menu-glass-box">
+                <img src="images/logo.jpeg" alt="Genius Royale Logo" class="app-logo-menu">
+                <h1 class="app-title-main">GENIUS ROYALE</h1>
+                <div class="menu-buttons">
+                    <button id="btn-public-game" class="btn-menu btn-primary">⚔️ Partida Pública</button>
+                    <button id="btn-private-game" class="btn-menu btn-secondary">🛡️ Partida Privada</button>
+                    <button id="btn-add-friend-menu" class="btn-menu btn-info">➕ Añadir Amigo</button>
+                </div>
             </div>
         </div>
     </div>
@@ -100,11 +106,11 @@
                     </div>
                     
                     <div id="host-controls" style="display: none; margin-top: 20px;">
-                        <button id="btn-start-game-final" class="btn-primary" style="background: #4CAF50; width: 100%; padding:15px;">🚀 INICIAR PARTIDA</button>
+                        <button id="btn-start-game-final" class="btn-primary" style="background: #4CAF50; width: 100%; padding:15px; border-radius: 8px; font-weight: bold;">🚀 INICIAR PARTIDA</button>
                     </div>
                     <p id="waiting-msg" style="font-style: italic; color: #ccc; margin-top: 15px;">Esperando a que se unan los jugadores...</p>
                     
-                    <button id="btn-leave-lobby" class="btn-secondary" style="margin-top: 20px; width: 100%;">Salir de la Sala</button>
+                    <button id="btn-leave-lobby">Salir de la Sala</button>
                 </div>
 
                 <div class="lobby-players panel" id="panel-private-friends">
@@ -116,7 +122,7 @@
                     <h3>Añadir Amigo</h3>
                     <div class="add-friend-box" style="display: flex; gap: 10px; margin-bottom: 15px;">
                         <input type="text" id="input-friend-name" placeholder="Email de tu amigo..." style="flex: 1; padding: 10px; border-radius:5px; border:none; width: 100%;">
-                        <button id="btn-add-friend-lobby" class="btn-info" style="padding: 10px;">Añadir</button>
+                        <button id="btn-add-friend-lobby" class="btn-info" style="padding: 10px; border-radius: 5px; font-weight: bold;">Añadir</button>
                     </div>
 
                     <h3>Tus Amigos</h3>
