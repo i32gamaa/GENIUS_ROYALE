@@ -9,6 +9,7 @@ import com.geniusroyale.api.repositories.UserRepository;
 import com.geniusroyale.api.services.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,29 +24,43 @@ public class AmistadController {
     @Autowired private UserRepository userRepository;
     @Autowired private AmistadRepository amistadRepository;
     @Autowired private JwtService jwtService;
+    
+    // 🔥 AÑADIMOS EL MENSAJERO DE WEBSOCKET 🔥
+    @Autowired private SimpMessagingTemplate messagingTemplate;
 
-    // 1. Enviar solicitud de amistad (ESCUDO TOTAL)
     @PostMapping("/solicitar")
     public ResponseEntity<?> enviarSolicitud(@RequestHeader("Authorization") String authHeader, @RequestBody Map<String, String> payload) {
         try {
             String token = authHeader.substring(7);
             String senderEmail = jwtService.extractEmail(token).trim().toLowerCase();
-            // Quitamos espacios invisibles que haya puesto el usuario sin querer
-            String receiverEmail = payload.get("email").trim().toLowerCase();
-
-            if (senderEmail.equals(receiverEmail)) {
-                return ResponseEntity.badRequest().body(new ApiResponse(false, "No puedes enviarte una solicitud a ti mismo"));
+            
+            String receiverUsername = payload.get("username");
+            
+            if (receiverUsername == null) {
+                receiverUsername = payload.get("email"); 
             }
+
+            if (receiverUsername == null || receiverUsername.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(new ApiResponse(false, "Falta el nombre de usuario."));
+            }
+            
+            receiverUsername = receiverUsername.trim();
 
             User sender = userRepository.findByEmail(senderEmail).orElseThrow();
-            User receiver = userRepository.findByEmail(receiverEmail).orElse(null);
-
-            if (receiver == null) {
-                return ResponseEntity.badRequest().body(new ApiResponse(false, "Usuario no encontrado con ese email"));
+            
+            if (sender.getUsername().equalsIgnoreCase(receiverUsername)) {
+                return ResponseEntity.badRequest().body(new ApiResponse(false, "No puedes enviarte una solicitud a ti mismo."));
             }
 
-            // ESCUDO: Revisamos TODA la base de datos
+            User receiver = userRepository.findByUsername(receiverUsername).orElse(null);
+
+            if (receiver == null) {
+                return ResponseEntity.badRequest().body(new ApiResponse(false, "Usuario no encontrado con ese nombre."));
+            }
+
             List<Amistad> todas = amistadRepository.findAll();
+            String receiverEmail = receiver.getEmail().trim().toLowerCase();
+
             for (Amistad a : todas) {
                 String u1Email = a.getUsuario1().getEmail().trim().toLowerCase();
                 String u2Email = a.getUsuario2().getEmail().trim().toLowerCase();
@@ -69,13 +84,18 @@ public class AmistadController {
             nuevaAmistad.setEstado("PENDIENTE");
             amistadRepository.save(nuevaAmistad);
 
+            // 🔥 LA MAGIA: Avisamos al receptor en tiempo real por WebSocket
+            Map<String, Object> notificacion = new HashMap<>();
+            notificacion.put("type", "FRIEND_REQUEST");
+            notificacion.put("sender", sender.getUsername());
+            messagingTemplate.convertAndSend("/topic/friends." + receiver.getUsername(), notificacion);
+
             return ResponseEntity.ok(new ApiResponse(true, "✅ Solicitud enviada a " + receiver.getUsername()));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(new ApiResponse(false, "Error en el servidor: " + e.getMessage()));
         }
     }
 
-    // 2. Obtener la lista de amigos (BIDIRECCIONAL Y SIN DUPLICADOS)
     @GetMapping("/lista")
     public ResponseEntity<List<UserProfileDTO>> listarAmigos(@RequestHeader("Authorization") String authHeader) {
         String token = authHeader.substring(7);
@@ -88,7 +108,7 @@ public class AmistadController {
                             (a.getUsuario1().getEmail().trim().toLowerCase().equals(email) || 
                              a.getUsuario2().getEmail().trim().toLowerCase().equals(email)))
                 .map(a -> a.getUsuario1().getEmail().trim().toLowerCase().equals(email) ? a.getUsuario2() : a.getUsuario1())
-                .collect(Collectors.toMap(User::getEmail, u -> u, (u1, u2) -> u1)) // Elimina duplicados si la BD está sucia
+                .collect(Collectors.toMap(User::getEmail, u -> u, (u1, u2) -> u1)) 
                 .values().stream()
                 .map(UserProfileDTO::new)
                 .collect(Collectors.toList());
@@ -96,7 +116,6 @@ public class AmistadController {
         return ResponseEntity.ok(amigos);
     }
 
-    // 3. Aceptar una solicitud
     @PostMapping("/aceptar/{idAmistad}")
     public ResponseEntity<?> aceptarSolicitud(@RequestHeader("Authorization") String authHeader, @PathVariable Integer idAmistad) {
         String token = authHeader.substring(7);
@@ -115,7 +134,6 @@ public class AmistadController {
         return ResponseEntity.ok(new ApiResponse(true, "Amistad aceptada."));
     }
 
-    // 4. Obtener solicitudes PENDIENTES
     @GetMapping("/pendientes")
     public ResponseEntity<List<Map<String, Object>>> listarPendientes(@RequestHeader("Authorization") String authHeader) {
         String token = authHeader.substring(7);
@@ -135,7 +153,6 @@ public class AmistadController {
         return ResponseEntity.ok(pendientes);
     }
 
-    // 5. Rechazar una solicitud
     @PostMapping("/rechazar/{idAmistad}")
     public ResponseEntity<?> rechazarSolicitud(@RequestHeader("Authorization") String authHeader, @PathVariable Integer idAmistad) {
         String token = authHeader.substring(7);

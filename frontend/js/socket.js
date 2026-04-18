@@ -1,8 +1,133 @@
 // ==========================================
-// js/socket.js - VERSIÓN ROYALE ADMINISTRADOR
+// js/socket.js - VERSIÓN NOTIFICACIONES PREMIUM
 // ==========================================
 let stompClient = null;
 let currentUser = "";
+window.invitacionesPendientes = []; 
+window.toastCallbacks = {}; 
+
+window.mostrarToastExito = function(mensaje) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-success';
+    toast.innerHTML = `<img src="images/logo.jpeg" class="toast-logo" alt="Logo"><div class="toast-content">${mensaje} ✔️</div>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 400); }, 3000);
+};
+
+window.mostrarToastError = function(mensaje) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-error';
+    toast.innerHTML = `<img src="images/logo.jpeg" class="toast-logo" alt="Logo"><div class="toast-content">${mensaje}</div>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 400); }, 4000); 
+};
+
+window.mostrarToastInfo = function(mensaje) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-info';
+    toast.innerHTML = `<img src="images/logo.jpeg" class="toast-logo" alt="Logo"><div class="toast-content">${mensaje}</div>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 400); }, 3000);
+};
+
+window.mostrarToastConfirmacion = function(mensaje, callbackAceptar) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const idToast = 'confirm-' + Date.now();
+    window.toastCallbacks[idToast] = callbackAceptar; 
+
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-warning';
+    toast.id = idToast;
+
+    toast.innerHTML = `
+        <img src="images/logo.jpeg" class="toast-logo" alt="Logo">
+        <div class="toast-content" style="flex:1;">${mensaje}</div>
+        <div class="toast-actions">
+            <button class="toast-btn" onclick="window.ejecutarToastCallback('${idToast}')" title="Sí">✔️</button>
+            <button class="toast-btn" onclick="window.cerrarToast('${idToast}')" title="No">❌</button>
+        </div>
+    `;
+    container.appendChild(toast);
+};
+
+window.ejecutarToastCallback = function(idToast) {
+    if (window.toastCallbacks[idToast]) {
+        window.toastCallbacks[idToast](); 
+        delete window.toastCallbacks[idToast];
+    }
+    window.cerrarToast(idToast);
+};
+
+window.cerrarToast = function(idToast) {
+    const toast = document.getElementById(idToast);
+    if (toast) {
+        toast.classList.add('fade-out');
+        setTimeout(() => toast.remove(), 400);
+    }
+    delete window.toastCallbacks[idToast];
+};
+
+window.mostrarToastInvitacion = function(inv) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const senderName = inv.senderUsername || inv.sender || "Un amigo";
+    const idInv = inv.inviteId || inv.id;
+
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-invite';
+    toast.id = `toast-inv-${idInv}`;
+
+    toast.innerHTML = `
+        <img src="images/logo.jpeg" class="toast-logo" alt="Logo">
+        <div class="toast-content">
+            Has recibido una invitación a sala de <strong>${senderName}</strong>
+        </div>
+        <div class="toast-actions">
+            <button class="toast-btn" onclick="window.responderInvitacion(${idInv}, true, '${senderName}', this)" title="Aceptar">✔️</button>
+            <button class="toast-btn" onclick="window.responderInvitacion(${idInv}, false, '${senderName}', this)" title="Rechazar">❌</button>
+        </div>
+    `;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        const toastElement = document.getElementById(`toast-inv-${idInv}`);
+        if (toastElement) {
+            toastElement.classList.add('fade-out');
+            setTimeout(() => toastElement.remove(), 400);
+            window.invitacionesPendientes.push(inv);
+            if (typeof actualizarBandejaMensajes === "function") actualizarBandejaMensajes();
+            if (typeof actualizarNotificacionMensajes === "function") actualizarNotificacionMensajes();
+        }
+    }, 7000);
+};
+
+window.responderInvitacion = function(inviteId, aceptar, senderName, btnElement) {
+    if (btnElement) {
+        const toast = btnElement.closest('.toast');
+        if (toast) {
+            toast.classList.add('fade-out');
+            setTimeout(() => toast.remove(), 400);
+        }
+    }
+
+    window.invitacionesPendientes = window.invitacionesPendientes.filter(i => (i.inviteId || i.id) !== inviteId);
+    if (typeof actualizarBandejaMensajes === "function") actualizarBandejaMensajes();
+    if (typeof actualizarNotificacionMensajes === "function") actualizarNotificacionMensajes();
+
+    if (aceptar) {
+        irALobbyComoInvitado(senderName);
+        stompClient.send("/app/invite.accept", {}, JSON.stringify({ inviteId: inviteId }));
+    }
+};
 
 function conectarWebSocket(token, username) {
     if (!token) return;
@@ -15,22 +140,28 @@ function conectarWebSocket(token, username) {
     stompClient.connect({'Authorization': 'Bearer ' + token}, function (frame) {
         console.log('✅ Conectado como: ' + currentUser);
 
+        // 🔥 NUEVO: ESCUCHAR PETICIONES DE AMISTAD EN TIEMPO REAL
+        stompClient.subscribe(`/topic/friends.${currentUser}`, function (message) {
+            const data = JSON.parse(message.body);
+            if (data.type === "FRIEND_REQUEST") {
+                // Sacamos el Toast Azul informando y actualizamos el numerito rojo
+                window.mostrarToastInfo(`🤝 ${data.sender} te ha enviado una solicitud de amistad.`);
+                if (typeof actualizarBandeja === "function") {
+                    actualizarBandeja(); // Esto recalcula el badge rojo al instante
+                }
+            }
+        });
+
         stompClient.subscribe(`/topic/invites.${currentUser}`, function (message) {
             const inv = JSON.parse(message.body);
-            const idInv = inv.inviteId || inv.id;
-            const senderName = inv.senderUsername || inv.sender || "Un amigo";
-
-            if (confirm(`¡${senderName} te invita a un Royale!\n¿Aceptar e ir a la sala?`)) {
-                irALobbyComoInvitado(senderName);
-                stompClient.send("/app/invite.accept", {}, JSON.stringify({ inviteId: idInv }));
-            }
+            window.mostrarToastInvitacion(inv);
         });
 
         stompClient.subscribe(`/topic/lobby.guest.joined.${currentUser}`, function (message) {
             const data = JSON.parse(message.body);
             
             if (data.type === "KICKED") {
-                alert("❌ Has sido expulsado de la sala por el anfitrión.");
+                window.mostrarToastError("❌ Has sido expulsado de la sala.");
                 sessionStorage.removeItem('current_game_id');
                 sessionStorage.removeItem('current_host_name');
                 sessionStorage.removeItem('last_voluntary_game_id'); 
@@ -43,7 +174,7 @@ function conectarWebSocket(token, username) {
 
             if (data.type === "ROOM_CLOSED") {
                 const nombreDelHost = data.hostName ? data.hostName : "El anfitrión";
-                alert(`❌ ${nombreDelHost} ha cerrado la sala.`); 
+                window.mostrarToastError(`❌ ${nombreDelHost} ha cerrado la sala.`); 
                 
                 sessionStorage.removeItem('current_game_id');
                 sessionStorage.removeItem('current_host_name');
@@ -153,7 +284,7 @@ function conectarWebSocket(token, username) {
 }
 
 window.expulsarJugador = function(usernameTarget) {
-    if (confirm(`¿Seguro que quieres expulsar a ${usernameTarget} de la sala?`)) {
+    window.mostrarToastConfirmacion(`¿Expulsar a <strong>${usernameTarget}</strong> de la sala?`, () => {
         const gameId = sessionStorage.getItem('current_game_id');
         if (stompClient && stompClient.connected && gameId) {
             stompClient.send("/app/lobby.kick", {}, JSON.stringify({
@@ -161,7 +292,7 @@ window.expulsarJugador = function(usernameTarget) {
                 usernameToKick: usernameTarget
             }));
         }
-    }
+    });
 };
 
 function irALobbyComoInvitado(hostName) {
@@ -180,7 +311,6 @@ function irALobbyComoInvitado(hostName) {
 }
 
 function irAPantallaDeJuego(players) {
-    // 🔥 EL ARREGLO: Forzamos al Enrutador a cambiar la URL a #screen-game
     const sLobby = document.getElementById('screen-lobby');
     const sGame = document.getElementById('screen-game');
     
@@ -201,7 +331,8 @@ function enviarInvitacionJuego(amigoUsername, categoria) {
         receiverUsername: amigoUsername,
         categoryName: categoria || "Cultura General"
     }));
-    alert("🚀 Invitación enviada a " + amigoUsername + "!");
+    
+    window.mostrarToastExito("Has invitado a " + amigoUsername);
 }
 
 function enviarRespuesta(gameId, respuestaSeleccionada) {
