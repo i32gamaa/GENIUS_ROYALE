@@ -1,5 +1,5 @@
 // ==========================================
-// js/menu.js - VERSIÓN BATTLE ROYALE + MENSAJES EN TIEMPO REAL
+// js/menu.js - FIX AUSENTES Y SALIDAS
 // ==========================================
 
 window.verificarBotonReconexion = function() {
@@ -100,6 +100,10 @@ function inicializarMenu() {
             sessionStorage.removeItem('current_game_id');
             sessionStorage.removeItem('current_host_name');
             window.verificarBotonReconexion(); 
+            
+            // 🔥 EL FIX: Avisamos a la URL de que volvemos al menú para que el Anti-Imán nos proteja
+            window.location.hash = '#screen-menu';
+            
             if (typeof cambiarPantalla === "function") cambiarPantalla(sLobby, sMenu); 
         };
     }
@@ -109,6 +113,9 @@ function inicializarMenu() {
             const lastGameId = sessionStorage.getItem('last_voluntary_game_id');
             if (lastGameId && stompClient && stompClient.connected) {
                 if (typeof cambiarPantalla === "function") cambiarPantalla(sMenu, sLobby);
+                
+                // 🔥 EL FIX: Avisamos a la URL de que volvemos a la sala activamente
+                window.location.hash = '#screen-lobby';
                 
                 const waitingMsg = document.getElementById('waiting-msg');
                 if (waitingMsg) {

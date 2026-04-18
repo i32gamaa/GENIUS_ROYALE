@@ -255,38 +255,47 @@ function mostrarPodioFinal(update) {
     scoresHtml += "</ul>";
     leaderboard.innerHTML = scoresHtml;
 
-    document.getElementById('btn-exit-to-menu').style.display = 'none';
+    const btnExit = document.getElementById('btn-exit-to-menu');
+    if (btnExit) btnExit.style.display = 'none';
     
     const btnVolver = document.getElementById('btn-back-to-lobby');
-    btnVolver.style.width = '100%';
-    btnVolver.style.maxWidth = '400px';
+    if (btnVolver) {
+        btnVolver.style.width = '100%';
+        btnVolver.style.maxWidth = '400px';
 
-    // 🔥 EL ARREGLO FINAL: Volvemos a la sala limpiando todo bien
-    btnVolver.onclick = () => {
-        resetearVistasDeJuego(); 
-        
-        const sGame = document.getElementById('screen-game');
-        const sLobby = document.getElementById('screen-lobby');
-        
-        // Obligamos al navegador a cambiar la URL
-        window.location.hash = '#screen-lobby';
-        
-        // Seguro de vida: apagamos la pantalla del juego a mano por si acaso
-        sGame.style.display = 'none';
-        sGame.classList.add('hidden');
+        btnVolver.onclick = () => {
+            resetearVistasDeJuego(); 
+            
+            const sGame = document.getElementById('screen-game');
+            const sLobby = document.getElementById('screen-lobby');
+            
+            // 🔥 FIX: Teletransporte directo sin generar historial basura
+            window.location.replace(window.location.pathname + window.location.search + '#screen-lobby');
+            
+            if (typeof cambiarPantalla === "function") cambiarPantalla(sGame, sLobby);
 
-        if (typeof cambiarPantalla === "function") cambiarPantalla(sGame, sLobby);
-
-        // Pedimos al servidor que nos devuelva a la sala con los demás
-        if (typeof stompClient !== 'undefined' && stompClient.connected) {
-            stompClient.send("/app/lobby.sync", {}, JSON.stringify({}));
-        }
-    };
+            if (typeof stompClient !== 'undefined' && stompClient.connected) {
+                stompClient.send("/app/lobby.sync", {}, JSON.stringify({}));
+            }
+        };
+    }
 }
 
 function resetearVistasDeJuego() {
-    document.getElementById('game-results').style.display = 'none';
-    document.getElementById('game-ui').style.display = 'none';
-    document.getElementById('game-loading').style.display = 'none'; 
+    const results = document.getElementById('game-results');
+    if (results) results.style.display = 'none';
+    
+    const ui = document.getElementById('game-ui');
+    if (ui) ui.style.display = 'none';
+    
+    const loading = document.getElementById('game-loading');
+    if (loading) loading.style.display = 'none'; 
+    
     gameOverData = null; 
+    
+    const sGame = document.getElementById('screen-game');
+    if (sGame) {
+        sGame.style.display = 'none';
+        sGame.classList.add('hidden');
+    }
 }

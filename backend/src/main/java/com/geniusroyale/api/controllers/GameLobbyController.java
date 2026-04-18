@@ -1,5 +1,6 @@
 package com.geniusroyale.api.controllers;
 
+import com.geniusroyale.api.dto.*;
 import com.geniusroyale.api.models.*;
 import com.geniusroyale.api.repositories.*;
 import jakarta.annotation.PostConstruct;
@@ -73,6 +74,55 @@ public class GameLobbyController {
             User host = invite.getSender();
 
             Game sala = SALAS_EN_VIVO.get(host.getId());
+
+            // 🔥 NUEVO: GESTIÓN DE ABANDONO DE SALA ANTERIOR 🔥
+            // 1. Buscamos si el que acepta la invitación ya estaba en otra sala
+            Game oldRoom = null;
+            for (Game g : SALAS_EN_VIVO.values()) {
+                if (g.getPlayers().stream().anyMatch(p -> p.getId().equals(guest.getId()))) {
+                    oldRoom = g;
+                    break;
+                }
+            }
+
+            // 2. Si estaba en una sala distinta a la que va a entrar...
+            if (oldRoom != null && (sala == null || !oldRoom.getId().equals(sala.getId()))) {
+                
+                // ¿Era el Host de esa sala antigua?
+                if (oldRoom.getPlayers().get(0).getId().equals(guest.getId())) {
+                    // Sí. Entonces CERRAR SALA ANTIGUA y avisar a sus invitados
+                    Map<String, Object> closeMsg = new HashMap<>();
+                    closeMsg.put("type", "ROOM_CLOSED");
+                    closeMsg.put("hostName", guest.getUsername());
+                    
+                    for (User p : oldRoom.getPlayers()) {
+                        if (!p.getId().equals(guest.getId())) {
+                            messagingTemplate.convertAndSend("/topic/lobby.guest.joined." + p.getUsername(), closeMsg);
+                        }
+                    }
+                    
+                    Integer hostKey = null;
+                    for (Map.Entry<Integer, Game> entry : SALAS_EN_VIVO.entrySet()) {
+                        if (entry.getValue().getId().equals(oldRoom.getId())) {
+                            hostKey = entry.getKey();
+                            break;
+                        }
+                    }
+                    if (hostKey != null) SALAS_EN_VIVO.remove(hostKey);
+                    ESTADOS_SALA.remove(oldRoom.getId());
+                    
+                } else {
+                    // No, era solo un invitado. LO BORRAMOS POR COMPLETO de la sala antigua.
+                    oldRoom.getPlayers().removeIf(p -> p.getId().equals(guest.getId()));
+                    oldRoom.getScores().remove(guest.getUsername());
+                    if (ESTADOS_SALA.containsKey(oldRoom.getId())) {
+                        ESTADOS_SALA.get(oldRoom.getId()).remove(guest.getUsername());
+                    }
+                    // Avisamos a los que se quedan en la sala antigua de que este jugador se fue
+                    broadcastLobbyUpdate(oldRoom);
+                }
+            }
+            // 🔥 FIN DE LA GESTIÓN DE ABANDONO 🔥
 
             if (sala == null) {
                 sala = new Game();
@@ -226,8 +276,6 @@ public class GameLobbyController {
 
         try {
             Game dbGame = new Game();
-            // 🔥 MAGIA: Creamos un ID único para la Partida en Base de Datos,
-            // pero NO borramos la sala de la RAM (partyRoom).
             dbGame.setId(UUID.randomUUID().toString()); 
             dbGame.setGameState("IN_PROGRESS");
             dbGame.setCurrentQuestionIndex(0);
@@ -251,16 +299,14 @@ public class GameLobbyController {
 
             gameRepository.save(dbGame);
 
-            // Restauramos a todos a estado "Listo" para cuando vuelvan al Lobby tras jugar
             Map<String, String> estados = ESTADOS_SALA.getOrDefault(partyRoom.getId(), new ConcurrentHashMap<>());
             for (User p : partyRoom.getPlayers()) {
                 estados.put(p.getUsername(), "Listo");
             }
             ESTADOS_SALA.put(partyRoom.getId(), estados);
 
-            // Avisamos a los móviles para que carguen la partida nueva
             Map<String, Object> startSignal = new HashMap<>();
-            startSignal.put("gameId", dbGame.getId()); // ¡Les mandamos el ID de la BD, no el de la RAM!
+            startSignal.put("gameId", dbGame.getId()); 
             startSignal.put("category", categoryName);
             startSignal.put("players", partyRoom.getPlayers().stream().map(User::getUsername).collect(Collectors.toList()));
 

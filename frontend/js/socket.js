@@ -1,5 +1,5 @@
 // ==========================================
-// js/socket.js - VERSIÓN NOTIFICACIONES PREMIUM
+// js/socket.js - VERSIÓN ANTI-IMÁN 🛡️
 // ==========================================
 let stompClient = null;
 let currentUser = "";
@@ -124,6 +124,11 @@ window.responderInvitacion = function(inviteId, aceptar, senderName, btnElement)
     if (typeof actualizarNotificacionMensajes === "function") actualizarNotificacionMensajes();
 
     if (aceptar) {
+        sessionStorage.removeItem('current_game_id');
+        sessionStorage.removeItem('current_host_name');
+        sessionStorage.removeItem('last_voluntary_game_id'); 
+        if (typeof verificarBotonReconexion === "function") verificarBotonReconexion();
+
         irALobbyComoInvitado(senderName);
         stompClient.send("/app/invite.accept", {}, JSON.stringify({ inviteId: inviteId }));
     }
@@ -140,14 +145,12 @@ function conectarWebSocket(token, username) {
     stompClient.connect({'Authorization': 'Bearer ' + token}, function (frame) {
         console.log('✅ Conectado como: ' + currentUser);
 
-        // 🔥 NUEVO: ESCUCHAR PETICIONES DE AMISTAD EN TIEMPO REAL
         stompClient.subscribe(`/topic/friends.${currentUser}`, function (message) {
             const data = JSON.parse(message.body);
             if (data.type === "FRIEND_REQUEST") {
-                // Sacamos el Toast Azul informando y actualizamos el numerito rojo
                 window.mostrarToastInfo(`🤝 ${data.sender} te ha enviado una solicitud de amistad.`);
                 if (typeof actualizarBandeja === "function") {
-                    actualizarBandeja(); // Esto recalcula el badge rojo al instante
+                    actualizarBandeja(); 
                 }
             }
         });
@@ -188,8 +191,35 @@ function conectarWebSocket(token, username) {
             }
 
             if (data.type === "LOBBY_UPDATE") {
-                const list = document.getElementById('lobby-players-list');
                 
+                const lastLeftId = sessionStorage.getItem('last_voluntary_game_id');
+                if (lastLeftId === data.gameId) {
+                    if (window.location.hash !== '#screen-lobby') {
+                        return; 
+                    } else {
+                        sessionStorage.removeItem('last_voluntary_game_id');
+                        if (typeof verificarBotonReconexion === "function") verificarBotonReconexion();
+                    }
+                }
+
+                const isViewingResults = document.getElementById('game-results') && document.getElementById('game-results').style.display === 'block';
+                const currentHash = window.location.hash;
+                
+                if (!isViewingResults && (currentHash === '#screen-game' || (data.gameId !== "" && currentHash !== '#screen-lobby'))) {
+                    document.querySelectorAll('.screen').forEach(s => {
+                        s.style.display = 'none';
+                        s.classList.add('hidden');
+                    });
+                    const sLobby = document.getElementById('screen-lobby');
+                    if (sLobby) {
+                        sLobby.classList.remove('hidden');
+                        sLobby.style.display = 'block'; 
+                        window.location.hash = '#screen-lobby';
+                    }
+                    if (typeof resetearVistasDeJuego === "function") resetearVistasDeJuego();
+                }
+
+                const list = document.getElementById('lobby-players-list');
                 if (list && data.playersInfo) {
                     list.innerHTML = ""; 
                     
@@ -267,7 +297,8 @@ function conectarWebSocket(token, username) {
         });
 
         setTimeout(() => {
-            if (window.location.hash === '#screen-lobby') {
+            const hash = window.location.hash;
+            if (hash === '#screen-lobby' || hash === '#screen-game') {
                 const list = document.getElementById('lobby-players-list');
                 if (list && list.children.length === 0) {
                     list.innerHTML = `<li style="margin-bottom:10px;">👑 <strong style="color: #FFD700">${currentUser} (Host)</strong></li>`;
@@ -296,13 +327,25 @@ window.expulsarJugador = function(usernameTarget) {
 };
 
 function irALobbyComoInvitado(hostName) {
-    const sMenu = document.getElementById('screen-menu');
+    document.querySelectorAll('.screen').forEach(s => {
+        s.style.display = 'none';
+        s.classList.add('hidden');
+    });
+    
     const sLobby = document.getElementById('screen-lobby');
+    if (sLobby) {
+        sLobby.classList.remove('hidden');
+        sLobby.style.display = 'block'; 
+        window.location.hash = '#screen-lobby';
+    }
+
+    if (typeof resetearVistasDeJuego === "function") {
+        resetearVistasDeJuego();
+    }
+    
     const waitingMsg = document.getElementById('waiting-msg');
     const hostControls = document.getElementById('host-controls');
 
-    if (typeof cambiarPantalla === "function") cambiarPantalla(sMenu, sLobby);
-    
     if (waitingMsg) {
         waitingMsg.innerText = "Conectando con la sala...";
         waitingMsg.style.display = 'block';
