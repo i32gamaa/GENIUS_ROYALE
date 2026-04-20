@@ -24,8 +24,6 @@ public class AmistadController {
     @Autowired private UserRepository userRepository;
     @Autowired private AmistadRepository amistadRepository;
     @Autowired private JwtService jwtService;
-    
-    // 🔥 AÑADIMOS EL MENSAJERO DE WEBSOCKET 🔥
     @Autowired private SimpMessagingTemplate messagingTemplate;
 
     @PostMapping("/solicitar")
@@ -33,30 +31,21 @@ public class AmistadController {
         try {
             String token = authHeader.substring(7);
             String senderEmail = jwtService.extractEmail(token).trim().toLowerCase();
-            
             String receiverUsername = payload.get("username");
-            
-            if (receiverUsername == null) {
-                receiverUsername = payload.get("email"); 
-            }
+            if (receiverUsername == null) receiverUsername = payload.get("email"); 
 
             if (receiverUsername == null || receiverUsername.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "Falta el nombre de usuario."));
             }
-            
             receiverUsername = receiverUsername.trim();
 
             User sender = userRepository.findByEmail(senderEmail).orElseThrow();
-            
             if (sender.getUsername().equalsIgnoreCase(receiverUsername)) {
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "No puedes enviarte una solicitud a ti mismo."));
             }
 
             User receiver = userRepository.findByUsername(receiverUsername).orElse(null);
-
-            if (receiver == null) {
-                return ResponseEntity.badRequest().body(new ApiResponse(false, "Usuario no encontrado con ese nombre."));
-            }
+            if (receiver == null) return ResponseEntity.badRequest().body(new ApiResponse(false, "Usuario no encontrado."));
 
             List<Amistad> todas = amistadRepository.findAll();
             String receiverEmail = receiver.getEmail().trim().toLowerCase();
@@ -65,16 +54,10 @@ public class AmistadController {
                 String u1Email = a.getUsuario1().getEmail().trim().toLowerCase();
                 String u2Email = a.getUsuario2().getEmail().trim().toLowerCase();
 
-                boolean esLaMismaRelacion = 
-                    (u1Email.equals(senderEmail) && u2Email.equals(receiverEmail)) ||
-                    (u1Email.equals(receiverEmail) && u2Email.equals(senderEmail));
-
+                boolean esLaMismaRelacion = (u1Email.equals(senderEmail) && u2Email.equals(receiverEmail)) || (u1Email.equals(receiverEmail) && u2Email.equals(senderEmail));
                 if (esLaMismaRelacion) {
-                    if ("ACEPTADA".equals(a.getEstado())) {
-                        return ResponseEntity.badRequest().body(new ApiResponse(false, "❌ Ya tienes a este usuario en tu lista de amigos."));
-                    } else if ("PENDIENTE".equals(a.getEstado())) {
-                        return ResponseEntity.badRequest().body(new ApiResponse(false, "⏳ Ya le has enviado una solicitud (o él a ti). Espera a que responda."));
-                    }
+                    if ("ACEPTADA".equals(a.getEstado())) return ResponseEntity.badRequest().body(new ApiResponse(false, "❌ Ya es tu amigo."));
+                    else if ("PENDIENTE".equals(a.getEstado())) return ResponseEntity.badRequest().body(new ApiResponse(false, "⏳ Ya hay una solicitud pendiente."));
                 }
             }
 
@@ -84,7 +67,6 @@ public class AmistadController {
             nuevaAmistad.setEstado("PENDIENTE");
             amistadRepository.save(nuevaAmistad);
 
-            // 🔥 LA MAGIA: Avisamos al receptor en tiempo real por WebSocket
             Map<String, Object> notificacion = new HashMap<>();
             notificacion.put("type", "FRIEND_REQUEST");
             notificacion.put("sender", sender.getUsername());
@@ -92,7 +74,7 @@ public class AmistadController {
 
             return ResponseEntity.ok(new ApiResponse(true, "✅ Solicitud enviada a " + receiver.getUsername()));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(new ApiResponse(false, "Error en el servidor: " + e.getMessage()));
+            return ResponseEntity.status(500).body(new ApiResponse(false, "Error: " + e.getMessage()));
         }
     }
 
@@ -102,7 +84,6 @@ public class AmistadController {
         String email = jwtService.extractEmail(token).trim().toLowerCase();
 
         List<Amistad> todas = amistadRepository.findAll();
-        
         List<UserProfileDTO> amigos = todas.stream()
                 .filter(a -> "ACEPTADA".equals(a.getEstado()) && 
                             (a.getUsuario1().getEmail().trim().toLowerCase().equals(email) || 
@@ -112,7 +93,6 @@ public class AmistadController {
                 .values().stream()
                 .map(UserProfileDTO::new)
                 .collect(Collectors.toList());
-
         return ResponseEntity.ok(amigos);
     }
 
@@ -125,12 +105,11 @@ public class AmistadController {
         if (amistad == null) return ResponseEntity.badRequest().body(new ApiResponse(false, "Solicitud no encontrada"));
 
         if (!amistad.getUsuario2().getEmail().trim().toLowerCase().equals(email)) {
-            return ResponseEntity.status(403).body(new ApiResponse(false, "No tienes permiso para aceptar esta solicitud"));
+            return ResponseEntity.status(403).body(new ApiResponse(false, "No tienes permiso"));
         }
 
         amistad.setEstado("ACEPTADA");
         amistadRepository.save(amistad);
-
         return ResponseEntity.ok(new ApiResponse(true, "Amistad aceptada."));
     }
 
@@ -149,7 +128,6 @@ public class AmistadController {
                     return map;
                 })
                 .collect(Collectors.toList());
-
         return ResponseEntity.ok(pendientes);
     }
 
@@ -164,8 +142,23 @@ public class AmistadController {
         if (!amistad.getUsuario2().getEmail().trim().toLowerCase().equals(email)) {
             return ResponseEntity.status(403).body(new ApiResponse(false, "No tienes permiso"));
         }
-
         amistadRepository.delete(amistad);
         return ResponseEntity.ok(new ApiResponse(true, "Solicitud rechazada"));
+    }
+
+    // 🔥 NUEVO: Consultar estadísticas de un amigo
+    @GetMapping("/amigo/{username}/stats")
+    public ResponseEntity<?> getAmigoStats(@RequestHeader("Authorization") String authHeader, @PathVariable String username) {
+        User amigo = userRepository.findByUsername(username).orElse(null);
+        if(amigo == null) return ResponseEntity.badRequest().body(new ApiResponse(false, "Usuario no encontrado"));
+        
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("username", amigo.getUsername());
+        stats.put("partidasGanadas", amigo.getPartidasGanadas());
+        stats.put("preguntasAcertadas", amigo.getPreguntasAcertadas());
+        stats.put("createdAt", amigo.getCreatedAt());
+        stats.put("fotoPerfil", amigo.getFotoPerfil());
+        
+        return ResponseEntity.ok(stats);
     }
 }

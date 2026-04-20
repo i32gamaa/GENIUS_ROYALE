@@ -17,8 +17,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Controller
@@ -29,9 +28,36 @@ public class GamePlayController {
     @Autowired private UserRepository userRepository;
     @Autowired private QuestionRepository questionRepository;
 
-    // 🔥 EL MOTOR DE RESPUESTAS EN RAM: 
-    // Inmune a colisiones aunque 10 jugadores manden TIMEOUT en el mismo milisegundo.
     private static final Map<String, Map<String, String>> RESPUESTAS_EN_VIVO = new ConcurrentHashMap<>();
+
+    @MessageMapping("/game.leave")
+    @Transactional
+    public void leaveGame(Principal principal, @Payload Map<String, String> payload) {
+        String username = userRepository.findByEmail(principal.getName()).orElseThrow().getUsername();
+        String gameId = payload.get("gameId");
+        
+        Game game = gameRepository.findById(gameId).orElse(null);
+        if (game == null || "FINISHED".equals(game.getGameState())) return;
+
+        if (!game.getEliminatedPlayers().contains(username)) {
+            game.getEliminatedPlayers().add(username);
+            
+            GameUpdateDTO update = new GameUpdateDTO();
+            update.setType("PLAYER_LEFT");
+            update.setWinnerUsername(username); 
+            for (User u : game.getPlayers()) {
+                messagingTemplate.convertAndSend("/topic/game.updates." + u.getUsername(), update);
+            }
+
+            long aliveCount = game.getPlayers().stream().filter(p -> !game.getEliminatedPlayers().contains(p.getUsername())).count();
+            
+            if (aliveCount <= 1 && game.getPlayers().size() > 1) {
+                terminarPartidaAbruptamente(game);
+            } else {
+                gameRepository.save(game);
+            }
+        }
+    }
 
     @MessageMapping("/game.answer")
     @Transactional
@@ -41,86 +67,176 @@ public class GamePlayController {
         Game game = gameRepository.findById(answer.getGameId()).orElseThrow();
 
         if ("FINISHED".equals(game.getGameState())) return;
+        if (game.getEliminatedPlayers().contains(username)) return;
 
-        // 1. Obtenemos la "mesa" de respuestas de esta partida en la RAM
         Map<String, String> respuestasPartida = RESPUESTAS_EN_VIVO.computeIfAbsent(game.getId(), k -> new ConcurrentHashMap<>());
 
-        // 2. Si el jugador no había respondido ya, guardamos su respuesta al instante
         if (!respuestasPartida.containsKey(username)) {
             respuestasPartida.put(username, answer.getSelectedAnswer());
-
-            // Avisar a los demás de que este jugador ya ha contestado (para que el reloj les lata)
             GameUpdateDTO rivalUpdate = new GameUpdateDTO();
-            rivalUpdate.setType("RIVAL_ANSWERED");
+            rivalUpdate.setType("PLAYER_ANSWERED_LIVE");
+            rivalUpdate.setWinnerUsername(username); 
+            rivalUpdate.setCorrectAnswer(answer.getSelectedAnswer()); 
+            
             for (User u : game.getPlayers()) {
-                if (!u.getUsername().equals(username)) {
-                    messagingTemplate.convertAndSend("/topic/game.updates." + u.getUsername(), rivalUpdate);
-                }
+                messagingTemplate.convertAndSend("/topic/game.updates." + u.getUsername(), rivalUpdate);
             }
         }
 
-        // 3. ¿Han respondido TODOS los jugadores? (Con synchronized evitamos que 2 TIMEOUTS evalúen esto a la vez)
+        long aliveCount = game.getPlayers().stream().filter(p -> !game.getEliminatedPlayers().contains(p.getUsername())).count();
+
         synchronized (respuestasPartida) {
-            if (respuestasPartida.size() >= game.getPlayers().size()) {
-                // Hacemos una copia de las respuestas y limpiamos la RAM para la siguiente ronda
+            if (respuestasPartida.size() >= aliveCount && aliveCount > 0) {
                 Map<String, String> respuestasFinales = new HashMap<>(respuestasPartida);
                 respuestasPartida.clear();
-                
-                // Procesamos quién ha ganado
-                processRound(game, respuestasFinales);
+                processRound(game, respuestasFinales, aliveCount);
             }
         }
     }
 
-    private void processRound(Game game, Map<String, String> respuestasFinales) {
+    private void processRound(Game game, Map<String, String> respuestasFinales, long aliveCount) {
         String[] questionIds = game.getQuestionIds().split(",");
         int questionIndex = game.getCurrentQuestionIndex();
         Question question = questionRepository.findById(Integer.parseInt(questionIds[questionIndex])).orElseThrow();
         String correctAnswer = question.getCorrectAnswer();
-        int scorePoints = getScore(question.getDifficultyLevel());
+        boolean isBattleRoyale = "Battle Royale".equals(game.getGameMode());
 
-        // 1. Comprobar aciertos de todos y sumar puntos en memoria
+        List<String> eliminadosEstaRonda = new ArrayList<>();
+
         for (Map.Entry<String, String> entry : respuestasFinales.entrySet()) {
-            if (correctAnswer.equals(entry.getValue())) {
-                String pName = entry.getKey();
+            String pName = entry.getKey();
+            String pAns = entry.getValue();
+
+            if (correctAnswer.equals(pAns)) {
                 int currentScore = game.getScores().getOrDefault(pName, 0);
-                game.getScores().put(pName, currentScore + scorePoints);
+                game.getScores().put(pName, currentScore + (isBattleRoyale ? 1 : getScore(question.getDifficultyLevel())));
+                
+                // 🔥 ESCUDO ANTI-NPE: Protegemos la suma por si la BD tiene NULL
+                User u = userRepository.findByUsername(pName).orElse(null);
+                if (u != null) {
+                    int currentCorrects = u.getPreguntasAcertadas() == null ? 0 : u.getPreguntasAcertadas();
+                    u.setPreguntasAcertadas(currentCorrects + 1);
+                    userRepository.save(u);
+                }
+            } else {
+                if (isBattleRoyale) {
+                    game.getEliminatedPlayers().add(pName);
+                    eliminadosEstaRonda.add(pName);
+                }
             }
         }
 
-        // 2. Enviar el resultado de la ronda a todos a la vez
         GameUpdateDTO roundResult = new GameUpdateDTO();
         roundResult.setType("ROUND_RESULT");
         roundResult.setCorrectAnswer(correctAnswer);
         roundResult.setScores(game.getScores());
+        
+        roundResult.setWinnerUsername(eliminadosEstaRonda.isEmpty() ? "" : String.join(",", eliminadosEstaRonda));
 
         for (User u : game.getPlayers()) {
             messagingTemplate.convertAndSend("/topic/game.updates." + u.getUsername(), roundResult);
         }
 
-        // 3. Preparar para la siguiente ronda
         game.setCurrentQuestionIndex(questionIndex + 1);
+        long newAliveCount = aliveCount - eliminadosEstaRonda.size();
 
-        // 4. Comprobar si es el final de la partida
-        if (game.getCurrentQuestionIndex() >= questionIds.length) {
-            game.setGameState("FINISHED");
-            
-            String winner = game.getScores().entrySet().stream()
-                .max(Map.Entry.comparingByValue())
-                .map(Map.Entry::getKey)
-                .orElse("Empate");
+        if (game.getCurrentQuestionIndex() >= questionIds.length || (isBattleRoyale && newAliveCount <= 1)) {
+            terminarPartida(game);
+        } else {
+            gameRepository.save(game);
+        }
+    }
 
-            GameUpdateDTO gameOver = new GameUpdateDTO();
-            gameOver.setType("GAME_OVER");
-            gameOver.setWinnerUsername(winner);
-            gameOver.setScores(game.getScores());
-            
-            for (User u : game.getPlayers()) {
-                messagingTemplate.convertAndSend("/topic/game.updates." + u.getUsername(), gameOver);
+    private void terminarPartida(Game game) {
+        game.setGameState("FINISHED");
+        boolean isBattleRoyale = "Battle Royale".equals(game.getGameMode());
+        
+        int maxScore = game.getScores().values().stream().max(Integer::compare).orElse(0);
+        List<String> tiedPlayers = new ArrayList<>();
+        
+        if (isBattleRoyale) {
+            long aliveCount = game.getPlayers().stream().filter(p -> !game.getEliminatedPlayers().contains(p.getUsername())).count();
+            if (aliveCount == 1) {
+                String aliveWinner = game.getPlayers().stream().filter(p -> !game.getEliminatedPlayers().contains(p.getUsername())).findFirst().get().getUsername();
+                tiedPlayers.add(aliveWinner);
+            } else {
+                for (Map.Entry<String, Integer> e : game.getScores().entrySet()) {
+                    if (e.getValue() != null && e.getValue().equals(maxScore)) tiedPlayers.add(e.getKey());
+                }
+            }
+        } else {
+            for (Map.Entry<String, Integer> e : game.getScores().entrySet()) {
+                if (e.getValue() != null && e.getValue().equals(maxScore)) tiedPlayers.add(e.getKey());
             }
         }
 
-        // 5. Por último, guardamos todo el progreso oficial (Puntos y Pregunta actual) en PostgreSQL
+        Map<String, String> diceRolls = new HashMap<>();
+        for (User p : game.getPlayers()) {
+            diceRolls.put(p.getUsername(), String.valueOf((int) (Math.random() * 6) + 1));
+        }
+
+        if (tiedPlayers.size() > 1) {
+            List<Integer> availableRolls = new ArrayList<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+            Collections.shuffle(availableRolls);
+            for (int i = 0; i < tiedPlayers.size(); i++) {
+                diceRolls.put(tiedPlayers.get(i), String.valueOf(availableRolls.get(i)));
+            }
+        }
+
+        String winner = "Empate";
+        if (tiedPlayers.size() == 1) {
+            winner = tiedPlayers.get(0);
+        } 
+        
+        // 🔥 ESCUDO ANTI-NPE 2: Salvamos al ganador sin crashear la BD
+        String dbWinner = tiedPlayers.size() > 1 ? tiedPlayers.stream().max(Comparator.comparingInt(p -> Integer.parseInt(diceRolls.get(p)))).get() : tiedPlayers.get(0);
+        
+        User w = userRepository.findByUsername(dbWinner).orElse(null);
+        if (w != null) {
+            int currentWins = w.getPartidasGanadas() == null ? 0 : w.getPartidasGanadas();
+            w.setPartidasGanadas(currentWins + 1);
+            userRepository.save(w);
+        }
+
+        GameUpdateDTO gameOver = new GameUpdateDTO();
+        gameOver.setType("GAME_OVER");
+        gameOver.setWinnerUsername(winner); 
+        gameOver.setScores(game.getScores());
+        gameOver.setCorrectAnswer(diceRolls.toString()); 
+        
+        for (User u : game.getPlayers()) {
+            messagingTemplate.convertAndSend("/topic/game.updates." + u.getUsername(), gameOver);
+        }
+        gameRepository.save(game);
+    }
+
+    private void terminarPartidaAbruptamente(Game game) {
+        game.setGameState("FINISHED");
+        
+        String winner = game.getPlayers().stream()
+                .filter(p -> !game.getEliminatedPlayers().contains(p.getUsername()))
+                .findFirst()
+                .map(User::getUsername)
+                .orElse("Empate");
+
+        if (!"Empate".equals(winner)) {
+            User w = userRepository.findByUsername(winner).orElse(null);
+            if (w != null) {
+                int currentWins = w.getPartidasGanadas() == null ? 0 : w.getPartidasGanadas();
+                w.setPartidasGanadas(currentWins + 1);
+                userRepository.save(w);
+            }
+        }
+
+        GameUpdateDTO gameOver = new GameUpdateDTO();
+        gameOver.setType("GAME_OVER_ABORTED"); 
+        gameOver.setWinnerUsername(winner);
+        gameOver.setScores(game.getScores());
+        gameOver.setCorrectAnswer("{}"); 
+        
+        for (User u : game.getPlayers()) {
+            messagingTemplate.convertAndSend("/topic/game.updates." + u.getUsername(), gameOver);
+        }
         gameRepository.save(game);
     }
 

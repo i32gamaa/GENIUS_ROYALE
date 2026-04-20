@@ -1,5 +1,5 @@
 // ==========================================
-// js/menu.js - FIX AUSENTES Y SALIDAS
+// js/menu.js - VERSIÓN PERFILES Y COMPRESOR 📸⚡
 // ==========================================
 
 window.verificarBotonReconexion = function() {
@@ -39,13 +39,229 @@ window.actualizarBandejaMensajes = function() {
 };
 
 window.actualizarNotificacionMensajes = function() {
-    const btn = document.getElementById('btn-messages');
-    if (!btn) return;
+    const badge = document.getElementById('messages-badge');
+    if (!badge) return;
+    
     if (window.invitacionesPendientes && window.invitacionesPendientes.length > 0) {
-        btn.innerHTML = `✉️ Mensajes <span class="badge" style="display:inline-block; animation: pulso-logo 1.5s infinite;">${window.invitacionesPendientes.length}</span>`;
+        badge.innerText = window.invitacionesPendientes.length;
+        badge.style.display = 'inline-block';
     } else {
-        btn.innerHTML = "✉️ Mensajes";
+        badge.style.display = 'none';
     }
+};
+
+window.ejecutarIntroCinematica = function() {
+    const introOverlay = document.getElementById('login-intro-animation');
+    const gridMenu = document.getElementById('main-grid-menu');
+    const sidebar = document.getElementById('menu-sidebar'); 
+    
+    if (!introOverlay || !gridMenu) return;
+
+    if (!sessionStorage.getItem('login_intro_played')) {
+        introOverlay.style.display = 'flex';
+        introOverlay.style.opacity = '1';
+        gridMenu.style.opacity = '0';
+        if (sidebar) sidebar.style.transform = 'translateX(-100%)';
+        
+        const logo = document.getElementById('cinematic-logo');
+        const title = document.getElementById('cinematic-title');
+        const subtitle = document.getElementById('cinematic-subtitle');
+        
+        if (logo) {
+            logo.style.transition = 'none';
+            logo.style.opacity = '0';
+            logo.style.transform = 'scale(0.5) translateY(20px)';
+        }
+        title.style.transition = 'none';
+        subtitle.style.transition = 'none';
+        title.style.opacity = '0'; 
+        title.style.transform = 'translateY(40px)';
+        subtitle.style.opacity = '0'; 
+        subtitle.style.transform = 'translateY(20px)';
+        
+        void title.offsetWidth;
+
+        if (logo) logo.style.transition = 'all 1.5s cubic-bezier(0.25, 1, 0.5, 1)';
+        title.style.transition = 'all 1.5s cubic-bezier(0.25, 1, 0.5, 1) 0.3s'; 
+        subtitle.style.transition = 'all 1.5s ease 0.8s';
+
+        setTimeout(() => {
+            if (logo) {
+                logo.style.opacity = '1';
+                logo.style.transform = 'scale(1) translateY(0)';
+            }
+            title.style.opacity = '1'; 
+            title.style.transform = 'translateY(0)';
+        }, 100);
+        
+        setTimeout(() => {
+            subtitle.style.opacity = '1'; 
+            subtitle.style.transform = 'translateY(0)';
+        }, 800);
+        
+        setTimeout(() => {
+            introOverlay.style.opacity = '0';
+            gridMenu.style.opacity = '1';
+            if (sidebar) sidebar.style.transform = 'translateX(0)';
+            
+            setTimeout(() => { 
+                introOverlay.style.display = 'none'; 
+            }, 1000);
+        }, 4500); 
+        
+        sessionStorage.setItem('login_intro_played', 'true');
+    } else {
+        introOverlay.style.display = 'none';
+        gridMenu.style.opacity = '1';
+        if (sidebar) sidebar.style.transform = 'translateX(0)';
+    }
+};
+
+window.cargarMiPerfil = function() {
+    fetch(`${window.API_BASE_URL}/api/auth/me`, { 
+        headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}` } 
+    })
+    .then(res => res.json())
+    .then(user => {
+        // Actualizamos la caché del avatar al instante
+        const avatarStr = user.fotoPerfil || 'images/default-profile.png';
+        sessionStorage.setItem('genius_avatar', avatarStr);
+
+        const modalName = document.getElementById('modal-my-username');
+        const modalWins = document.getElementById('stat-wins');
+        const modalCorrects = document.getElementById('stat-corrects');
+        const modalDate = document.getElementById('stat-date');
+        
+        const myPics = [document.getElementById('modal-my-photo'), document.getElementById('sidebar-profile-pic')];
+        
+        if (modalName) modalName.innerText = user.username;
+        if (modalWins) modalWins.innerText = user.partidasGanadas || 0;
+        if (modalCorrects) modalCorrects.innerText = user.preguntasAcertadas || 0;
+        if (modalDate && user.createdAt) {
+            modalDate.innerText = new Date(user.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+        }
+        
+        myPics.forEach(pic => {
+            if (pic) pic.src = avatarStr;
+        });
+    })
+    .catch(err => console.error("Error cargando perfil:", err));
+};
+
+window.abrirMiPerfil = function() {
+    document.getElementById('my-profile-modal').style.display = 'flex';
+    document.getElementById('my-profile-modal').classList.remove('hidden');
+    window.cargarMiPerfil();
+};
+
+window.cerrarMiPerfil = function() {
+    document.getElementById('my-profile-modal').style.display = 'none';
+};
+
+window.subirFotoPerfil = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 250; 
+            const MAX_HEIGHT = 250;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+            } else {
+                if (height > MAX_HEIGHT) {
+                    width *= MAX_HEIGHT / height;
+                    height = MAX_HEIGHT;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const base64String = canvas.toDataURL('image/jpeg', 0.8);
+            
+            fetch(`${window.API_BASE_URL}/api/auth/photo`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ foto: base64String }) 
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    window.mostrarToastExito("📸 Foto actualizada");
+                    window.cargarMiPerfil(); 
+                } else {
+                    window.mostrarToastError(data.message);
+                }
+            })
+            .catch(err => {
+                console.error("Error subiendo foto:", err);
+                window.mostrarToastError("Error al subir la foto.");
+            });
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+};
+
+window.abrirListaAmigosStats = function() {
+    const modal = document.getElementById('friends-stats-modal');
+    modal.style.display = 'flex';
+    modal.classList.remove('hidden');
+    document.getElementById('friend-stats-details').style.display = 'none';
+
+    const list = document.getElementById('friends-explorer-list');
+    list.innerHTML = "<li style='text-align:center;'><div class='loader'></div></li>";
+
+    fetch(`${window.API_BASE_URL}/api/amistad/lista`, { headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}` } })
+    .then(res => res.json())
+    .then(amigos => {
+        list.innerHTML = "";
+        if (amigos.length === 0) {
+            list.innerHTML = "<li>No tienes amigos aún. ¡Añade a alguien!</li>";
+            return;
+        }
+        amigos.forEach(a => {
+            list.innerHTML += `
+                <li style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; cursor: pointer; transition: background 0.3s;" onclick="window.verStatsAmigo('${a.username}')" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                    <span>${a.username}</span> 
+                    <span style="font-size: 1.2rem;">📊</span>
+                </li>`;
+        });
+    });
+};
+
+window.cerrarListaAmigosStats = function() {
+    document.getElementById('friends-stats-modal').style.display = 'none';
+};
+
+window.verStatsAmigo = function(username) {
+    const box = document.getElementById('friend-stats-details');
+    box.style.display = 'block';
+    
+    document.getElementById('friend-detail-name').innerText = "Cargando...";
+    document.getElementById('friend-detail-wins').innerText = "-";
+    document.getElementById('friend-detail-corrects').innerText = "-";
+
+    fetch(`${window.API_BASE_URL}/api/amistad/amigo/${username}/stats`, { headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}` } })
+    .then(res => res.json())
+    .then(stats => {
+        document.getElementById('friend-detail-name').innerText = stats.username;
+        document.getElementById('friend-detail-wins').innerText = stats.partidasGanadas || 0;
+        document.getElementById('friend-detail-corrects').innerText = stats.preguntasAcertadas || 0;
+        document.getElementById('friend-detail-photo').src = stats.fotoPerfil || 'images/default-profile.png';
+    });
 };
 
 function inicializarMenu() {
@@ -74,6 +290,8 @@ function inicializarMenu() {
     const btnAddLobby = document.getElementById('btn-add-friend-lobby');
     const inputFriendName = document.getElementById('input-friend-name');
 
+    window.cargarMiPerfil(); 
+    
     window.verificarBotonReconexion(); 
     actualizarBandeja(); 
 
@@ -101,7 +319,6 @@ function inicializarMenu() {
             sessionStorage.removeItem('current_host_name');
             window.verificarBotonReconexion(); 
             
-            // 🔥 EL FIX: Avisamos a la URL de que volvemos al menú para que el Anti-Imán nos proteja
             window.location.hash = '#screen-menu';
             
             if (typeof cambiarPantalla === "function") cambiarPantalla(sLobby, sMenu); 
@@ -114,7 +331,6 @@ function inicializarMenu() {
             if (lastGameId && stompClient && stompClient.connected) {
                 if (typeof cambiarPantalla === "function") cambiarPantalla(sMenu, sLobby);
                 
-                // 🔥 EL FIX: Avisamos a la URL de que volvemos a la sala activamente
                 window.location.hash = '#screen-lobby';
                 
                 const waitingMsg = document.getElementById('waiting-msg');
@@ -132,7 +348,20 @@ function inicializarMenu() {
             if (typeof cambiarPantalla === "function") cambiarPantalla(sMenu, sLobby);
             
             const list = document.getElementById('lobby-players-list');
-            if(list) list.innerHTML = `<li style="margin-bottom:10px;">👑 <strong style="color:#FFD700">${sessionStorage.getItem('genius_username')} (Host)</strong></li>`;
+            
+            // 🔥 PINTAMOS LA FOTO AL INSTANTE AL CREAR LA SALA 🔥
+            const myAvatar = sessionStorage.getItem('genius_avatar') || 'images/default-profile.png';
+            const myName = sessionStorage.getItem('genius_username');
+            
+            if(list) {
+                list.innerHTML = `
+                <li style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 10px;">
+                    <div style="display:flex; align-items:center;">
+                        <img src="${myAvatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover; margin-right:10px; border:2px solid #FFD700; vertical-align:middle;">
+                        👑 <strong style="color:#FFD700; margin-left:5px;">${myName} (Host)</strong>
+                    </div>
+                </li>`;
+            }
             
             const hostControls = document.getElementById('host-controls');
             const waitingMsg = document.getElementById('waiting-msg');
@@ -144,20 +373,47 @@ function inicializarMenu() {
             
             document.querySelectorAll('#panel-private-friends hr, #panel-private-friends h3:not(:first-of-type), .add-friend-box, #friends-list').forEach(el => el.style.display = '');
 
-            sessionStorage.setItem('current_host_name', sessionStorage.getItem('genius_username'));
+            sessionStorage.setItem('current_host_name', myName);
 
             cargarListaAmigos();
             cargarCategorias();
         };
     }
 
+    function notificarCambioLobby() {
+        const gameId = sessionStorage.getItem('current_game_id');
+        const myName = sessionStorage.getItem('genius_username');
+        const hostName = sessionStorage.getItem('current_host_name');
+        
+        if (gameId && myName === hostName && stompClient && stompClient.connected) {
+            stompClient.send("/app/lobby.settings.change", {}, JSON.stringify({ 
+                gameId: gameId,
+                gameMode: document.getElementById('game-mode').value,
+                categoryName: document.getElementById('game-category').value
+            }));
+        }
+    }
+
+    document.getElementById('game-mode').addEventListener('change', notificarCambioLobby);
+    document.getElementById('game-category').addEventListener('change', notificarCambioLobby);
+
     if (btnStart) {
         btnStart.onclick = () => {
+            btnStart.disabled = true;
+            setTimeout(() => btnStart.disabled = false, 3000);
+
             const listaJugadoresTexto = document.getElementById('lobby-players-list').innerText;
-            
+            const playerCount = document.getElementById('lobby-players-list').getElementsByTagName('li').length;
+            const gameMode = document.getElementById('game-mode').value;
+
             if (listaJugadoresTexto.includes('(Ausente)')) {
                 window.mostrarToastError("⚠️ Hay jugadores AUSENTES. Espera o expúlsalos para iniciar.");
                 return; 
+            }
+
+            if (gameMode === "1v1" && playerCount !== 2) {
+                window.mostrarToastError("⚔️ El modo 1v1 requiere EXACTAMENTE 2 jugadores en la sala.");
+                return;
             }
 
             const gameId = sessionStorage.getItem('current_game_id');
@@ -171,7 +427,8 @@ function inicializarMenu() {
             if (stompClient && stompClient.connected) {
                 stompClient.send("/app/game.start.private", {}, JSON.stringify({ 
                     gameId: gameId,
-                    categoryName: selectedCategory
+                    categoryName: selectedCategory,
+                    gameMode: gameMode 
                 }));
             }
         };
@@ -293,10 +550,8 @@ window.actualizarBandeja = function() {
             if (data.length > 0) {
                 badge.innerText = data.length;
                 badge.style.display = 'inline-block';
-                badge.style.animation = 'pulso-logo 1.5s infinite';
             } else {
                 badge.style.display = 'none';
-                badge.style.animation = 'none';
             }
         }
 

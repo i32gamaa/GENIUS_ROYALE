@@ -73,56 +73,40 @@ public class GameLobbyController {
             if (guest == null || invite == null) return;
             User host = invite.getSender();
 
-            Game sala = SALAS_EN_VIVO.get(host.getId());
-
-            // 🔥 NUEVO: GESTIÓN DE ABANDONO DE SALA ANTERIOR 🔥
-            // 1. Buscamos si el que acepta la invitación ya estaba en otra sala
             Game oldRoom = null;
-            for (Game g : SALAS_EN_VIVO.values()) {
-                if (g.getPlayers().stream().anyMatch(p -> p.getId().equals(guest.getId()))) {
-                    oldRoom = g;
+            Integer oldRoomKey = null;
+            for (Map.Entry<Integer, Game> entry : SALAS_EN_VIVO.entrySet()) {
+                if (entry.getValue().getPlayers().stream().anyMatch(p -> p.getUsername().equals(guest.getUsername()))) {
+                    oldRoom = entry.getValue();
+                    oldRoomKey = entry.getKey();
                     break;
                 }
             }
 
-            // 2. Si estaba en una sala distinta a la que va a entrar...
+            Game sala = SALAS_EN_VIVO.get(host.getId());
+
             if (oldRoom != null && (sala == null || !oldRoom.getId().equals(sala.getId()))) {
-                
-                // ¿Era el Host de esa sala antigua?
-                if (oldRoom.getPlayers().get(0).getId().equals(guest.getId())) {
-                    // Sí. Entonces CERRAR SALA ANTIGUA y avisar a sus invitados
+                if (oldRoom.getPlayers().get(0).getUsername().equals(guest.getUsername())) {
                     Map<String, Object> closeMsg = new HashMap<>();
                     closeMsg.put("type", "ROOM_CLOSED");
                     closeMsg.put("hostName", guest.getUsername());
                     
                     for (User p : oldRoom.getPlayers()) {
-                        if (!p.getId().equals(guest.getId())) {
+                        if (!p.getUsername().equals(guest.getUsername())) {
                             messagingTemplate.convertAndSend("/topic/lobby.guest.joined." + p.getUsername(), closeMsg);
                         }
                     }
-                    
-                    Integer hostKey = null;
-                    for (Map.Entry<Integer, Game> entry : SALAS_EN_VIVO.entrySet()) {
-                        if (entry.getValue().getId().equals(oldRoom.getId())) {
-                            hostKey = entry.getKey();
-                            break;
-                        }
-                    }
-                    if (hostKey != null) SALAS_EN_VIVO.remove(hostKey);
+                    SALAS_EN_VIVO.remove(oldRoomKey);
                     ESTADOS_SALA.remove(oldRoom.getId());
-                    
                 } else {
-                    // No, era solo un invitado. LO BORRAMOS POR COMPLETO de la sala antigua.
-                    oldRoom.getPlayers().removeIf(p -> p.getId().equals(guest.getId()));
+                    oldRoom.getPlayers().removeIf(p -> p.getUsername().equals(guest.getUsername()));
                     oldRoom.getScores().remove(guest.getUsername());
                     if (ESTADOS_SALA.containsKey(oldRoom.getId())) {
                         ESTADOS_SALA.get(oldRoom.getId()).remove(guest.getUsername());
                     }
-                    // Avisamos a los que se quedan en la sala antigua de que este jugador se fue
                     broadcastLobbyUpdate(oldRoom);
                 }
             }
-            // 🔥 FIN DE LA GESTIÓN DE ABANDONO 🔥
 
             if (sala == null) {
                 sala = new Game();
@@ -137,7 +121,7 @@ public class GameLobbyController {
             }
 
             if (sala.getPlayers().size() >= 10) return;
-            boolean existe = sala.getPlayers().stream().anyMatch(p -> p.getId().equals(guest.getId()));
+            boolean existe = sala.getPlayers().stream().anyMatch(p -> p.getUsername().equals(guest.getUsername()));
             if (!existe) {
                 sala.getPlayers().add(guest);
                 sala.getScores().put(guest.getUsername(), 0);
@@ -176,7 +160,6 @@ public class GameLobbyController {
                         messagingTemplate.convertAndSend("/topic/lobby.guest.joined." + p.getUsername(), closeMsg);
                     }
                 }
-                
                 Integer hostKey = null;
                 for (Map.Entry<Integer, Game> entry : SALAS_EN_VIVO.entrySet()) {
                     if (entry.getValue().getId().equals(gameId)) {
@@ -256,6 +239,8 @@ public class GameLobbyController {
     public void startPrivateGame(Principal principal, @Payload Map<String, Object> payload) {
         String gameId = (String) payload.get("gameId");
         String categoryName = (String) payload.get("categoryName");
+        String gameMode = (String) payload.get("gameMode"); 
+        if (gameMode == null) gameMode = "Quizziz";
 
         Game partyRoom = null;
 
@@ -270,7 +255,7 @@ public class GameLobbyController {
 
         Map<String, String> estadosActuales = ESTADOS_SALA.get(partyRoom.getId());
         if (estadosActuales != null && estadosActuales.containsValue("Ausente")) {
-            System.err.println("⚠️ Inicio bloqueado en el servidor: Hay jugadores ausentes en la sala " + gameId);
+            System.err.println("⚠️ Inicio bloqueado: Hay jugadores ausentes");
             return; 
         }
 
@@ -279,7 +264,9 @@ public class GameLobbyController {
             dbGame.setId(UUID.randomUUID().toString()); 
             dbGame.setGameState("IN_PROGRESS");
             dbGame.setCurrentQuestionIndex(0);
+            dbGame.setGameMode(gameMode);
             dbGame.setScores(new HashMap<>());
+            dbGame.setEliminatedPlayers(new ArrayList<>());
 
             for (User ramUser : partyRoom.getPlayers()) {
                 User realUser = userRepository.findById(ramUser.getId()).orElse(null);
@@ -289,7 +276,7 @@ public class GameLobbyController {
                 }
             }
 
-            List<Question> questions = getBalancedQuestions(categoryName);
+            List<Question> questions = getBalancedQuestions(categoryName, gameMode);
             String questionIds = questions.stream().map(q -> String.valueOf(q.getId())).collect(Collectors.joining(","));
             dbGame.setQuestionIds(questionIds);
 
@@ -308,6 +295,7 @@ public class GameLobbyController {
             Map<String, Object> startSignal = new HashMap<>();
             startSignal.put("gameId", dbGame.getId()); 
             startSignal.put("category", categoryName);
+            startSignal.put("gameMode", gameMode);
             startSignal.put("players", partyRoom.getPlayers().stream().map(User::getUsername).collect(Collectors.toList()));
 
             for (User p : partyRoom.getPlayers()) {
@@ -345,6 +333,7 @@ public class GameLobbyController {
                 info.put("username", user.getUsername());
                 info.put("isHost", true);
                 info.put("status", "Listo");
+                info.put("fotoPerfil", user.getFotoPerfil()); // 🔥 FOTO
                 playersInfo.add(info);
 
                 Map<String, Object> lobbyUpdate = new HashMap<>();
@@ -368,12 +357,16 @@ public class GameLobbyController {
         List<String> plainNames = new ArrayList<>(); 
 
         for (User p : sala.getPlayers()) {
+            // 🔥 Nos aseguramos de sacar la foto fresca de la base de datos
+            User realUser = userRepository.findById(p.getId()).orElse(p);
+            
             Map<String, Object> info = new HashMap<>();
-            info.put("username", p.getUsername());
-            info.put("isHost", p.getUsername().equals(hostName));
-            info.put("status", estados.getOrDefault(p.getUsername(), "Listo"));
+            info.put("username", realUser.getUsername());
+            info.put("isHost", realUser.getUsername().equals(hostName));
+            info.put("status", estados.getOrDefault(realUser.getUsername(), "Listo"));
+            info.put("fotoPerfil", realUser.getFotoPerfil()); // 🔥 FOTO
             playersInfo.add(info);
-            plainNames.add(p.getUsername());
+            plainNames.add(realUser.getUsername());
         }
 
         Map<String, Object> lobbyUpdate = new HashMap<>();
@@ -395,7 +388,7 @@ public class GameLobbyController {
         return null;
     }
 
-    private List<Question> getBalancedQuestions(String categoryName) {
+    private List<Question> getBalancedQuestions(String categoryName, String gameMode) {
         List<Question> easy, medium, hard;
         if (categoryName == null || categoryName.equals("Cultura General")) {
             easy = questionRepository.findAllByDifficultyLevel(Difficulty.facil);
@@ -409,9 +402,11 @@ public class GameLobbyController {
         }
         Collections.shuffle(easy); Collections.shuffle(medium); Collections.shuffle(hard);
         
+        int limit = "Battle Royale".equals(gameMode) ? 15 : 5;
+        
         return Stream.concat(
-                easy.stream().limit(1), 
-                Stream.concat(medium.stream().limit(1), hard.stream().limit(0))
+                easy.stream().limit(limit), 
+                Stream.concat(medium.stream().limit(limit), hard.stream().limit(limit))
         ).collect(Collectors.toList());
     }
 }

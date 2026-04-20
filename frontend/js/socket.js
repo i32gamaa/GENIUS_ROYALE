@@ -1,5 +1,5 @@
 // ==========================================
-// js/socket.js - VERSIÓN ANTI-IMÁN 🛡️
+// js/socket.js - VERSIÓN MAGIA PURA Y CACHÉ 🛡️👻
 // ==========================================
 let stompClient = null;
 let currentUser = "";
@@ -191,21 +191,22 @@ function conectarWebSocket(token, username) {
             }
 
             if (data.type === "LOBBY_UPDATE") {
+                const currentHash = window.location.hash;
                 
+                if (currentHash === '#screen-game') return;
+
                 const lastLeftId = sessionStorage.getItem('last_voluntary_game_id');
                 if (lastLeftId === data.gameId) {
-                    if (window.location.hash !== '#screen-lobby') {
-                        return; 
-                    } else {
+                    if (currentHash !== '#screen-lobby') return; 
+                    else {
                         sessionStorage.removeItem('last_voluntary_game_id');
                         if (typeof verificarBotonReconexion === "function") verificarBotonReconexion();
                     }
                 }
 
                 const isViewingResults = document.getElementById('game-results') && document.getElementById('game-results').style.display === 'block';
-                const currentHash = window.location.hash;
                 
-                if (!isViewingResults && (currentHash === '#screen-game' || (data.gameId !== "" && currentHash !== '#screen-lobby'))) {
+                if (!isViewingResults && (data.gameId !== "" && currentHash !== '#screen-lobby')) {
                     document.querySelectorAll('.screen').forEach(s => {
                         s.style.display = 'none';
                         s.classList.add('hidden');
@@ -223,20 +224,30 @@ function conectarWebSocket(token, username) {
                 if (list && data.playersInfo) {
                     list.innerHTML = ""; 
                     
+                    let playerAvatars = {}; 
+                    
                     data.playersInfo.forEach((p) => {
+                        let avatar = p.fotoPerfil || 'images/default-profile.png';
+                        playerAvatars[p.username] = avatar;
+                        
+                        let imgHtml = `<img src="${avatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover; margin-right:10px; border:2px solid ${p.isHost ? '#FFD700' : '#03DAC6'}; vertical-align:middle;">`;
+
                         const li = document.createElement('li');
                         li.style.display = "flex";
                         li.style.justifyContent = "space-between";
                         li.style.alignItems = "center";
                         li.style.marginBottom = "10px";
+                        li.style.background = "rgba(255,255,255,0.05)";
+                        li.style.padding = "8px 15px";
+                        li.style.borderRadius = "10px";
                         
                         let statusHtml = p.status === "Ausente" 
                             ? `<span style="color: #F44336; font-size: 0.8em; margin-left: 5px;">(Ausente)</span>` 
                             : `<span style="color: #4CAF50; font-size: 0.8em; margin-left: 5px;">(Listo)</span>`;
 
                         let nameHtml = p.isHost 
-                            ? `<div>👑 <strong style="color: #FFD700">${p.username} (Host)</strong></div>` 
-                            : `<div>👤 <span style="color: ${p.username === currentUser ? '#03DAC6' : 'white'}">${p.username}</span> ${statusHtml}</div>`;
+                            ? `<div style="display:flex; align-items:center;">${imgHtml} 👑 <strong style="color: #FFD700; margin-left:5px;">${p.username} (Host)</strong></div>` 
+                            : `<div style="display:flex; align-items:center;">${imgHtml} 👤 <span style="color: ${p.username === currentUser ? '#03DAC6' : 'white'}; margin-left:5px;">${p.username}</span> ${statusHtml}</div>`;
                         
                         let kickBtnHtml = "";
                         if (data.hostName === currentUser && !p.isHost) {
@@ -248,12 +259,22 @@ function conectarWebSocket(token, username) {
                         if (p.isHost) list.prepend(li); 
                         else list.appendChild(li); 
                     });
+                    
+                    sessionStorage.setItem('player_avatars', JSON.stringify(playerAvatars));
                 }
 
                 const waitingMsg = document.getElementById('waiting-msg');
                 const hostControls = document.getElementById('host-controls');
 
+                const selectMode = document.getElementById('game-mode');
+                const selectCat = document.getElementById('game-category');
+                
                 if (data.hostName === currentUser) {
+                    selectMode.disabled = false;
+                    selectCat.disabled = false;
+                    selectMode.style.opacity = "1";
+                    selectCat.style.opacity = "1";
+                    
                     if (data.players.length >= 2) {
                         if (hostControls) hostControls.style.display = 'block';
                         if (waitingMsg) waitingMsg.style.display = 'none';
@@ -265,6 +286,23 @@ function conectarWebSocket(token, username) {
                         }
                     }
                 } else {
+                    selectMode.disabled = true;
+                    selectCat.disabled = true;
+                    selectMode.style.opacity = "0.6";
+                    selectCat.style.opacity = "0.6";
+                    
+                    if (selectMode.value !== data.gameMode) {
+                        selectMode.value = data.gameMode;
+                        selectMode.style.border = "2px solid #03DAC6";
+                        setTimeout(() => selectMode.style.border = "none", 1000);
+                    }
+                    if (selectCat && data.categoryName && selectCat.value !== data.categoryName) {
+                        selectCat.innerHTML = `<option value="${data.categoryName}">${data.categoryName}</option>`;
+                        selectCat.value = data.categoryName;
+                        selectCat.style.border = "2px solid #FF9800";
+                        setTimeout(() => selectCat.style.border = "none", 1000);
+                    }
+
                     if (waitingMsg) {
                         waitingMsg.innerText = `Esperando al Host (${data.players.length}/10)...`;
                         waitingMsg.style.display = 'block';
@@ -279,20 +317,32 @@ function conectarWebSocket(token, username) {
         stompClient.subscribe(`/topic/game.start.${currentUser}`, function (message) {
             const gameData = JSON.parse(message.body);
             sessionStorage.removeItem('last_voluntary_game_id'); 
-            irAPantallaDeJuego(gameData.players); 
+            
+            sessionStorage.setItem('current_game_mode', gameData.gameMode || "Quizziz");
+            sessionStorage.setItem('current_game_category', gameData.category || "Cultura General");
+            sessionStorage.setItem('current_game_players', JSON.stringify(gameData.players));
+            
+            irAPantallaDeJuego(gameData.players, gameData.gameMode); 
             sessionStorage.setItem('current_game_id', gameData.gameId);
             if (typeof inicializarJuego === "function") inicializarJuego(gameData);
         });
 
         stompClient.subscribe(`/topic/game.updates.${currentUser}`, function (message) {
             const update = JSON.parse(message.body);
-            if (update.type === "RIVAL_ANSWERED") {
+            if (update.type === "PLAYER_ANSWERED_LIVE") {
+                if (typeof rivalHaRespondidoLive === "function") rivalHaRespondidoLive(update);
+            } else if (update.type === "RIVAL_ANSWERED") {
                 if (typeof rivalHaRespondido === "function") rivalHaRespondido();
             } else if (update.type === "ROUND_RESULT") {
                 if (typeof procesarResultadoRonda === "function") procesarResultadoRonda(update);
             } else if (update.type === "GAME_OVER") {
                 sessionStorage.removeItem('last_voluntary_game_id');
                 if (typeof finalizarJuego === "function") finalizarJuego(update);
+            } else if (update.type === "GAME_OVER_ABORTED") {
+                sessionStorage.removeItem('last_voluntary_game_id');
+                if (typeof forzarFinalAbrupto === "function") forzarFinalAbrupto(update);
+            } else if (update.type === "PLAYER_LEFT") {
+                window.mostrarToastInfo(`🚪 ${update.winnerUsername} ha abandonado la partida.`);
             }
         });
 
@@ -300,8 +350,17 @@ function conectarWebSocket(token, username) {
             const hash = window.location.hash;
             if (hash === '#screen-lobby' || hash === '#screen-game') {
                 const list = document.getElementById('lobby-players-list');
+                
+                // 🔥 Pintamos la foto al instante en el Fallback del WebSocket 🔥
                 if (list && list.children.length === 0) {
-                    list.innerHTML = `<li style="margin-bottom:10px;">👑 <strong style="color: #FFD700">${currentUser} (Host)</strong></li>`;
+                    const myAvatar = sessionStorage.getItem('genius_avatar') || 'images/default-profile.png';
+                    list.innerHTML = `
+                    <li style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 10px;">
+                        <div style="display:flex; align-items:center;">
+                            <img src="${myAvatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover; margin-right:10px; border:2px solid #FFD700; vertical-align:middle;">
+                            👑 <strong style="color: #FFD700; margin-left:5px;">${currentUser} (Host)</strong>
+                        </div>
+                    </li>`;
                 }
                 stompClient.send("/app/lobby.sync", {}, JSON.stringify({}));
                 if (typeof cargarListaAmigos === "function") cargarListaAmigos();
@@ -353,10 +412,15 @@ function irALobbyComoInvitado(hostName) {
     if (hostControls) hostControls.style.display = 'none';
 }
 
-function irAPantallaDeJuego(players) {
+function irAPantallaDeJuego(players, mode) {
     const sLobby = document.getElementById('screen-lobby');
     const sGame = document.getElementById('screen-game');
     
+    if (sGame) {
+        sGame.style.display = 'block';
+        sGame.classList.remove('hidden');
+    }
+
     if (typeof cambiarPantalla === "function") {
         cambiarPantalla(sLobby, sGame);
     }
@@ -364,7 +428,8 @@ function irAPantallaDeJuego(players) {
     const oppElement = document.getElementById('opponent-name');
     if (oppElement) {
         let num = Array.isArray(players) ? players.length : 2;
-        oppElement.innerText = `🏆 MODO ROYALE: ${num} Jugadores`;
+        let modeName = mode ? mode : "Quizziz";
+        oppElement.innerText = `🏆 MODO ${modeName.toUpperCase()}: ${num} Jugadores`;
     }
 }
 
@@ -374,7 +439,6 @@ function enviarInvitacionJuego(amigoUsername, categoria) {
         receiverUsername: amigoUsername,
         categoryName: categoria || "Cultura General"
     }));
-    
     window.mostrarToastExito("Has invitado a " + amigoUsername);
 }
 

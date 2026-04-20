@@ -8,7 +8,7 @@ import java.util.*;
 public class Game {
 
     @Id
-    private String id; // UUID
+    private String id;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -31,7 +31,7 @@ public class Game {
     private Map<String, String> currentAnswers = new HashMap<>();
 
     @Column(name = "game_state")
-    private String gameState; // "WAITING_FOR_PLAYER", "IN_PROGRESS", "FINISHED"
+    private String gameState;
 
     private int currentQuestionIndex;
 
@@ -41,6 +41,15 @@ public class Game {
 
     @Column(name = "question_ids")
     private String questionIds;
+
+    // 🔥 NUEVO: Modo de juego y Lista de Muertos
+    @Column(name = "game_mode")
+    private String gameMode = "Quizziz";
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "game_eliminated", joinColumns = @JoinColumn(name = "game_id"))
+    @Column(name = "username")
+    private List<String> eliminatedPlayers = new ArrayList<>();
 
     // Getters y Setters
     public String getId() { return id; }
@@ -59,4 +68,8 @@ public class Game {
     public void setCategory(Category category) { this.category = category; }
     public String getQuestionIds() { return questionIds; }
     public void setQuestionIds(String questionIds) { this.questionIds = questionIds; }
+    public String getGameMode() { return gameMode; }
+    public void setGameMode(String gameMode) { this.gameMode = gameMode; }
+    public List<String> getEliminatedPlayers() { return eliminatedPlayers; }
+    public void setEliminatedPlayers(List<String> eliminatedPlayers) { this.eliminatedPlayers = eliminatedPlayers; }
 }

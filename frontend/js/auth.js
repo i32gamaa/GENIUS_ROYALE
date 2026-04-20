@@ -1,5 +1,5 @@
 // ==========================================
-// js/auth.js - ARCHIVO COMPLETO CORREGIDO
+// js/auth.js - VERSIÓN CINEMÁTICA Y CACHÉ INSTANTÁNEA ⚡🎬
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     
@@ -47,14 +47,32 @@ document.addEventListener('DOMContentLoaded', () => {
                     sessionStorage.setItem('genius_token', data.token);
                     sessionStorage.setItem('genius_username', data.user.username);
                     
+                    // 🔥 NUEVO: Guardamos el avatar en el bolsillo para pintarlo instantáneamente 🔥
+                    const avatarInstantaneo = data.user.fotoPerfil || 'images/default-profile.png';
+                    sessionStorage.setItem('genius_avatar', avatarInstantaneo);
+                    
+                    sessionStorage.removeItem('login_intro_played');
+
                     const displayUsername = document.getElementById('display-username');
                     if (displayUsername) displayUsername.innerText = data.user.username;
 
+                    // 🔥 Pintamos la foto en la barra lateral del menú al instante 🔥
+                    const sidebarPic = document.getElementById('sidebar-profile-pic');
+                    if (sidebarPic) sidebarPic.src = avatarInstantaneo;
+
                     if (typeof cambiarPantalla === "function") {
                         cambiarPantalla(screenLogin, screenMenu);
+                        
+                        setTimeout(() => {
+                            if (typeof window.ejecutarIntroCinematica === "function") {
+                                window.ejecutarIntroCinematica();
+                            }
+                        }, 50);
                     }
                     
-                    // ¡AQUÍ ESTABA EL ERROR! Faltaba pasar el data.token
+                    // Aseguramos que se actualicen las estadísticas del modal
+                    if (typeof window.cargarMiPerfil === "function") window.cargarMiPerfil();
+                    
                     if (typeof conectarWebSocket === "function") {
                         conectarWebSocket(data.token, data.user.username);
                     }
@@ -105,10 +123,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const displayUsername = document.getElementById('display-username');
         if (displayUsername) displayUsername.innerText = savedUsername;
         
-        if (typeof cambiarPantalla === "function") {
-            setTimeout(() => cambiarPantalla(screenLogin, screenMenu), 100);
+        // Pintamos el avatar cacheado si existe
+        const cachedAvatar = sessionStorage.getItem('genius_avatar');
+        if (cachedAvatar) {
+            const sidebarPic = document.getElementById('sidebar-profile-pic');
+            if (sidebarPic) sidebarPic.src = cachedAvatar;
         }
-        // ¡AQUÍ TAMBIÉN FALTABA EL TOKEN!
+
+        if (typeof cambiarPantalla === "function") {
+            setTimeout(() => {
+                cambiarPantalla(screenLogin, screenMenu);
+                if (typeof window.ejecutarIntroCinematica === "function") {
+                    window.ejecutarIntroCinematica();
+                }
+            }, 100);
+        }
+        
         if (typeof conectarWebSocket === "function") {
             setTimeout(() => conectarWebSocket(savedToken, savedUsername), 200);
         }

@@ -27,6 +27,16 @@ public class User {
     @Column(name = "puntos_totales")
     private Integer totalScore = 0;
 
+    // 🔥 NUEVO: Estadísticas y Foto de Perfil
+    @Column(name = "partidas_ganadas")
+    private Integer partidasGanadas = 0;
+
+    @Column(name = "preguntas_acertadas")
+    private Integer preguntasAcertadas = 0;
+
+    @Column(name = "foto_perfil", columnDefinition="TEXT")
+    private String fotoPerfil;
+
     public User() {}
 
     public Integer getId() { return id; }
@@ -41,4 +51,11 @@ public class User {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public Integer getTotalScore() { return totalScore; }
     public void setTotalScore(Integer totalScore) { this.totalScore = totalScore; }
+
+    public Integer getPartidasGanadas() { return partidasGanadas; }
+    public void setPartidasGanadas(Integer partidasGanadas) { this.partidasGanadas = partidasGanadas; }
+    public Integer getPreguntasAcertadas() { return preguntasAcertadas; }
+    public void setPreguntasAcertadas(Integer preguntasAcertadas) { this.preguntasAcertadas = preguntasAcertadas; }
+    public String getFotoPerfil() { return fotoPerfil; }
+    public void setFotoPerfil(String fotoPerfil) { this.fotoPerfil = fotoPerfil; }
 }

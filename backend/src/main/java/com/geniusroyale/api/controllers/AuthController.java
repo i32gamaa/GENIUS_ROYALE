@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -19,7 +20,7 @@ public class AuthController {
 
     @Autowired private UserRepository userRepository;
     @Autowired private JwtService jwtService;
-    @Autowired private ActiveUserManager activeUserManager; // <-- Inyectamos la pizarra
+    @Autowired private ActiveUserManager activeUserManager; 
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody RegisterRequest registerRequest) {
@@ -50,18 +51,38 @@ public class AuthController {
         if (userOptional.isPresent()) {
             User user = userOptional.get();
             if (loginRequest.getPassword().equals(user.getPassword())) {
-                
-                // --- EL ESCUDO DE DOBLE SESIÓN ---
                 if (activeUserManager.isUserActive(user.getEmail())) {
-                    return ResponseEntity.status(403).body(new ApiResponse(false, "Ya tienes una sesión iniciada en otro dispositivo o pestaña. Ciérrala primero."));
+                    return ResponseEntity.status(403).body(new ApiResponse(false, "Ya tienes una sesión iniciada. Ciérrala primero."));
                 }
-                // ---------------------------------
-
                 String token = jwtService.generateToken(user);
                 return ResponseEntity.ok(new ApiResponse(true, "Login exitoso", token, user));
             }
         }
-
         return ResponseEntity.status(401).body(new ApiResponse(false, "Credenciales inválidas"));
+    }
+
+    // 🔥 NUEVO: Obtener mi perfil completo
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyProfile(@RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.substring(7);
+        String email = jwtService.extractEmail(token);
+        User user = userRepository.findByEmail(email).orElseThrow();
+        return ResponseEntity.ok(user);
+    }
+
+    // 🔥 NUEVO: Subir foto de perfil en Base64
+    @PostMapping("/photo")
+    public ResponseEntity<?> uploadPhoto(@RequestHeader("Authorization") String authHeader, @RequestBody Map<String, String> payload) {
+        try {
+            String token = authHeader.substring(7);
+            String email = jwtService.extractEmail(token);
+            User user = userRepository.findByEmail(email).orElseThrow();
+            
+            user.setFotoPerfil(payload.get("foto"));
+            userRepository.save(user);
+            return ResponseEntity.ok(new ApiResponse(true, "Foto actualizada correctamente."));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(new ApiResponse(false, "Error al guardar la foto."));
+        }
     }
 }
