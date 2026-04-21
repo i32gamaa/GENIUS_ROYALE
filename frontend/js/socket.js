@@ -1,39 +1,59 @@
 // ==========================================
-// js/socket.js - VERSIÓN MAGIA PURA Y CACHÉ 🛡️👻
+// js/socket.js - VERSIÓN DEFINITIVA, SIN COMPRIMIR Y BLINDADA 🛡️👻
 // ==========================================
+
 let stompClient = null;
 let currentUser = "";
 window.invitacionesPendientes = []; 
 window.toastCallbacks = {}; 
 
+// ==========================================
+// 1. SISTEMA DE NOTIFICACIONES (TOASTS)
+// ==========================================
+
 window.mostrarToastExito = function(mensaje) {
     const container = document.getElementById('toast-container');
     if (!container) return;
+    
     const toast = document.createElement('div');
     toast.className = 'toast toast-success';
     toast.innerHTML = `<img src="images/logo.jpeg" class="toast-logo" alt="Logo"><div class="toast-content">${mensaje} ✔️</div>`;
     container.appendChild(toast);
-    setTimeout(() => { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 400); }, 3000);
+    
+    setTimeout(() => { 
+        toast.classList.add('fade-out'); 
+        setTimeout(() => toast.remove(), 400); 
+    }, 3000);
 };
 
 window.mostrarToastError = function(mensaje) {
     const container = document.getElementById('toast-container');
     if (!container) return;
+    
     const toast = document.createElement('div');
     toast.className = 'toast toast-error';
     toast.innerHTML = `<img src="images/logo.jpeg" class="toast-logo" alt="Logo"><div class="toast-content">${mensaje}</div>`;
     container.appendChild(toast);
-    setTimeout(() => { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 400); }, 4000); 
+    
+    setTimeout(() => { 
+        toast.classList.add('fade-out'); 
+        setTimeout(() => toast.remove(), 400); 
+    }, 4000); 
 };
 
 window.mostrarToastInfo = function(mensaje) {
     const container = document.getElementById('toast-container');
     if (!container) return;
+    
     const toast = document.createElement('div');
     toast.className = 'toast toast-info';
     toast.innerHTML = `<img src="images/logo.jpeg" class="toast-logo" alt="Logo"><div class="toast-content">${mensaje}</div>`;
     container.appendChild(toast);
-    setTimeout(() => { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 400); }, 3000);
+    
+    setTimeout(() => { 
+        toast.classList.add('fade-out'); 
+        setTimeout(() => toast.remove(), 400); 
+    }, 3000);
 };
 
 window.mostrarToastConfirmacion = function(mensaje, callbackAceptar) {
@@ -104,6 +124,7 @@ window.mostrarToastInvitacion = function(inv) {
             toastElement.classList.add('fade-out');
             setTimeout(() => toastElement.remove(), 400);
             window.invitacionesPendientes.push(inv);
+            
             if (typeof actualizarBandejaMensajes === "function") actualizarBandejaMensajes();
             if (typeof actualizarNotificacionMensajes === "function") actualizarNotificacionMensajes();
         }
@@ -120,6 +141,7 @@ window.responderInvitacion = function(inviteId, aceptar, senderName, btnElement)
     }
 
     window.invitacionesPendientes = window.invitacionesPendientes.filter(i => (i.inviteId || i.id) !== inviteId);
+    
     if (typeof actualizarBandejaMensajes === "function") actualizarBandejaMensajes();
     if (typeof actualizarNotificacionMensajes === "function") actualizarNotificacionMensajes();
 
@@ -127,12 +149,120 @@ window.responderInvitacion = function(inviteId, aceptar, senderName, btnElement)
         sessionStorage.removeItem('current_game_id');
         sessionStorage.removeItem('current_host_name');
         sessionStorage.removeItem('last_voluntary_game_id'); 
+        
         if (typeof verificarBotonReconexion === "function") verificarBotonReconexion();
 
         irALobbyComoInvitado(senderName);
         stompClient.send("/app/invite.accept", {}, JSON.stringify({ inviteId: inviteId }));
     }
 };
+
+// ==========================================
+// 2. SISTEMA VISUAL DE VOTACIÓN PÚBLICA
+// ==========================================
+
+window.mostrarPantallaVotacion = function(categorias) {
+    document.querySelectorAll('.screen').forEach(s => {
+        s.classList.add('hidden');
+        s.style.display = 'none';
+    });
+    
+    const sVote = document.getElementById('screen-voting');
+    if (sVote) {
+        sVote.classList.remove('hidden');
+        sVote.style.display = 'flex';
+    }
+    
+    const grid = document.getElementById('voting-grid');
+    if (grid) {
+        grid.innerHTML = "";
+        categorias.forEach(cat => {
+            const safeId = cat.replace(/\s+/g, '-');
+            const div = document.createElement('div');
+            div.className = 'vote-card';
+            div.id = `vote-${safeId}`;
+            div.innerHTML = `
+                <h3 style="margin:0; color:#FFD700; font-family:'Cinzel Decorative', cursive;">${cat}</h3>
+                <p style="margin-top:10px; color:#aaa; font-weight:bold;"><span id="count-${safeId}">0</span> votos</p>
+            `;
+            div.onclick = () => window.enviarVoto(cat);
+            grid.appendChild(div);
+        });
+    }
+
+    let sec = 10; 
+    const t = document.getElementById('voting-timer');
+    if (t) t.innerText = `${sec}s`;
+    
+    if (window.votingInterval) clearInterval(window.votingInterval);
+    
+    window.votingInterval = setInterval(() => { 
+        sec--; 
+        if (t) t.innerText = `${sec}s`; 
+        if (sec <= 0) clearInterval(window.votingInterval); 
+    }, 1000);
+};
+
+window.enviarVoto = function(categoria) {
+    if (window.miVoto) return; 
+    window.miVoto = categoria;
+    
+    document.querySelectorAll('.vote-card').forEach(c => c.classList.remove('selected'));
+    
+    const safeId = categoria.replace(/\s+/g, '-');
+    const card = document.getElementById(`vote-${safeId}`);
+    if (card) card.classList.add('selected');
+    
+    const gameId = sessionStorage.getItem('current_game_id');
+    if (stompClient && stompClient.connected) {
+        stompClient.send("/app/game.vote", {}, JSON.stringify({ gameId: gameId, category: categoria }));
+    }
+};
+
+window.actualizarContadorVotos = function(votos) {
+    Object.entries(votos).forEach(([cat, num]) => {
+        const safeId = cat.replace(/\s+/g, '-');
+        const el = document.getElementById(`count-${safeId}`);
+        if (el) el.innerText = num;
+    });
+};
+
+window.procesarResultadoVotacion = function(ganador, esEmpate, opcionesEmpatadas) {
+    if (esEmpate) {
+        let i = 0;
+        const interval = setInterval(() => {
+            document.querySelectorAll('.vote-card').forEach(c => c.classList.remove('highlight'));
+            const safeId = opcionesEmpatadas[i % opcionesEmpatadas.length].replace(/\s+/g, '-');
+            const target = document.getElementById(`vote-${safeId}`);
+            if (target) target.classList.add('highlight');
+            i++;
+        }, 100);
+        
+        setTimeout(() => {
+            clearInterval(interval);
+            document.querySelectorAll('.vote-card').forEach(c => c.classList.remove('highlight', 'selected'));
+            const safeWinnerId = ganador.replace(/\s+/g, '-');
+            const winCard = document.getElementById(`vote-${safeWinnerId}`);
+            if (winCard) {
+                winCard.classList.add('selected');
+                winCard.style.borderColor = "#FFD700";
+                winCard.style.boxShadow = "0 0 40px #FFD700";
+            }
+        }, 2000);
+    } else {
+        document.querySelectorAll('.vote-card').forEach(c => c.classList.remove('selected'));
+        const safeWinnerId = ganador.replace(/\s+/g, '-');
+        const winCard = document.getElementById(`vote-${safeWinnerId}`);
+        if (winCard) {
+            winCard.classList.add('selected');
+            winCard.style.boxShadow = "0 0 40px #03DAC6";
+        }
+    }
+};
+
+// ==========================================
+// 3. CONEXIÓN PRINCIPAL DEL WEBSOCKET
+// ==========================================
 
 function conectarWebSocket(token, username) {
     if (!token) return;
@@ -145,6 +275,7 @@ function conectarWebSocket(token, username) {
     stompClient.connect({'Authorization': 'Bearer ' + token}, function (frame) {
         console.log('✅ Conectado como: ' + currentUser);
 
+        // --- Suscripción: Solicitudes de Amistad ---
         stompClient.subscribe(`/topic/friends.${currentUser}`, function (message) {
             const data = JSON.parse(message.body);
             if (data.type === "FRIEND_REQUEST") {
@@ -155,11 +286,13 @@ function conectarWebSocket(token, username) {
             }
         });
 
+        // --- Suscripción: Invitaciones de Sala ---
         stompClient.subscribe(`/topic/invites.${currentUser}`, function (message) {
             const inv = JSON.parse(message.body);
             window.mostrarToastInvitacion(inv);
         });
 
+        // --- Suscripción: Actualizaciones del Lobby (Sala) ---
         stompClient.subscribe(`/topic/lobby.guest.joined.${currentUser}`, function (message) {
             const data = JSON.parse(message.body);
             
@@ -168,6 +301,7 @@ function conectarWebSocket(token, username) {
                 sessionStorage.removeItem('current_game_id');
                 sessionStorage.removeItem('current_host_name');
                 sessionStorage.removeItem('last_voluntary_game_id'); 
+                
                 const sMenu = document.getElementById('screen-menu');
                 const sLobby = document.getElementById('screen-lobby');
                 if (typeof cambiarPantalla === "function") cambiarPantalla(sLobby, sMenu);
@@ -182,9 +316,9 @@ function conectarWebSocket(token, username) {
                 sessionStorage.removeItem('current_game_id');
                 sessionStorage.removeItem('current_host_name');
                 sessionStorage.removeItem('last_voluntary_game_id'); 
+                
                 const sMenu = document.getElementById('screen-menu');
                 const sLobby = document.getElementById('screen-lobby');
-                
                 if (typeof cambiarPantalla === "function") cambiarPantalla(sLobby, sMenu);
                 if (typeof verificarBotonReconexion === "function") verificarBotonReconexion();
                 return; 
@@ -193,12 +327,23 @@ function conectarWebSocket(token, username) {
             if (data.type === "LOBBY_UPDATE") {
                 const currentHash = window.location.hash;
                 
-                if (currentHash === '#screen-game') return;
+                if (currentHash === '#screen-game' || currentHash === '#screen-voting') return;
+
+                // 🔥 FIX: Mostrar botón de volver a sala si entran al Menú y la sala sigue activa 🔥
+                if (data.gameId !== "" && currentHash === '#screen-menu') {
+                    const btnRejoin = document.getElementById('btn-rejoin-lobby');
+                    if (btnRejoin) btnRejoin.style.display = 'block';
+                    sessionStorage.setItem('last_voluntary_game_id', data.gameId);
+                } else if (data.gameId === "") {
+                    const btnRejoin = document.getElementById('btn-rejoin-lobby');
+                    if (btnRejoin) btnRejoin.style.display = 'none';
+                    sessionStorage.removeItem('last_voluntary_game_id');
+                }
 
                 const lastLeftId = sessionStorage.getItem('last_voluntary_game_id');
                 if (lastLeftId === data.gameId) {
-                    if (currentHash !== '#screen-lobby') return; 
-                    else {
+                    if (currentHash !== '#screen-lobby' && currentHash !== '#screen-menu') return; 
+                    else if (currentHash === '#screen-lobby') {
                         sessionStorage.removeItem('last_voluntary_game_id');
                         if (typeof verificarBotonReconexion === "function") verificarBotonReconexion();
                     }
@@ -206,7 +351,7 @@ function conectarWebSocket(token, username) {
 
                 const isViewingResults = document.getElementById('game-results') && document.getElementById('game-results').style.display === 'block';
                 
-                if (!isViewingResults && (data.gameId !== "" && currentHash !== '#screen-lobby')) {
+                if (!isViewingResults && (data.gameId !== "" && currentHash !== '#screen-lobby' && currentHash !== '#screen-menu')) {
                     document.querySelectorAll('.screen').forEach(s => {
                         s.style.display = 'none';
                         s.classList.add('hidden');
@@ -223,7 +368,6 @@ function conectarWebSocket(token, username) {
                 const list = document.getElementById('lobby-players-list');
                 if (list && data.playersInfo) {
                     list.innerHTML = ""; 
-                    
                     let playerAvatars = {}; 
                     
                     data.playersInfo.forEach((p) => {
@@ -241,6 +385,7 @@ function conectarWebSocket(token, username) {
                         li.style.padding = "8px 15px";
                         li.style.borderRadius = "10px";
                         
+                        // Estado: Listo / Ausente (Rojo)
                         let statusHtml = p.status === "Ausente" 
                             ? `<span style="color: #F44336; font-size: 0.8em; margin-left: 5px;">(Ausente)</span>` 
                             : `<span style="color: #4CAF50; font-size: 0.8em; margin-left: 5px;">(Listo)</span>`;
@@ -256,27 +401,67 @@ function conectarWebSocket(token, username) {
 
                         li.innerHTML = `${nameHtml} ${kickBtnHtml}`;
                         
-                        if (p.isHost) list.prepend(li); 
-                        else list.appendChild(li); 
+                        if (p.isHost) {
+                            list.prepend(li); 
+                        } else {
+                            list.appendChild(li); 
+                        }
                     });
                     
                     sessionStorage.setItem('player_avatars', JSON.stringify(playerAvatars));
                 }
 
+                // Control visual para el Host y los Invitados
                 const waitingMsg = document.getElementById('waiting-msg');
                 const hostControls = document.getElementById('host-controls');
-
                 const selectMode = document.getElementById('game-mode');
                 const selectCat = document.getElementById('game-category');
                 
                 if (data.hostName === currentUser) {
-                    selectMode.disabled = false;
-                    selectCat.disabled = false;
-                    selectMode.style.opacity = "1";
-                    selectCat.style.opacity = "1";
+                    if (selectMode) selectMode.disabled = false;
+                    if (selectCat) selectCat.disabled = false;
                     
                     if (data.players.length >= 2) {
-                        if (hostControls) hostControls.style.display = 'block';
+                        if (hostControls) {
+                            hostControls.style.display = 'block';
+                            
+                            // 🔥 COOLDOWN DE 5 SEGUNDOS PARA EL ANFITRIÓN 🔥
+                            const cooldownEnd = sessionStorage.getItem('host_cooldown');
+                            const btnStart = document.getElementById('btn-start-game-final');
+                            
+                            if (cooldownEnd && btnStart) {
+                                const timeLeft = parseInt(cooldownEnd) - Date.now();
+                                if (timeLeft > 0) {
+                                    btnStart.disabled = true;
+                                    btnStart.style.opacity = "0.5";
+                                    let secs = Math.ceil(timeLeft / 1000);
+                                    btnStart.innerText = `⏳ ESPERA (${secs}s)...`;
+                                    
+                                    if(window.cooldownInterval) clearInterval(window.cooldownInterval);
+                                    
+                                    window.cooldownInterval = setInterval(() => {
+                                        secs--;
+                                        if (secs > 0) { 
+                                            btnStart.innerText = `⏳ ESPERA (${secs}s)...`; 
+                                        } else {
+                                            clearInterval(window.cooldownInterval);
+                                            btnStart.disabled = false; 
+                                            btnStart.style.opacity = "1"; 
+                                            btnStart.innerText = "🚀 INICIAR PARTIDA";
+                                            sessionStorage.removeItem('host_cooldown');
+                                        }
+                                    }, 1000);
+                                } else {
+                                    btnStart.disabled = false; 
+                                    btnStart.style.opacity = "1"; 
+                                    btnStart.innerText = "🚀 INICIAR PARTIDA";
+                                }
+                            } else if (btnStart) {
+                                btnStart.disabled = false; 
+                                btnStart.style.opacity = "1"; 
+                                btnStart.innerText = "🚀 INICIAR PARTIDA";
+                            }
+                        }
                         if (waitingMsg) waitingMsg.style.display = 'none';
                     } else {
                         if (hostControls) hostControls.style.display = 'none';
@@ -286,18 +471,20 @@ function conectarWebSocket(token, username) {
                         }
                     }
                 } else {
-                    selectMode.disabled = true;
-                    selectCat.disabled = true;
-                    selectMode.style.opacity = "0.6";
-                    selectCat.style.opacity = "0.6";
+                    if (selectMode) selectMode.disabled = true;
+                    if (selectCat) selectCat.disabled = true;
                     
-                    if (selectMode.value !== data.gameMode) {
+                    // 🔥 ACTUALIZA MODO Y CATEGORÍA EN TIEMPO REAL PARA INVITADOS 🔥
+                    if (selectMode && data.gameMode && selectMode.value !== data.gameMode) {
                         selectMode.value = data.gameMode;
                         selectMode.style.border = "2px solid #03DAC6";
                         setTimeout(() => selectMode.style.border = "none", 1000);
                     }
                     if (selectCat && data.categoryName && selectCat.value !== data.categoryName) {
-                        selectCat.innerHTML = `<option value="${data.categoryName}">${data.categoryName}</option>`;
+                        let exists = Array.from(selectCat.options).some(o => o.value === data.categoryName);
+                        if(!exists) {
+                            selectCat.add(new Option(data.categoryName, data.categoryName));
+                        }
                         selectCat.value = data.categoryName;
                         selectCat.style.border = "2px solid #FF9800";
                         setTimeout(() => selectCat.style.border = "none", 1000);
@@ -309,11 +496,27 @@ function conectarWebSocket(token, username) {
                     }
                     if (hostControls) hostControls.style.display = 'none';
                 }
+                
                 sessionStorage.setItem('current_game_id', data.gameId);
                 sessionStorage.setItem('current_host_name', data.hostName);
             }
         });
 
+        // --- Suscripción: Pantalla de Votación ---
+        stompClient.subscribe(`/topic/game.voting.${currentUser}`, function (message) {
+            const data = JSON.parse(message.body);
+            if (data.type === "START_VOTING") {
+                window.categoriasParaVotar = data.categories;
+                window.miVoto = null;
+                window.mostrarPantallaVotacion(data.categories);
+            } else if (data.type === "VOTE_UPDATE") {
+                window.actualizarContadorVotos(data.votes);
+            } else if (data.type === "VOTING_RESULT") {
+                window.procesarResultadoVotacion(data.winner, data.isTie, data.tiedOptions);
+            }
+        });
+
+        // --- Suscripción: Iniciar Partida ---
         stompClient.subscribe(`/topic/game.start.${currentUser}`, function (message) {
             const gameData = JSON.parse(message.body);
             sessionStorage.removeItem('last_voluntary_game_id'); 
@@ -323,10 +526,15 @@ function conectarWebSocket(token, username) {
             sessionStorage.setItem('current_game_players', JSON.stringify(gameData.players));
             
             irAPantallaDeJuego(gameData.players, gameData.gameMode); 
-            sessionStorage.setItem('current_game_id', gameData.gameId);
-            if (typeof inicializarJuego === "function") inicializarJuego(gameData);
+            
+            // 🔥 FIX: Quitamos la reescritura del current_game_id para no matar el Ausente
+            
+            if (typeof inicializarJuego === "function") {
+                inicializarJuego(gameData);
+            }
         });
 
+        // --- Suscripción: Actualizaciones durante la partida ---
         stompClient.subscribe(`/topic/game.updates.${currentUser}`, function (message) {
             const update = JSON.parse(message.body);
             if (update.type === "PLAYER_ANSWERED_LIVE") {
@@ -346,12 +554,16 @@ function conectarWebSocket(token, username) {
             }
         });
 
+        // Sincronización inicial al cargar el websocket
         setTimeout(() => {
             const hash = window.location.hash;
-            if (hash === '#screen-lobby' || hash === '#screen-game') {
+            
+            // Forzamos el Sync para recuperar estado de menús y botones
+            stompClient.send("/app/lobby.sync", {}, JSON.stringify({}));
+            
+            if (hash === '#screen-lobby' || hash === '#screen-game' || hash === '#screen-voting') {
                 const list = document.getElementById('lobby-players-list');
                 
-                // 🔥 Pintamos la foto al instante en el Fallback del WebSocket 🔥
                 if (list && list.children.length === 0) {
                     const myAvatar = sessionStorage.getItem('genius_avatar') || 'images/default-profile.png';
                     list.innerHTML = `
@@ -362,7 +574,7 @@ function conectarWebSocket(token, username) {
                         </div>
                     </li>`;
                 }
-                stompClient.send("/app/lobby.sync", {}, JSON.stringify({}));
+                
                 if (typeof cargarListaAmigos === "function") cargarListaAmigos();
                 if (typeof cargarCategorias === "function") cargarCategorias();
             }
@@ -372,6 +584,10 @@ function conectarWebSocket(token, username) {
         setTimeout(() => conectarWebSocket(token, username), 2000);
     });
 }
+
+// ==========================================
+// 4. FUNCIONES AUXILIARES
+// ==========================================
 
 window.expulsarJugador = function(usernameTarget) {
     window.mostrarToastConfirmacion(`¿Expulsar a <strong>${usernameTarget}</strong> de la sala?`, () => {
@@ -415,7 +631,13 @@ function irALobbyComoInvitado(hostName) {
 function irAPantallaDeJuego(players, mode) {
     const sLobby = document.getElementById('screen-lobby');
     const sGame = document.getElementById('screen-game');
+    const sVote = document.getElementById('screen-voting');
     
+    if (sVote) {
+        sVote.style.display = 'none';
+        sVote.classList.add('hidden');
+    }
+
     if (sGame) {
         sGame.style.display = 'block';
         sGame.classList.remove('hidden');
@@ -435,15 +657,18 @@ function irAPantallaDeJuego(players, mode) {
 
 function enviarInvitacionJuego(amigoUsername, categoria) {
     if (!stompClient || !stompClient.connected) return;
+    
     stompClient.send("/app/game.invite", {}, JSON.stringify({
         receiverUsername: amigoUsername,
         categoryName: categoria || "Cultura General"
     }));
+    
     window.mostrarToastExito("Has invitado a " + amigoUsername);
 }
 
 function enviarRespuesta(gameId, respuestaSeleccionada) {
     if (!stompClient || !stompClient.connected) return;
+    
     stompClient.send("/app/game.answer", {}, JSON.stringify({
         gameId: gameId,
         selectedAnswer: respuestaSeleccionada 

@@ -141,6 +141,33 @@
             box-shadow: 0 0 25px rgba(255,215,0,0.6);
             border-radius: 50%;
         }
+
+        /* 🔥 ESTILOS PARA LA VOTACIÓN 🔥 */
+        .vote-card { 
+            background: rgba(255,255,255,0.05); 
+            border: 2px solid #555; 
+            border-radius: 15px; 
+            padding: 20px; 
+            cursor: pointer; 
+            transition: all 0.3s; 
+            text-align: center; 
+        }
+        .vote-card:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .vote-card.selected { 
+            border-color: #03DAC6; 
+            background: rgba(3,218,198,0.2); 
+            transform: scale(1.05); 
+        }
+        .vote-card.highlight { 
+            animation: flash-vote 0.2s infinite; 
+        }
+        @keyframes flash-vote { 
+            0% { border-color: #FFD700; background: rgba(255,215,0,0.3); } 
+            50% { border-color: transparent; background: rgba(255,255,255,0.05); } 
+            100% { border-color: #FFD700; background: rgba(255,215,0,0.3); } 
+        }
     </style>
 </head>
 <body>
@@ -231,12 +258,32 @@
             </button>
 
             <div id="main-grid-menu" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 100%; max-width: 800px; opacity: 0; transition: opacity 1s ease;">
-                <button id="btn-public-game" class="grid-menu-btn btn-public"><span style="font-size: 4rem;">⚔️</span><span>Partida Pública</span></button>
+                <button id="btn-public-game" onclick="window.abrirSeleccionModoPublico()" class="grid-menu-btn btn-public"><span style="font-size: 4rem;">⚔️</span><span>Partida Pública</span></button>
                 <button id="btn-private-game" class="grid-menu-btn btn-private"><span style="font-size: 4rem;">🛡️</span><span>Partida Privada</span></button>
                 <button id="btn-requests" class="grid-menu-btn btn-req"><span style="font-size: 4rem;">📬</span><span>Solicitudes</span><span id="requests-badge" class="badge-grid">0</span></button>
                 <button id="btn-messages" class="grid-menu-btn btn-msg"><span style="font-size: 4rem;">✉️</span><span>Mensajes</span><span id="messages-badge" class="badge-grid">0</span></button>
             </div>
         </div>
+    </div>
+
+    <div id="screen-public-modes" class="screen hidden" style="display:none; background: radial-gradient(circle, #2D0A4E, #000); flex-direction: column; justify-content: center; align-items: center; height: 100vh; width:100vw;">
+        <h2 class="cinematic-title" style="color: #FFD700; font-size: 3.5rem; text-shadow: 0 0 20px rgba(255,215,0,0.5); margin-bottom: 40px;">Elige tu Batalla</h2>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 90%; max-width: 900px;">
+            <button onclick="window.unirseAPartidaPublica('1v1')" class="grid-menu-btn" style="border-color:#03DAC6; background: rgba(3,218,198,0.1);"><span style="font-size: 3rem;">🤝</span><span>Duelo 1v1</span></button>
+            <button onclick="window.unirseAPartidaPublica('Quizziz')" class="grid-menu-btn" style="border-color:#FF9800; background: rgba(255,152,0,0.1);"><span style="font-size: 3rem;">⚡</span><span>Quizziz Clásico</span></button>
+            <button onclick="window.unirseAPartidaPublica('Battle Royale')" class="grid-menu-btn" style="border-color:#F44336; background: rgba(244,67,54,0.1);"><span style="font-size: 3rem;">🔥</span><span>Battle Royale</span></button>
+        </div>
+        <button onclick="cambiarPantalla(document.getElementById('screen-public-modes'), document.getElementById('screen-menu'))" style="margin-top: 50px; background: transparent; border: 2px solid #aaa; color: #aaa; padding: 12px 40px; border-radius: 10px; cursor:pointer; font-weight: bold; font-size: 1.2rem; transition: all 0.3s;" onmouseover="this.style.color='#fff'; this.style.borderColor='#fff';" onmouseout="this.style.color='#aaa'; this.style.borderColor='#aaa';">Volver al Menú</button>
+    </div>
+
+    <div id="screen-voting" class="screen hidden" style="display:none; background: radial-gradient(circle, #1a0b2e, #000); flex-direction: column; justify-content: center; align-items: center; height: 100vh; width: 100vw; z-index: 10000;">
+        <h2 class="cinematic-title" style="color: #03DAC6; font-size: 3rem; margin-bottom: 10px; text-shadow: 0 0 20px rgba(3,218,198,0.5);">¡VOTACIÓN DE CATEGORÍA!</h2>
+        <p style="color: #ccc; margin-bottom: 40px; font-size: 1.2rem;">Elige el tema de la batalla antes de que se acabe el tiempo.</p>
+        
+        <div id="voting-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; width: 90%; max-width: 1000px;">
+            </div>
+        
+        <div id="voting-timer" style="margin-top: 50px; font-size: 4rem; color: #FFD700; font-weight: bold; text-shadow: 0 0 30px #FFD700;">10s</div>
     </div>
 
     <div id="screen-lobby" class="screen hidden" style="display:none; background: radial-gradient(circle, #2D0A4E, #000); min-height: 100vh; overflow-y:auto;">
@@ -246,19 +293,28 @@
             <div class="lobby-layout">
                 <div class="lobby-config panel" style="background: rgba(0,0,0,0.7); border: 1px solid #03DAC6; box-shadow: 0 0 20px rgba(0,0,0,0.8); color: white;">
                     <h3 style="color:#03DAC6;">Configuración</h3>
-                    <div class="input-group">
-                        <label for="game-mode" style="color:#ccc;">Modo de Juego:</label>
-                        <select id="game-mode" style="background: rgba(255,255,255,0.1); color: white; border: 1px solid #555; outline: none;">
-                            <option value="Quizziz">Quizziz Clásico</option>
-                            <option value="1v1">Modo 1v1</option>
-                            <option value="Battle Royale">🔥 Battle Royale (Muerte Súbita)</option>
-                        </select>
+                    
+                    <div id="config-private-only">
+                        <div class="input-group">
+                            <label for="game-mode" style="color:#ccc;">Modo de Juego:</label>
+                            <select id="game-mode" style="background: rgba(255,255,255,0.1); color: white; border: 1px solid #555; outline: none;">
+                                <option value="Quizziz">Quizziz Clásico</option>
+                                <option value="1v1">Modo 1v1</option>
+                                <option value="Battle Royale">🔥 Battle Royale (Muerte Súbita)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="game-category" style="color:#ccc;">Categoría:</label>
+                            <select id="game-category" style="background: rgba(255,255,255,0.1); color: white; border: 1px solid #555; outline: none;">
+                                <option value="Cultura General">Cultura General</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="input-group">
-                        <label for="game-category" style="color:#ccc;">Categoría:</label>
-                        <select id="game-category" style="background: rgba(255,255,255,0.1); color: white; border: 1px solid #555; outline: none;">
-                            <option value="Cultura General">Cultura General</option>
-                        </select>
+
+                    <div id="config-public-display" style="display:none; text-align:center; padding: 20px 0;">
+                        <h4 style="color:#aaa; font-weight:normal; letter-spacing: 2px;">MODO PÚBLICO ACTIVO</h4>
+                        <h2 id="public-mode-label" style="color:#FFD700; font-size: 2rem; margin: 10px 0; text-transform: uppercase;">--</h2>
+                        <p style="color:#03DAC6; font-style:italic;">Categoría elegida por Votación 🗳️</p>
                     </div>
                     
                     <div id="host-controls" style="display: none; margin-top: 20px;">
@@ -271,14 +327,17 @@
                 <div class="lobby-players panel" id="panel-private-friends" style="background: rgba(0,0,0,0.7); border: 1px solid #FFD700; box-shadow: 0 0 20px rgba(0,0,0,0.8); color: white;">
                     <h3 style="color:#FFD700;">Jugadores en Sala</h3>
                     <ul id="lobby-players-list" class="styled-list" style="margin-bottom: 20px; font-weight: bold; color: #FFD700;"></ul>
-                    <hr style="border-color: rgba(255,255,255,0.1);">
-                    <h3 style="color:#03DAC6;">Añadir Amigo</h3>
-                    <div class="add-friend-box" style="display: flex; gap: 10px; margin-bottom: 15px;">
-                        <input type="text" id="input-friend-name" placeholder="Usuario de tu amigo..." style="flex: 1; padding: 10px; border-radius:5px; border:none; width: 100%; outline:none; background:rgba(255,255,255,0.9); color: black;">
-                        <button id="btn-add-friend-lobby" class="btn-info btn-modal-style" style="padding: 10px; font-weight: bold;">Añadir</button>
+                    
+                    <div id="lobby-add-friend-section">
+                        <hr style="border-color: rgba(255,255,255,0.1);">
+                        <h3 style="color:#03DAC6;">Añadir Amigo</h3>
+                        <div class="add-friend-box" style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <input type="text" id="input-friend-name" placeholder="Usuario de tu amigo..." style="flex: 1; padding: 10px; border-radius:5px; border:none; width: 100%; outline:none; background:rgba(255,255,255,0.9); color: black;">
+                            <button id="btn-add-friend-lobby" class="btn-info btn-modal-style" style="padding: 10px; font-weight: bold;">Añadir</button>
+                        </div>
+                        <h3 style="color:#FF9800;">Tus Amigos</h3>
+                        <ul id="friends-list" class="styled-list"></ul>
                     </div>
-                    <h3 style="color:#FF9800;">Tus Amigos</h3>
-                    <ul id="friends-list" class="styled-list"></ul>
                 </div>
             </div>
         </div>
@@ -292,7 +351,7 @@
     </div>
 
     <div id="screen-game" class="screen hidden" style="display: none; background: radial-gradient(circle, #2D0A4E, #000); height: 100%; min-height: 100vh; width: 100vw; position: fixed; top:0; left:0; z-index: 9999; overflow-y: auto;">
-        <button id="btn-abandon-game" style="position: absolute; top: 15px; right: 15px; background: #F44336; color: white; border: 2px solid white; border-radius: 8px; padding: 8px 15px; font-weight: bold; cursor: pointer; z-index: 99999; box-shadow: 0 4px 6px rgba(0,0,0,0.5);">🚪 Abandonar</button>
+        <button id="btn-abandon-game" onclick="window.abrirModalAbandonar()" style="position: absolute; top: 15px; right: 15px; background: #F44336; color: white; border: 2px solid white; border-radius: 8px; padding: 8px 15px; font-weight: bold; cursor: pointer; z-index: 99999; box-shadow: 0 4px 6px rgba(0,0,0,0.5);">🚪 Abandonar</button>
 
         <div id="game-loading" style="display: none; text-align: center; padding-top: 20vh; padding: 20px;">
             <h1 class="responsive-title cinematic-title" style="color: #FFD700; font-size: 3rem; text-shadow: 0 0 20px rgba(255,215,0,0.5);">¡PREPARANDO DUELO!</h1>
@@ -329,29 +388,18 @@
     <div id="my-profile-modal" class="modal-overlay hidden" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 100000; justify-content: center; align-items: center;">
         <div class="modal-content" style="background: #1a0b2e; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; color: white; border: 2px solid #03DAC6; box-shadow: 0 0 40px rgba(3,218,198,0.3);">
             <h2 style="color: #FFD700; margin-top:0; font-family:'Cinzel Decorative', cursive;">Mi Perfil</h2>
-            
             <div style="position: relative; display: inline-block; cursor: pointer;" onclick="document.getElementById('input-profile-photo').click()">
                 <img id="modal-my-photo" src="images/default-profile.png" alt="Perfil" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #03DAC6; transition: transform 0.3s;">
                 <div style="position: absolute; bottom: 0; right: 0; background: #FF9800; border-radius: 50%; padding: 8px; box-shadow: 0 0 10px black;">📸</div>
                 <input type="file" id="input-profile-photo" accept="image/*" style="display:none;" onchange="window.subirFotoPerfil(event)">
             </div>
-            
             <h3 id="modal-my-username" style="font-size: 1.8rem; margin: 15px 0;">Cargando...</h3>
             <p style="color: #aaa; font-style: italic; margin-bottom: 20px;">Haz clic en la foto para cambiarla.</p>
-
             <div style="display: flex; gap: 15px; margin-bottom: 25px;">
-                <div class="stat-box">
-                    <p style="margin:0; font-size:0.9rem; color:#aaa;">Victorias</p>
-                    <p id="stat-wins" class="stat-number">0</p>
-                </div>
-                <div class="stat-box">
-                    <p style="margin:0; font-size:0.9rem; color:#aaa;">Aciertos</p>
-                    <p id="stat-corrects" class="stat-number">0</p>
-                </div>
+                <div class="stat-box"><p style="margin:0; font-size:0.9rem; color:#aaa;">Victorias</p><p id="stat-wins" class="stat-number">0</p></div>
+                <div class="stat-box"><p style="margin:0; font-size:0.9rem; color:#aaa;">Aciertos</p><p id="stat-corrects" class="stat-number">0</p></div>
             </div>
-
             <p style="color: #ccc; font-size: 0.9rem; margin-bottom: 20px;">Miembro desde: <span id="stat-date" style="color: white; font-weight: bold;">--</span></p>
-
             <button onclick="window.cerrarMiPerfil()" class="btn-primary btn-modal-style" style="width: 100%;">Cerrar</button>
         </div>
     </div>
@@ -359,9 +407,7 @@
     <div id="friends-stats-modal" class="modal-overlay hidden" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 100000; justify-content: center; align-items: center;">
         <div class="modal-content" style="background: #1a0b2e; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; color: white; border: 2px solid #9C27B0; box-shadow: 0 0 40px rgba(156,39,176,0.3);">
             <h2 style="color: #FFD700; margin-top:0; font-family:'Cinzel Decorative', cursive;">Mis Amigos</h2>
-            
             <ul id="friends-explorer-list" class="styled-list" style="max-height: 200px; overflow-y: auto; margin-bottom: 20px;"></ul>
-
             <div id="friend-stats-details" style="display:none; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; border: 1px solid #FF9800; margin-bottom: 20px;">
                 <img id="friend-detail-photo" src="images/default-profile.png" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #FFD700; margin-bottom: 10px;">
                 <h3 id="friend-detail-name" style="margin: 0 0 15px 0;">Amigo</h3>
@@ -370,7 +416,6 @@
                     <div><span style="color:#aaa;">Aciertos:</span> <strong id="friend-detail-corrects" style="color:#03DAC6; font-size:1.2rem;">0</strong></div>
                 </div>
             </div>
-
             <button onclick="window.cerrarListaAmigosStats()" class="btn-secondary btn-modal-style" style="width: 100%;">Cerrar</button>
         </div>
     </div>
