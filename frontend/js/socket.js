@@ -1,5 +1,5 @@
 // ==========================================
-// js/socket.js - VERSIÓN DEFINITIVA, SIN COMPRIMIR Y BLINDADA 🛡️👻
+// js/socket.js - VERSIÓN DEFINITIVA CHATS Y ESTADOS 🛡️👻💬
 // ==========================================
 
 let stompClient = null;
@@ -7,66 +7,44 @@ let currentUser = "";
 window.invitacionesPendientes = []; 
 window.toastCallbacks = {}; 
 
-// ==========================================
-// 1. SISTEMA DE NOTIFICACIONES (TOASTS)
-// ==========================================
-
 window.mostrarToastExito = function(mensaje) {
     const container = document.getElementById('toast-container');
     if (!container) return;
-    
     const toast = document.createElement('div');
     toast.className = 'toast toast-success';
     toast.innerHTML = `<img src="images/logo.jpeg" class="toast-logo" alt="Logo"><div class="toast-content">${mensaje} ✔️</div>`;
     container.appendChild(toast);
-    
-    setTimeout(() => { 
-        toast.classList.add('fade-out'); 
-        setTimeout(() => toast.remove(), 400); 
-    }, 3000);
+    setTimeout(() => { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 400); }, 3000);
 };
 
 window.mostrarToastError = function(mensaje) {
     const container = document.getElementById('toast-container');
     if (!container) return;
-    
     const toast = document.createElement('div');
     toast.className = 'toast toast-error';
     toast.innerHTML = `<img src="images/logo.jpeg" class="toast-logo" alt="Logo"><div class="toast-content">${mensaje}</div>`;
     container.appendChild(toast);
-    
-    setTimeout(() => { 
-        toast.classList.add('fade-out'); 
-        setTimeout(() => toast.remove(), 400); 
-    }, 4000); 
+    setTimeout(() => { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 400); }, 4000); 
 };
 
 window.mostrarToastInfo = function(mensaje) {
     const container = document.getElementById('toast-container');
     if (!container) return;
-    
     const toast = document.createElement('div');
     toast.className = 'toast toast-info';
     toast.innerHTML = `<img src="images/logo.jpeg" class="toast-logo" alt="Logo"><div class="toast-content">${mensaje}</div>`;
     container.appendChild(toast);
-    
-    setTimeout(() => { 
-        toast.classList.add('fade-out'); 
-        setTimeout(() => toast.remove(), 400); 
-    }, 3000);
+    setTimeout(() => { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 400); }, 3000);
 };
 
 window.mostrarToastConfirmacion = function(mensaje, callbackAceptar) {
     const container = document.getElementById('toast-container');
     if (!container) return;
-
     const idToast = 'confirm-' + Date.now();
     window.toastCallbacks[idToast] = callbackAceptar; 
-
     const toast = document.createElement('div');
     toast.className = 'toast toast-warning';
     toast.id = idToast;
-
     toast.innerHTML = `
         <img src="images/logo.jpeg" class="toast-logo" alt="Logo">
         <div class="toast-content" style="flex:1;">${mensaje}</div>
@@ -79,33 +57,24 @@ window.mostrarToastConfirmacion = function(mensaje, callbackAceptar) {
 };
 
 window.ejecutarToastCallback = function(idToast) {
-    if (window.toastCallbacks[idToast]) {
-        window.toastCallbacks[idToast](); 
-        delete window.toastCallbacks[idToast];
-    }
+    if (window.toastCallbacks[idToast]) { window.toastCallbacks[idToast](); delete window.toastCallbacks[idToast]; }
     window.cerrarToast(idToast);
 };
 
 window.cerrarToast = function(idToast) {
     const toast = document.getElementById(idToast);
-    if (toast) {
-        toast.classList.add('fade-out');
-        setTimeout(() => toast.remove(), 400);
-    }
+    if (toast) { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 400); }
     delete window.toastCallbacks[idToast];
 };
 
 window.mostrarToastInvitacion = function(inv) {
     const container = document.getElementById('toast-container');
     if (!container) return;
-
     const senderName = inv.senderUsername || inv.sender || "Un amigo";
     const idInv = inv.inviteId || inv.id;
-
     const toast = document.createElement('div');
     toast.className = 'toast toast-invite';
     toast.id = `toast-inv-${idInv}`;
-
     toast.innerHTML = `
         <img src="images/logo.jpeg" class="toast-logo" alt="Logo">
         <div class="toast-content">
@@ -121,10 +90,8 @@ window.mostrarToastInvitacion = function(inv) {
     setTimeout(() => {
         const toastElement = document.getElementById(`toast-inv-${idInv}`);
         if (toastElement) {
-            toastElement.classList.add('fade-out');
-            setTimeout(() => toastElement.remove(), 400);
+            toastElement.classList.add('fade-out'); setTimeout(() => toastElement.remove(), 400);
             window.invitacionesPendientes.push(inv);
-            
             if (typeof actualizarBandejaMensajes === "function") actualizarBandejaMensajes();
             if (typeof actualizarNotificacionMensajes === "function") actualizarNotificacionMensajes();
         }
@@ -134,45 +101,27 @@ window.mostrarToastInvitacion = function(inv) {
 window.responderInvitacion = function(inviteId, aceptar, senderName, btnElement) {
     if (btnElement) {
         const toast = btnElement.closest('.toast');
-        if (toast) {
-            toast.classList.add('fade-out');
-            setTimeout(() => toast.remove(), 400);
-        }
+        if (toast) { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 400); }
     }
-
     window.invitacionesPendientes = window.invitacionesPendientes.filter(i => (i.inviteId || i.id) !== inviteId);
-    
     if (typeof actualizarBandejaMensajes === "function") actualizarBandejaMensajes();
     if (typeof actualizarNotificacionMensajes === "function") actualizarNotificacionMensajes();
-
     if (aceptar) {
-        sessionStorage.removeItem('current_game_id');
-        sessionStorage.removeItem('current_host_name');
-        sessionStorage.removeItem('last_voluntary_game_id'); 
-        
+        sessionStorage.removeItem('current_game_id'); sessionStorage.removeItem('current_host_name'); sessionStorage.removeItem('last_voluntary_game_id'); 
         if (typeof verificarBotonReconexion === "function") verificarBotonReconexion();
-
         irALobbyComoInvitado(senderName);
         stompClient.send("/app/invite.accept", {}, JSON.stringify({ inviteId: inviteId }));
     }
 };
 
-// ==========================================
-// 2. SISTEMA VISUAL DE VOTACIÓN PÚBLICA
-// ==========================================
-
 window.mostrarPantallaVotacion = function(categorias) {
-    document.querySelectorAll('.screen').forEach(s => {
-        s.classList.add('hidden');
-        s.style.display = 'none';
-    });
-    
+    document.querySelectorAll('.screen').forEach(s => { s.classList.add('hidden'); s.style.display = 'none'; });
     const sVote = document.getElementById('screen-voting');
-    if (sVote) {
-        sVote.classList.remove('hidden');
-        sVote.style.display = 'flex';
-    }
+    if (sVote) { sVote.classList.remove('hidden'); sVote.style.display = 'flex'; }
     
+    // Ocultar chat en la votación
+    document.getElementById('global-chat-btn').style.display = 'none';
+
     const grid = document.getElementById('voting-grid');
     if (grid) {
         grid.innerHTML = "";
@@ -181,21 +130,15 @@ window.mostrarPantallaVotacion = function(categorias) {
             const div = document.createElement('div');
             div.className = 'vote-card';
             div.id = `vote-${safeId}`;
-            div.innerHTML = `
-                <h3 style="margin:0; color:#FFD700; font-family:'Cinzel Decorative', cursive;">${cat}</h3>
-                <p style="margin-top:10px; color:#aaa; font-weight:bold;"><span id="count-${safeId}">0</span> votos</p>
-            `;
+            div.innerHTML = `<h3 style="margin:0; color:#FFD700; font-family:'Cinzel Decorative', cursive;">${cat}</h3><p style="margin-top:10px; color:#aaa; font-weight:bold;"><span id="count-${safeId}">0</span> votos</p>`;
             div.onclick = () => window.enviarVoto(cat);
             grid.appendChild(div);
         });
     }
-
     let sec = 10; 
     const t = document.getElementById('voting-timer');
     if (t) t.innerText = `${sec}s`;
-    
     if (window.votingInterval) clearInterval(window.votingInterval);
-    
     window.votingInterval = setInterval(() => { 
         sec--; 
         if (t) t.innerText = `${sec}s`; 
@@ -206,17 +149,12 @@ window.mostrarPantallaVotacion = function(categorias) {
 window.enviarVoto = function(categoria) {
     if (window.miVoto) return; 
     window.miVoto = categoria;
-    
     document.querySelectorAll('.vote-card').forEach(c => c.classList.remove('selected'));
-    
     const safeId = categoria.replace(/\s+/g, '-');
     const card = document.getElementById(`vote-${safeId}`);
     if (card) card.classList.add('selected');
-    
     const gameId = sessionStorage.getItem('current_game_id');
-    if (stompClient && stompClient.connected) {
-        stompClient.send("/app/game.vote", {}, JSON.stringify({ gameId: gameId, category: categoria }));
-    }
+    if (stompClient && stompClient.connected) stompClient.send("/app/game.vote", {}, JSON.stringify({ gameId: gameId, category: categoria }));
 };
 
 window.actualizarContadorVotos = function(votos) {
@@ -237,32 +175,103 @@ window.procesarResultadoVotacion = function(ganador, esEmpate, opcionesEmpatadas
             if (target) target.classList.add('highlight');
             i++;
         }, 100);
-        
         setTimeout(() => {
             clearInterval(interval);
             document.querySelectorAll('.vote-card').forEach(c => c.classList.remove('highlight', 'selected'));
             const safeWinnerId = ganador.replace(/\s+/g, '-');
             const winCard = document.getElementById(`vote-${safeWinnerId}`);
-            if (winCard) {
-                winCard.classList.add('selected');
-                winCard.style.borderColor = "#FFD700";
-                winCard.style.boxShadow = "0 0 40px #FFD700";
-            }
+            if (winCard) { winCard.classList.add('selected'); winCard.style.borderColor = "#FFD700"; winCard.style.boxShadow = "0 0 40px #FFD700"; }
         }, 2000);
     } else {
         document.querySelectorAll('.vote-card').forEach(c => c.classList.remove('selected'));
         const safeWinnerId = ganador.replace(/\s+/g, '-');
         const winCard = document.getElementById(`vote-${safeWinnerId}`);
-        if (winCard) {
-            winCard.classList.add('selected');
-            winCard.style.boxShadow = "0 0 40px #03DAC6";
+        if (winCard) { winCard.classList.add('selected'); winCard.style.boxShadow = "0 0 40px #03DAC6"; }
+    }
+};
+
+// 🔥 CHAT GLOBAL FUNCIONALIDADES 🔥
+window.toggleRoomChat = function() {
+    const panel = document.getElementById('room-chat-panel');
+    const badge = document.getElementById('global-chat-badge');
+    if (panel) {
+        if (panel.classList.contains('open')) { panel.classList.remove('open'); } 
+        else {
+            panel.classList.add('open');
+            if(badge) { badge.innerText = '0'; badge.style.display = 'none'; }
+            const box = document.getElementById('room-chat-messages');
+            if (box) box.scrollTop = box.scrollHeight;
         }
     }
 };
 
-// ==========================================
-// 3. CONEXIÓN PRINCIPAL DEL WEBSOCKET
-// ==========================================
+window.enviarMensajeSala = function() {
+    const input = document.getElementById('room-chat-input');
+    const msg = input.value.trim();
+    const gameId = sessionStorage.getItem('current_game_id');
+    
+    if (msg && gameId && stompClient && stompClient.connected) {
+        stompClient.send("/app/chat.room", {}, JSON.stringify({ gameId: gameId, message: msg }));
+        input.value = '';
+        document.getElementById('emoji-picker-room').classList.add('hidden');
+    } else if (!gameId) {
+        window.mostrarToastInfo("Debes estar en una sala para poder chatear.");
+    }
+};
+
+window.recibirMensajeSala = function(data) {
+    const myName = sessionStorage.getItem('genius_username');
+    const isOwn = data.sender === myName;
+    const box = document.getElementById('room-chat-messages');
+    const panel = document.getElementById('room-chat-panel');
+    
+    if (box.innerHTML.includes("Únete a una sala para chatear")) { box.innerHTML = ""; }
+    
+    box.innerHTML += `
+        <div class="msg-bubble ${isOwn ? 'msg-own' : 'msg-other'}">
+            ${!isOwn ? `<div class="msg-author">${data.sender}</div>` : ''}
+            ${data.message}
+        </div>
+    `;
+    box.scrollTop = box.scrollHeight;
+
+    if (!panel.classList.contains('open')) {
+        const badge = document.getElementById('global-chat-badge');
+        if (badge) { badge.innerText = parseInt(badge.innerText || 0) + 1; badge.style.display = 'block'; }
+    }
+};
+
+// 🔥 RECIBIR CHAT PRIVADO WHATSAPP 🔥
+window.recibirMensajePrivado = function(data) {
+    const chatBox = document.getElementById('wa-messages');
+    const panelAmigos = document.getElementById('friends-stats-modal');
+    
+    if (panelAmigos && panelAmigos.style.display !== 'none' && window.waActiveFriend === data.sender) {
+        if (chatBox) {
+            chatBox.innerHTML += `<div class="msg-bubble msg-other">${data.message}</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        // Actualizar snippet
+        const snippetEl = document.getElementById(`wa-snippet-${data.sender}`);
+        if (snippetEl) snippetEl.innerText = data.message;
+        
+        // Confirmar lectura automáticamente porque tenemos el chat abierto
+        if (stompClient && stompClient.connected) {
+            stompClient.send("/app/chat.read", {}, JSON.stringify({ sender: data.sender }));
+        }
+
+    } else {
+        if(!window.unreadPrivates) window.unreadPrivates = {};
+        window.unreadPrivates[data.sender] = (window.unreadPrivates[data.sender] || 0) + 1;
+        
+        const snippetEl = document.getElementById(`wa-snippet-${data.sender}`);
+        if (snippetEl) snippetEl.innerText = data.message;
+
+        if (typeof actualizarBadgesAmigos === "function") window.actualizarBadgesAmigos();
+        window.mostrarToastInfo(`💬 Mensaje de ${data.sender}: ${data.message}`);
+    }
+};
 
 function conectarWebSocket(token, username) {
     if (!token) return;
@@ -275,61 +284,71 @@ function conectarWebSocket(token, username) {
     stompClient.connect({'Authorization': 'Bearer ' + token}, function (frame) {
         console.log('✅ Conectado como: ' + currentUser);
 
-        // --- Suscripción: Solicitudes de Amistad ---
-        stompClient.subscribe(`/topic/friends.${currentUser}`, function (message) {
+        // 🔥 EL PING CONSTANTE PARA "EN LÍNEA" 🔥
+        setInterval(() => {
+            if (stompClient && stompClient.connected) {
+                stompClient.send("/app/user.ping", {}, JSON.stringify({}));
+            }
+        }, 5000);
+
+        stompClient.subscribe(`/topic/chat.room.${currentUser}`, function (message) { window.recibirMensajeSala(JSON.parse(message.body)); });
+        stompClient.subscribe(`/topic/chat.private.${currentUser}`, function (message) { window.recibirMensajePrivado(JSON.parse(message.body)); });
+
+        // 🔥 RECIBIR EL "ESCRIBIENDO..." 🔥
+        stompClient.subscribe(`/topic/chat.typing.${currentUser}`, function (message) {
             const data = JSON.parse(message.body);
-            if (data.type === "FRIEND_REQUEST") {
-                window.mostrarToastInfo(`🤝 ${data.sender} te ha enviado una solicitud de amistad.`);
-                if (typeof actualizarBandeja === "function") {
-                    actualizarBandeja(); 
+            if (window.waActiveFriend === data.sender) {
+                const statusEl = document.getElementById('wa-chat-status');
+                if (statusEl) {
+                    if (data.isTyping) {
+                        statusEl.innerText = "Escribiendo..."; statusEl.style.color = "#03DAC6";
+                    } else {
+                        window.actualizarEstadoAmigo(); // Vuelve a comprobar estado
+                    }
                 }
             }
         });
 
-        // --- Suscripción: Invitaciones de Sala ---
-        stompClient.subscribe(`/topic/invites.${currentUser}`, function (message) {
-            const inv = JSON.parse(message.body);
-            window.mostrarToastInvitacion(inv);
+        // 🔥 RECIBIR EL DOBLE TICK AZUL 🔥
+        stompClient.subscribe(`/topic/chat.read.${currentUser}`, function (message) {
+            const data = JSON.parse(message.body);
+            if (window.waActiveFriend === data.reader) {
+                const ticks = document.getElementById('wa-messages').querySelectorAll('.msg-ticks');
+                ticks.forEach(t => {
+                    t.innerText = "✓✓";
+                    t.classList.add('msg-ticks-read');
+                });
+            }
         });
 
-        // --- Suscripción: Actualizaciones del Lobby (Sala) ---
+        stompClient.subscribe(`/topic/friends.${currentUser}`, function (message) {
+            const data = JSON.parse(message.body);
+            if (data.type === "FRIEND_REQUEST") { window.mostrarToastInfo(`🤝 ${data.sender} te ha enviado una solicitud.`); if (typeof actualizarBandeja === "function") actualizarBandeja(); }
+        });
+
+        stompClient.subscribe(`/topic/invites.${currentUser}`, function (message) { window.mostrarToastInvitacion(JSON.parse(message.body)); });
+
         stompClient.subscribe(`/topic/lobby.guest.joined.${currentUser}`, function (message) {
             const data = JSON.parse(message.body);
             
-            if (data.type === "KICKED") {
-                window.mostrarToastError("❌ Has sido expulsado de la sala.");
-                sessionStorage.removeItem('current_game_id');
-                sessionStorage.removeItem('current_host_name');
-                sessionStorage.removeItem('last_voluntary_game_id'); 
-                
-                const sMenu = document.getElementById('screen-menu');
-                const sLobby = document.getElementById('screen-lobby');
+            if (data.type === "KICKED" || data.type === "ROOM_CLOSED") {
+                if(data.type === "KICKED") window.mostrarToastError("❌ Has sido expulsado de la sala.");
+                if(data.type === "ROOM_CLOSED") window.mostrarToastError(`❌ La sala ha sido cerrada.`); 
+                sessionStorage.removeItem('current_game_id'); sessionStorage.removeItem('current_host_name'); sessionStorage.removeItem('last_voluntary_game_id'); 
+                const sMenu = document.getElementById('screen-menu'); const sLobby = document.getElementById('screen-lobby');
                 if (typeof cambiarPantalla === "function") cambiarPantalla(sLobby, sMenu);
                 if (typeof verificarBotonReconexion === "function") verificarBotonReconexion();
-                return; 
-            }
-
-            if (data.type === "ROOM_CLOSED") {
-                const nombreDelHost = data.hostName ? data.hostName : "El anfitrión";
-                window.mostrarToastError(`❌ ${nombreDelHost} ha cerrado la sala.`); 
                 
-                sessionStorage.removeItem('current_game_id');
-                sessionStorage.removeItem('current_host_name');
-                sessionStorage.removeItem('last_voluntary_game_id'); 
-                
-                const sMenu = document.getElementById('screen-menu');
-                const sLobby = document.getElementById('screen-lobby');
-                if (typeof cambiarPantalla === "function") cambiarPantalla(sLobby, sMenu);
-                if (typeof verificarBotonReconexion === "function") verificarBotonReconexion();
+                // Limpiar Chat Global
+                document.getElementById('global-chat-btn').style.display = 'none';
+                document.getElementById('room-chat-messages').innerHTML = '<p style="text-align:center; color:#aaa; font-size:0.9rem;">Únete a una sala para chatear</p>';
                 return; 
             }
 
             if (data.type === "LOBBY_UPDATE") {
                 const currentHash = window.location.hash;
-                
                 if (currentHash === '#screen-game' || currentHash === '#screen-voting') return;
 
-                // 🔥 FIX: Mostrar botón de volver a sala si entran al Menú y la sala sigue activa 🔥
                 if (data.gameId !== "" && currentHash === '#screen-menu') {
                     const btnRejoin = document.getElementById('btn-rejoin-lobby');
                     if (btnRejoin) btnRejoin.style.display = 'block';
@@ -350,327 +369,160 @@ function conectarWebSocket(token, username) {
                 }
 
                 const isViewingResults = document.getElementById('game-results') && document.getElementById('game-results').style.display === 'block';
-                
                 if (!isViewingResults && (data.gameId !== "" && currentHash !== '#screen-lobby' && currentHash !== '#screen-menu')) {
-                    document.querySelectorAll('.screen').forEach(s => {
-                        s.style.display = 'none';
-                        s.classList.add('hidden');
-                    });
+                    document.querySelectorAll('.screen').forEach(s => { s.style.display = 'none'; s.classList.add('hidden'); });
                     const sLobby = document.getElementById('screen-lobby');
-                    if (sLobby) {
-                        sLobby.classList.remove('hidden');
-                        sLobby.style.display = 'block'; 
-                        window.location.hash = '#screen-lobby';
-                    }
+                    if (sLobby) { sLobby.classList.remove('hidden'); sLobby.style.display = 'block'; window.location.hash = '#screen-lobby'; }
                     if (typeof resetearVistasDeJuego === "function") resetearVistasDeJuego();
+                    document.getElementById('global-chat-btn').style.display = 'flex';
                 }
 
                 const list = document.getElementById('lobby-players-list');
                 if (list && data.playersInfo) {
-                    list.innerHTML = ""; 
-                    let playerAvatars = {}; 
+                    list.innerHTML = ""; let playerAvatars = {}; 
                     
                     data.playersInfo.forEach((p) => {
-                        let avatar = p.fotoPerfil || 'images/default-profile.png';
+                        let avatar = p.fotoPerfil || 'images/invitado.jpg';
                         playerAvatars[p.username] = avatar;
                         
                         let imgHtml = `<img src="${avatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover; margin-right:10px; border:2px solid ${p.isHost ? '#FFD700' : '#03DAC6'}; vertical-align:middle;">`;
-
                         const li = document.createElement('li');
-                        li.style.display = "flex";
-                        li.style.justifyContent = "space-between";
-                        li.style.alignItems = "center";
-                        li.style.marginBottom = "10px";
-                        li.style.background = "rgba(255,255,255,0.05)";
-                        li.style.padding = "8px 15px";
-                        li.style.borderRadius = "10px";
+                        li.style.display = "flex"; li.style.justifyContent = "space-between"; li.style.alignItems = "center"; li.style.marginBottom = "10px"; li.style.background = "rgba(255,255,255,0.05)"; li.style.padding = "8px 15px"; li.style.borderRadius = "10px";
                         
-                        // Estado: Listo / Ausente (Rojo)
-                        let statusHtml = p.status === "Ausente" 
-                            ? `<span style="color: #F44336; font-size: 0.8em; margin-left: 5px;">(Ausente)</span>` 
-                            : `<span style="color: #4CAF50; font-size: 0.8em; margin-left: 5px;">(Listo)</span>`;
-
-                        let nameHtml = p.isHost 
-                            ? `<div style="display:flex; align-items:center;">${imgHtml} 👑 <strong style="color: #FFD700; margin-left:5px;">${p.username} (Host)</strong></div>` 
-                            : `<div style="display:flex; align-items:center;">${imgHtml} 👤 <span style="color: ${p.username === currentUser ? '#03DAC6' : 'white'}; margin-left:5px;">${p.username}</span> ${statusHtml}</div>`;
-                        
+                        let statusHtml = p.status === "Ausente" ? `<span style="color: #F44336; font-size: 0.8em; margin-left: 5px;">(Ausente)</span>` : `<span style="color: #4CAF50; font-size: 0.8em; margin-left: 5px;">(Listo)</span>`;
+                        let nameHtml = p.isHost ? `<div style="display:flex; align-items:center;">${imgHtml} 👑 <strong style="color: #FFD700; margin-left:5px;">${p.username} (Host)</strong></div>` : `<div style="display:flex; align-items:center;">${imgHtml} 👤 <span style="color: ${p.username === currentUser ? '#03DAC6' : 'white'}; margin-left:5px;">${p.username}</span> ${statusHtml}</div>`;
                         let kickBtnHtml = "";
                         if (data.hostName === currentUser && !p.isHost) {
                             kickBtnHtml = `<button onclick="window.expulsarJugador('${p.username}')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; transition: transform 0.2s;" title="Expulsar jugador">❌</button>`;
                         }
-
                         li.innerHTML = `${nameHtml} ${kickBtnHtml}`;
-                        
-                        if (p.isHost) {
-                            list.prepend(li); 
-                        } else {
-                            list.appendChild(li); 
-                        }
+                        if (p.isHost) list.prepend(li); else list.appendChild(li); 
                     });
-                    
                     sessionStorage.setItem('player_avatars', JSON.stringify(playerAvatars));
                 }
 
-                // Control visual para el Host y los Invitados
-                const waitingMsg = document.getElementById('waiting-msg');
-                const hostControls = document.getElementById('host-controls');
-                const selectMode = document.getElementById('game-mode');
-                const selectCat = document.getElementById('game-category');
+                const waitingMsg = document.getElementById('waiting-msg'); const hostControls = document.getElementById('host-controls'); const selectMode = document.getElementById('game-mode'); const selectCat = document.getElementById('game-category');
                 
                 if (data.hostName === currentUser) {
-                    if (selectMode) selectMode.disabled = false;
-                    if (selectCat) selectCat.disabled = false;
-                    
+                    if (selectMode) selectMode.disabled = false; if (selectCat) selectCat.disabled = false;
                     if (data.players.length >= 2) {
                         if (hostControls) {
                             hostControls.style.display = 'block';
-                            
-                            // 🔥 COOLDOWN DE 5 SEGUNDOS PARA EL ANFITRIÓN 🔥
                             const cooldownEnd = sessionStorage.getItem('host_cooldown');
                             const btnStart = document.getElementById('btn-start-game-final');
-                            
                             if (cooldownEnd && btnStart) {
                                 const timeLeft = parseInt(cooldownEnd) - Date.now();
                                 if (timeLeft > 0) {
-                                    btnStart.disabled = true;
-                                    btnStart.style.opacity = "0.5";
-                                    let secs = Math.ceil(timeLeft / 1000);
-                                    btnStart.innerText = `⏳ ESPERA (${secs}s)...`;
-                                    
+                                    btnStart.disabled = true; btnStart.style.opacity = "0.5";
+                                    let secs = Math.ceil(timeLeft / 1000); btnStart.innerText = `⏳ ESPERA (${secs}s)...`;
                                     if(window.cooldownInterval) clearInterval(window.cooldownInterval);
-                                    
                                     window.cooldownInterval = setInterval(() => {
                                         secs--;
-                                        if (secs > 0) { 
-                                            btnStart.innerText = `⏳ ESPERA (${secs}s)...`; 
-                                        } else {
-                                            clearInterval(window.cooldownInterval);
-                                            btnStart.disabled = false; 
-                                            btnStart.style.opacity = "1"; 
-                                            btnStart.innerText = "🚀 INICIAR PARTIDA";
-                                            sessionStorage.removeItem('host_cooldown');
-                                        }
+                                        if (secs > 0) { btnStart.innerText = `⏳ ESPERA (${secs}s)...`; } 
+                                        else { clearInterval(window.cooldownInterval); btnStart.disabled = false; btnStart.style.opacity = "1"; btnStart.innerText = "🚀 INICIAR PARTIDA"; sessionStorage.removeItem('host_cooldown'); }
                                     }, 1000);
-                                } else {
-                                    btnStart.disabled = false; 
-                                    btnStart.style.opacity = "1"; 
-                                    btnStart.innerText = "🚀 INICIAR PARTIDA";
-                                }
-                            } else if (btnStart) {
-                                btnStart.disabled = false; 
-                                btnStart.style.opacity = "1"; 
-                                btnStart.innerText = "🚀 INICIAR PARTIDA";
-                            }
+                                } else { btnStart.disabled = false; btnStart.style.opacity = "1"; btnStart.innerText = "🚀 INICIAR PARTIDA"; }
+                            } else if (btnStart) { btnStart.disabled = false; btnStart.style.opacity = "1"; btnStart.innerText = "🚀 INICIAR PARTIDA"; }
                         }
                         if (waitingMsg) waitingMsg.style.display = 'none';
                     } else {
                         if (hostControls) hostControls.style.display = 'none';
-                        if (waitingMsg) {
-                            waitingMsg.innerText = `Esperando a que se unan los jugadores (Máx 10)...`;
-                            waitingMsg.style.display = 'block';
-                        }
+                        if (waitingMsg) { waitingMsg.innerText = `Esperando a que se unan los jugadores (Máx 10)...`; waitingMsg.style.display = 'block'; }
                     }
                 } else {
-                    if (selectMode) selectMode.disabled = true;
-                    if (selectCat) selectCat.disabled = true;
-                    
-                    // 🔥 ACTUALIZA MODO Y CATEGORÍA EN TIEMPO REAL PARA INVITADOS 🔥
-                    if (selectMode && data.gameMode && selectMode.value !== data.gameMode) {
-                        selectMode.value = data.gameMode;
-                        selectMode.style.border = "2px solid #03DAC6";
-                        setTimeout(() => selectMode.style.border = "none", 1000);
-                    }
+                    if (selectMode) selectMode.disabled = true; if (selectCat) selectCat.disabled = true;
+                    if (selectMode && data.gameMode && selectMode.value !== data.gameMode) { selectMode.value = data.gameMode; selectMode.style.border = "2px solid #03DAC6"; setTimeout(() => selectMode.style.border = "none", 1000); }
                     if (selectCat && data.categoryName && selectCat.value !== data.categoryName) {
                         let exists = Array.from(selectCat.options).some(o => o.value === data.categoryName);
-                        if(!exists) {
-                            selectCat.add(new Option(data.categoryName, data.categoryName));
-                        }
-                        selectCat.value = data.categoryName;
-                        selectCat.style.border = "2px solid #FF9800";
-                        setTimeout(() => selectCat.style.border = "none", 1000);
+                        if(!exists) { selectCat.add(new Option(data.categoryName, data.categoryName)); }
+                        selectCat.value = data.categoryName; selectCat.style.border = "2px solid #FF9800"; setTimeout(() => selectCat.style.border = "none", 1000);
                     }
-
-                    if (waitingMsg) {
-                        waitingMsg.innerText = `Esperando al Host (${data.players.length}/10)...`;
-                        waitingMsg.style.display = 'block';
-                    }
+                    if (waitingMsg) { waitingMsg.innerText = `Esperando al Host (${data.players.length}/10)...`; waitingMsg.style.display = 'block'; }
                     if (hostControls) hostControls.style.display = 'none';
                 }
-                
-                sessionStorage.setItem('current_game_id', data.gameId);
-                sessionStorage.setItem('current_host_name', data.hostName);
+                sessionStorage.setItem('current_game_id', data.gameId); sessionStorage.setItem('current_host_name', data.hostName);
             }
         });
 
-        // --- Suscripción: Pantalla de Votación ---
         stompClient.subscribe(`/topic/game.voting.${currentUser}`, function (message) {
             const data = JSON.parse(message.body);
-            if (data.type === "START_VOTING") {
-                window.categoriasParaVotar = data.categories;
-                window.miVoto = null;
-                window.mostrarPantallaVotacion(data.categories);
-            } else if (data.type === "VOTE_UPDATE") {
-                window.actualizarContadorVotos(data.votes);
-            } else if (data.type === "VOTING_RESULT") {
-                window.procesarResultadoVotacion(data.winner, data.isTie, data.tiedOptions);
-            }
+            if (data.type === "START_VOTING") { window.categoriasParaVotar = data.categories; window.miVoto = null; window.mostrarPantallaVotacion(data.categories); } 
+            else if (data.type === "VOTE_UPDATE") { window.actualizarContadorVotos(data.votes); } 
+            else if (data.type === "VOTING_RESULT") { window.procesarResultadoVotacion(data.winner, data.isTie, data.tiedOptions); }
         });
 
-        // --- Suscripción: Iniciar Partida ---
         stompClient.subscribe(`/topic/game.start.${currentUser}`, function (message) {
             const gameData = JSON.parse(message.body);
             sessionStorage.removeItem('last_voluntary_game_id'); 
+            sessionStorage.setItem('current_game_mode', gameData.gameMode || "Quizziz"); sessionStorage.setItem('current_game_category', gameData.category || "Cultura General"); sessionStorage.setItem('current_game_players', JSON.stringify(gameData.players));
             
-            sessionStorage.setItem('current_game_mode', gameData.gameMode || "Quizziz");
-            sessionStorage.setItem('current_game_category', gameData.category || "Cultura General");
-            sessionStorage.setItem('current_game_players', JSON.stringify(gameData.players));
-            
+            document.getElementById('global-chat-btn').style.display = 'flex';
             irAPantallaDeJuego(gameData.players, gameData.gameMode); 
-            
-            // 🔥 FIX: Quitamos la reescritura del current_game_id para no matar el Ausente
-            
-            if (typeof inicializarJuego === "function") {
-                inicializarJuego(gameData);
-            }
+            if (typeof inicializarJuego === "function") inicializarJuego(gameData);
         });
 
-        // --- Suscripción: Actualizaciones durante la partida ---
         stompClient.subscribe(`/topic/game.updates.${currentUser}`, function (message) {
             const update = JSON.parse(message.body);
-            if (update.type === "PLAYER_ANSWERED_LIVE") {
-                if (typeof rivalHaRespondidoLive === "function") rivalHaRespondidoLive(update);
-            } else if (update.type === "RIVAL_ANSWERED") {
-                if (typeof rivalHaRespondido === "function") rivalHaRespondido();
-            } else if (update.type === "ROUND_RESULT") {
-                if (typeof procesarResultadoRonda === "function") procesarResultadoRonda(update);
-            } else if (update.type === "GAME_OVER") {
-                sessionStorage.removeItem('last_voluntary_game_id');
-                if (typeof finalizarJuego === "function") finalizarJuego(update);
-            } else if (update.type === "GAME_OVER_ABORTED") {
-                sessionStorage.removeItem('last_voluntary_game_id');
-                if (typeof forzarFinalAbrupto === "function") forzarFinalAbrupto(update);
-            } else if (update.type === "PLAYER_LEFT") {
-                window.mostrarToastInfo(`🚪 ${update.winnerUsername} ha abandonado la partida.`);
-            }
+            if (update.type === "PLAYER_ANSWERED_LIVE") { if (typeof rivalHaRespondidoLive === "function") rivalHaRespondidoLive(update); } 
+            else if (update.type === "RIVAL_ANSWERED") { if (typeof rivalHaRespondido === "function") rivalHaRespondido(); } 
+            else if (update.type === "ROUND_RESULT") { if (typeof procesarResultadoRonda === "function") procesarResultadoRonda(update); } 
+            else if (update.type === "GAME_OVER") { sessionStorage.removeItem('last_voluntary_game_id'); if (typeof finalizarJuego === "function") finalizarJuego(update); } 
+            else if (update.type === "GAME_OVER_ABORTED") { sessionStorage.removeItem('last_voluntary_game_id'); if (typeof forzarFinalAbrupto === "function") forzarFinalAbrupto(update); } 
+            else if (update.type === "PLAYER_LEFT") { window.mostrarToastInfo(`🚪 ${update.winnerUsername} ha abandonado la partida.`); }
         });
 
-        // Sincronización inicial al cargar el websocket
         setTimeout(() => {
             const hash = window.location.hash;
-            
-            // Forzamos el Sync para recuperar estado de menús y botones
             stompClient.send("/app/lobby.sync", {}, JSON.stringify({}));
-            
             if (hash === '#screen-lobby' || hash === '#screen-game' || hash === '#screen-voting') {
                 const list = document.getElementById('lobby-players-list');
-                
                 if (list && list.children.length === 0) {
-                    const myAvatar = sessionStorage.getItem('genius_avatar') || 'images/default-profile.png';
-                    list.innerHTML = `
-                    <li style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 10px;">
-                        <div style="display:flex; align-items:center;">
-                            <img src="${myAvatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover; margin-right:10px; border:2px solid #FFD700; vertical-align:middle;">
-                            👑 <strong style="color: #FFD700; margin-left:5px;">${currentUser} (Host)</strong>
-                        </div>
-                    </li>`;
+                    const myAvatar = sessionStorage.getItem('genius_avatar') || 'images/invitado.jpg';
+                    list.innerHTML = `<li style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 10px;"><div style="display:flex; align-items:center;"><img src="${myAvatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover; margin-right:10px; border:2px solid #FFD700; vertical-align:middle;">👑 <strong style="color: #FFD700; margin-left:5px;">${currentUser} (Host)</strong></div></li>`;
                 }
-                
                 if (typeof cargarListaAmigos === "function") cargarListaAmigos();
                 if (typeof cargarCategorias === "function") cargarCategorias();
             }
         }, 1200); 
 
-    }, function(error) {
-        setTimeout(() => conectarWebSocket(token, username), 2000);
-    });
+    }, function(error) { setTimeout(() => conectarWebSocket(token, username), 2000); });
 }
-
-// ==========================================
-// 4. FUNCIONES AUXILIARES
-// ==========================================
 
 window.expulsarJugador = function(usernameTarget) {
     window.mostrarToastConfirmacion(`¿Expulsar a <strong>${usernameTarget}</strong> de la sala?`, () => {
         const gameId = sessionStorage.getItem('current_game_id');
-        if (stompClient && stompClient.connected && gameId) {
-            stompClient.send("/app/lobby.kick", {}, JSON.stringify({
-                gameId: gameId,
-                usernameToKick: usernameTarget
-            }));
-        }
+        if (stompClient && stompClient.connected && gameId) { stompClient.send("/app/lobby.kick", {}, JSON.stringify({ gameId: gameId, usernameToKick: usernameTarget })); }
     });
 };
 
 function irALobbyComoInvitado(hostName) {
-    document.querySelectorAll('.screen').forEach(s => {
-        s.style.display = 'none';
-        s.classList.add('hidden');
-    });
-    
+    document.querySelectorAll('.screen').forEach(s => { s.style.display = 'none'; s.classList.add('hidden'); });
     const sLobby = document.getElementById('screen-lobby');
-    if (sLobby) {
-        sLobby.classList.remove('hidden');
-        sLobby.style.display = 'block'; 
-        window.location.hash = '#screen-lobby';
-    }
-
-    if (typeof resetearVistasDeJuego === "function") {
-        resetearVistasDeJuego();
-    }
-    
-    const waitingMsg = document.getElementById('waiting-msg');
-    const hostControls = document.getElementById('host-controls');
-
-    if (waitingMsg) {
-        waitingMsg.innerText = "Conectando con la sala...";
-        waitingMsg.style.display = 'block';
-    }
+    if (sLobby) { sLobby.classList.remove('hidden'); sLobby.style.display = 'block'; window.location.hash = '#screen-lobby'; }
+    if (typeof resetearVistasDeJuego === "function") resetearVistasDeJuego();
+    const waitingMsg = document.getElementById('waiting-msg'); const hostControls = document.getElementById('host-controls');
+    if (waitingMsg) { waitingMsg.innerText = "Conectando con la sala..."; waitingMsg.style.display = 'block'; }
     if (hostControls) hostControls.style.display = 'none';
+    document.getElementById('global-chat-btn').style.display = 'flex';
 }
 
 function irAPantallaDeJuego(players, mode) {
-    const sLobby = document.getElementById('screen-lobby');
-    const sGame = document.getElementById('screen-game');
-    const sVote = document.getElementById('screen-voting');
-    
-    if (sVote) {
-        sVote.style.display = 'none';
-        sVote.classList.add('hidden');
-    }
-
-    if (sGame) {
-        sGame.style.display = 'block';
-        sGame.classList.remove('hidden');
-    }
-
-    if (typeof cambiarPantalla === "function") {
-        cambiarPantalla(sLobby, sGame);
-    }
-    
+    const sLobby = document.getElementById('screen-lobby'); const sGame = document.getElementById('screen-game'); const sVote = document.getElementById('screen-voting');
+    if (sVote) { sVote.style.display = 'none'; sVote.classList.add('hidden'); }
+    if (sGame) { sGame.style.display = 'block'; sGame.classList.remove('hidden'); }
+    if (typeof cambiarPantalla === "function") cambiarPantalla(sLobby, sGame);
+    document.getElementById('global-chat-btn').style.display = 'flex';
     const oppElement = document.getElementById('opponent-name');
-    if (oppElement) {
-        let num = Array.isArray(players) ? players.length : 2;
-        let modeName = mode ? mode : "Quizziz";
-        oppElement.innerText = `🏆 MODO ${modeName.toUpperCase()}: ${num} Jugadores`;
-    }
+    if (oppElement) { let num = Array.isArray(players) ? players.length : 2; let modeName = mode ? mode : "Quizziz"; oppElement.innerText = `🏆 MODO ${modeName.toUpperCase()}: ${num} Jugadores`; }
 }
 
 function enviarInvitacionJuego(amigoUsername, categoria) {
     if (!stompClient || !stompClient.connected) return;
-    
-    stompClient.send("/app/game.invite", {}, JSON.stringify({
-        receiverUsername: amigoUsername,
-        categoryName: categoria || "Cultura General"
-    }));
-    
+    stompClient.send("/app/game.invite", {}, JSON.stringify({ receiverUsername: amigoUsername, categoryName: categoria || "Cultura General" }));
     window.mostrarToastExito("Has invitado a " + amigoUsername);
 }
 
 function enviarRespuesta(gameId, respuestaSeleccionada) {
     if (!stompClient || !stompClient.connected) return;
-    
-    stompClient.send("/app/game.answer", {}, JSON.stringify({
-        gameId: gameId,
-        selectedAnswer: respuestaSeleccionada 
-    }));
+    stompClient.send("/app/game.answer", {}, JSON.stringify({ gameId: gameId, selectedAnswer: respuestaSeleccionada }));
 }

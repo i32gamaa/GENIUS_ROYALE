@@ -23,17 +23,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @Controller
 public class GamePlayController {
 
-    @Autowired 
-    private SimpMessagingTemplate messagingTemplate;
-    
-    @Autowired 
-    private GameRepository gameRepository;
-    
-    @Autowired 
-    private UserRepository userRepository;
-    
-    @Autowired 
-    private QuestionRepository questionRepository;
+    @Autowired private SimpMessagingTemplate messagingTemplate;
+    @Autowired private GameRepository gameRepository;
+    @Autowired private UserRepository userRepository;
+    @Autowired private QuestionRepository questionRepository;
 
     private static final Map<String, Map<String, String>> RESPUESTAS_EN_VIVO = new ConcurrentHashMap<>();
 
@@ -52,14 +45,11 @@ public class GamePlayController {
             GameUpdateDTO update = new GameUpdateDTO();
             update.setType("PLAYER_LEFT");
             update.setWinnerUsername(username); 
-            
             for (User u : game.getPlayers()) {
                 messagingTemplate.convertAndSend("/topic/game.updates." + u.getUsername(), update);
             }
 
-            long aliveCount = game.getPlayers().stream()
-                    .filter(p -> !game.getEliminatedPlayers().contains(p.getUsername()))
-                    .count();
+            long aliveCount = game.getPlayers().stream().filter(p -> !game.getEliminatedPlayers().contains(p.getUsername())).count();
             
             if (aliveCount <= 1 && game.getPlayers().size() > 1) {
                 terminarPartidaAbruptamente(game);
@@ -83,7 +73,6 @@ public class GamePlayController {
 
         if (!respuestasPartida.containsKey(username)) {
             respuestasPartida.put(username, answer.getSelectedAnswer());
-            
             GameUpdateDTO rivalUpdate = new GameUpdateDTO();
             rivalUpdate.setType("PLAYER_ANSWERED_LIVE");
             rivalUpdate.setWinnerUsername(username); 
@@ -94,9 +83,7 @@ public class GamePlayController {
             }
         }
 
-        long aliveCount = game.getPlayers().stream()
-                .filter(p -> !game.getEliminatedPlayers().contains(p.getUsername()))
-                .count();
+        long aliveCount = game.getPlayers().stream().filter(p -> !game.getEliminatedPlayers().contains(p.getUsername())).count();
 
         synchronized (respuestasPartida) {
             if (respuestasPartida.size() >= aliveCount && aliveCount > 0) {
@@ -111,7 +98,6 @@ public class GamePlayController {
         String[] questionIds = game.getQuestionIds().split(",");
         int questionIndex = game.getCurrentQuestionIndex();
         Question question = questionRepository.findById(Integer.parseInt(questionIds[questionIndex])).orElseThrow();
-        
         String correctAnswer = question.getCorrectAnswer();
         boolean isBattleRoyale = "Battle Royale".equals(game.getGameMode());
 
@@ -168,27 +154,18 @@ public class GamePlayController {
         List<String> tiedPlayers = new ArrayList<>();
         
         if (isBattleRoyale) {
-            long aliveCount = game.getPlayers().stream()
-                    .filter(p -> !game.getEliminatedPlayers().contains(p.getUsername()))
-                    .count();
-            
+            long aliveCount = game.getPlayers().stream().filter(p -> !game.getEliminatedPlayers().contains(p.getUsername())).count();
             if (aliveCount == 1) {
-                String aliveWinner = game.getPlayers().stream()
-                        .filter(p -> !game.getEliminatedPlayers().contains(p.getUsername()))
-                        .findFirst().get().getUsername();
+                String aliveWinner = game.getPlayers().stream().filter(p -> !game.getEliminatedPlayers().contains(p.getUsername())).findFirst().get().getUsername();
                 tiedPlayers.add(aliveWinner);
             } else {
                 for (Map.Entry<String, Integer> e : game.getScores().entrySet()) {
-                    if (e.getValue() != null && e.getValue().equals(maxScore)) {
-                        tiedPlayers.add(e.getKey());
-                    }
+                    if (e.getValue() != null && e.getValue().equals(maxScore)) tiedPlayers.add(e.getKey());
                 }
             }
         } else {
             for (Map.Entry<String, Integer> e : game.getScores().entrySet()) {
-                if (e.getValue() != null && e.getValue().equals(maxScore)) {
-                    tiedPlayers.add(e.getKey());
-                }
+                if (e.getValue() != null && e.getValue().equals(maxScore)) tiedPlayers.add(e.getKey());
             }
         }
 
@@ -228,6 +205,9 @@ public class GamePlayController {
         for (User u : game.getPlayers()) {
             messagingTemplate.convertAndSend("/topic/game.updates." + u.getUsername(), gameOver);
         }
+        
+        // 🔥 FIX: Reseteamos la sala pública para Re-Matchmaking 🔥
+        GameLobbyController.finalizarJuegoEnLobby(game.getPlayers());
         gameRepository.save(game);
     }
 
@@ -249,13 +229,13 @@ public class GamePlayController {
             }
         }
 
-        // 🔥 FIX: GENERAMOS DADOS TRUCADOS PARA JUSTIFICAR POSICIONES SI HUBO EMPATE A 0 PUNTOS 🔥
+        // 🔥 FIX: Dados TRUCADOS. El superviviente saca un 6. Evita bugs visuales de undefined 🔥
         Map<String, String> diceRolls = new HashMap<>();
         for (User p : game.getPlayers()) {
             if (p.getUsername().equals(winner)) {
-                diceRolls.put(p.getUsername(), "6"); // El superviviente saca un 6 absoluto
+                diceRolls.put(p.getUsername(), "6"); 
             } else {
-                diceRolls.put(p.getUsername(), String.valueOf((int) (Math.random() * 3) + 1)); // El cobarde saca entre 1 y 3
+                diceRolls.put(p.getUsername(), String.valueOf((int) (Math.random() * 3) + 1)); 
             }
         }
 
@@ -263,11 +243,14 @@ public class GamePlayController {
         gameOver.setType("GAME_OVER_ABORTED"); 
         gameOver.setWinnerUsername(winner);
         gameOver.setScores(game.getScores());
-        gameOver.setCorrectAnswer(diceRolls.toString()); // Enviamos los dados trucados
+        gameOver.setCorrectAnswer(diceRolls.toString()); // Mandamos los dados trucados
         
         for (User u : game.getPlayers()) {
             messagingTemplate.convertAndSend("/topic/game.updates." + u.getUsername(), gameOver);
         }
+        
+        // 🔥 FIX: Reseteamos la sala pública para Re-Matchmaking 🔥
+        GameLobbyController.finalizarJuegoEnLobby(game.getPlayers());
         gameRepository.save(game);
     }
 

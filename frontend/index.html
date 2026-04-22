@@ -16,40 +16,13 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Montserrat:wght@500;700&display=swap');
-
         .cinematic-title { font-family: 'Cinzel Decorative', cursive; }
         .cinematic-subtitle { font-family: 'Montserrat', sans-serif; }
-
-        @keyframes slowZoom {
-            0% { transform: scale(1); }
-            100% { transform: scale(1.15); }
-        }
-
-        .intro-bg {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: url('images/intro-bg.jpg') center/cover no-repeat;
-            background-color: #0f0518; 
-            animation: slowZoom 20s linear infinite alternate;
-            z-index: 1;
-        }
-
-        .intro-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, rgba(20,5,40,0.3) 0%, rgba(0,0,0,0.85) 100%);
-            z-index: 2;
-        }
-
-        .intro-content {
-            position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center;
-        }
-
-        .grid-menu-btn {
-            background: rgba(255, 255, 255, 0.05); border: 2px solid transparent; border-radius: 20px;
-            padding: 40px 20px; font-size: 1.8rem; color: white; font-weight: bold; cursor: pointer;
-            transition: all 0.3s ease; backdrop-filter: blur(10px); position: relative;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: 15px; text-transform: uppercase; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
+        @keyframes slowZoom { 0% { transform: scale(1); } 100% { transform: scale(1.15); } }
+        .intro-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('images/intro-bg.jpg') center/cover no-repeat; background-color: #0f0518; animation: slowZoom 20s linear infinite alternate; z-index: 1; }
+        .intro-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, rgba(20,5,40,0.3) 0%, rgba(0,0,0,0.85) 100%); z-index: 2; }
+        .intro-content { position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; }
+        .grid-menu-btn { background: rgba(255, 255, 255, 0.05); border: 2px solid transparent; border-radius: 20px; padding: 40px 20px; font-size: 1.8rem; color: white; font-weight: bold; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; text-transform: uppercase; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .grid-menu-btn:hover { transform: translateY(-5px) scale(1.02); }
         .grid-menu-btn.btn-public { border-color: #03DAC6; background: linear-gradient(135deg, rgba(98,0,234,0.8), rgba(55,0,179,0.8)); }
         .grid-menu-btn.btn-public:hover { box-shadow: 0 15px 40px rgba(3, 218, 198, 0.4); }
@@ -59,115 +32,28 @@
         .grid-menu-btn.btn-req:hover { border-color: #81C784; box-shadow: 0 15px 40px rgba(76, 175, 80, 0.4); background: rgba(255,255,255,0.1); }
         .grid-menu-btn.btn-msg { border-color: #E91E63; }
         .grid-menu-btn.btn-msg:hover { border-color: #F06292; box-shadow: 0 15px 40px rgba(233, 30, 99, 0.4); background: rgba(255,255,255,0.1); }
-
-        .badge-grid {
-            position: absolute; top: 15px; right: 15px; background: #F44336; color: white;
-            padding: 5px 12px; border-radius: 50%; font-size: 1.2rem; font-weight: bold;
-            display: none; box-shadow: 0 0 15px #F44336; animation: pulso-logo 1.5s infinite;
-        }
-
+        .badge-grid { position: absolute; top: 15px; right: 15px; background: #F44336; color: white; padding: 5px 12px; border-radius: 50%; font-size: 1.2rem; font-weight: bold; display: none; box-shadow: 0 0 15px #F44336; animation: pulso-logo 1.5s infinite; }
         #menu-sidebar { transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1); }
-        
-        .stat-box {
-            background: rgba(0,0,0,0.5); border: 1px solid #03DAC6; border-radius: 10px; padding: 15px; flex: 1; text-align: center;
-        }
+        .stat-box { background: rgba(0,0,0,0.5); border: 1px solid #03DAC6; border-radius: 10px; padding: 15px; flex: 1; text-align: center; }
         .stat-number { font-size: 2rem; color: #FFD700; font-weight: bold; margin: 5px 0; }
-
-        select option {
-            background-color: #1a0b2e;
-            color: #ffffff;
-            font-weight: bold;
-        }
-
-        #screen-login, #screen-register {
-            background: radial-gradient(circle, #2D0A4E, #000) !important;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .login-box {
-            background: rgba(0,0,0,0.7) !important;
-            border: 2px solid #03DAC6 !important;
-            box-shadow: 0 0 30px rgba(3, 218, 198, 0.3) !important;
-            color: white !important;
-            border-radius: 20px !important;
-            padding: 40px 30px !important;
-        }
-        .login-box h2 {
-            color: #FFD700 !important;
-            text-shadow: 0 0 15px rgba(255,215,0,0.5);
-            font-family: 'Cinzel Decorative', cursive;
-            font-size: 2.2rem;
-            margin-bottom: 25px;
-        }
-        .login-box label {
-            color: #03DAC6 !important;
-            font-weight: bold;
-        }
-        .login-box input {
-            background: rgba(255,255,255,0.05) !important;
-            color: white !important;
-            border: 1px solid #555 !important;
-            border-radius: 10px;
-            padding: 12px;
-            transition: all 0.3s;
-        }
-        .login-box input:focus {
-            border-color: #FF9800 !important;
-            outline: none;
-            box-shadow: 0 0 15px rgba(255,152,0,0.4);
-            background: rgba(255,255,255,0.1) !important;
-        }
-        .login-box .btn-login {
-            background: linear-gradient(135deg, #FF9800, #FF5722) !important;
-            border: none;
-            border-radius: 10px;
-            font-weight: bold;
-            font-size: 1.2rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            box-shadow: 0 5px 15px rgba(255, 87, 34, 0.5);
-            margin-top: 15px;
-            transition: transform 0.2s;
-        }
-        .login-box .btn-login:hover {
-            transform: scale(1.05);
-        }
+        select option { background-color: #1a0b2e; color: #ffffff; font-weight: bold; }
+        #screen-login, #screen-register { background: radial-gradient(circle, #2D0A4E, #000) !important; display: flex; justify-content: center; align-items: center; }
+        .login-box { background: rgba(0,0,0,0.7) !important; border: 2px solid #03DAC6 !important; box-shadow: 0 0 30px rgba(3, 218, 198, 0.3) !important; color: white !important; border-radius: 20px !important; padding: 40px 30px !important; }
+        .login-box h2 { color: #FFD700 !important; text-shadow: 0 0 15px rgba(255,215,0,0.5); font-family: 'Cinzel Decorative', cursive; font-size: 2.2rem; margin-bottom: 25px; }
+        .login-box label { color: #03DAC6 !important; font-weight: bold; }
+        .login-box input { background: rgba(255,255,255,0.05) !important; color: white !important; border: 1px solid #555 !important; border-radius: 10px; padding: 12px; transition: all 0.3s; }
+        .login-box input:focus { border-color: #FF9800 !important; outline: none; box-shadow: 0 0 15px rgba(255,152,0,0.4); background: rgba(255,255,255,0.1) !important; }
+        .login-box .btn-login { background: linear-gradient(135deg, #FF9800, #FF5722) !important; border: none; border-radius: 10px; font-weight: bold; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 5px 15px rgba(255, 87, 34, 0.5); margin-top: 15px; transition: transform 0.2s; }
+        .login-box .btn-login:hover { transform: scale(1.05); }
         .login-footer p { color: #ccc !important; }
         .login-footer a { color: #03DAC6 !important; font-weight: bold; transition: color 0.3s; }
         .login-footer a:hover { color: #FFD700 !important; text-decoration: none; text-shadow: 0 0 10px rgba(255,215,0,0.5); }
-        .app-logo {
-            border: 3px solid #FFD700;
-            box-shadow: 0 0 25px rgba(255,215,0,0.6);
-            border-radius: 50%;
-        }
-
-        /* 🔥 ESTILOS PARA LA VOTACIÓN 🔥 */
-        .vote-card { 
-            background: rgba(255,255,255,0.05); 
-            border: 2px solid #555; 
-            border-radius: 15px; 
-            padding: 20px; 
-            cursor: pointer; 
-            transition: all 0.3s; 
-            text-align: center; 
-        }
-        .vote-card:hover {
-            background: rgba(255,255,255,0.1);
-        }
-        .vote-card.selected { 
-            border-color: #03DAC6; 
-            background: rgba(3,218,198,0.2); 
-            transform: scale(1.05); 
-        }
-        .vote-card.highlight { 
-            animation: flash-vote 0.2s infinite; 
-        }
-        @keyframes flash-vote { 
-            0% { border-color: #FFD700; background: rgba(255,215,0,0.3); } 
-            50% { border-color: transparent; background: rgba(255,255,255,0.05); } 
-            100% { border-color: #FFD700; background: rgba(255,215,0,0.3); } 
-        }
+        .app-logo { border: 3px solid #FFD700; box-shadow: 0 0 25px rgba(255,215,0,0.6); border-radius: 50%; }
+        .vote-card { background: rgba(255,255,255,0.05); border: 2px solid #555; border-radius: 15px; padding: 20px; cursor: pointer; transition: all 0.3s; text-align: center; }
+        .vote-card:hover { background: rgba(255,255,255,0.1); }
+        .vote-card.selected { border-color: #03DAC6; background: rgba(3,218,198,0.2); transform: scale(1.05); }
+        .vote-card.highlight { animation: flash-vote 0.2s infinite; }
+        @keyframes flash-vote { 0% { border-color: #FFD700; background: rgba(255,215,0,0.3); } 50% { border-color: transparent; background: rgba(255,255,255,0.05); } 100% { border-color: #FFD700; background: rgba(255,215,0,0.3); } }
     </style>
 </head>
 <body>
@@ -223,7 +109,6 @@
     </div>
 
     <div id="screen-menu" class="screen hidden" style="display:none; flex-direction: row; height: 100vh; width: 100vw; background: radial-gradient(circle, #2D0A4E, #000); overflow: hidden;">
-        
         <div id="login-intro-animation" style="display: none; position: absolute; top:0; left:0; width:100%; height:100%; flex-direction: column; justify-content: center; align-items: center; z-index: 100; transition: opacity 1s ease; overflow: hidden; background: #000;">
             <div class="intro-bg"></div>
             <div class="intro-overlay"></div>
@@ -235,18 +120,17 @@
         </div>
 
         <div id="menu-sidebar" style="width: 300px; background: rgba(0,0,0,0.7); border-right: 2px solid rgba(255, 215, 0, 0.3); display: flex; flex-direction: column; justify-content: flex-start; padding: 30px 20px; box-shadow: 5px 0 25px rgba(0,0,0,0.8); z-index: 10; transform: translateX(-100%);">
-            
             <div style="display: flex; flex-direction: column; align-items: center;">
                 <img src="images/logo.jpeg" alt="Logo" style="width: 140px; height: 140px; border-radius: 50%; border: 3px solid #03DAC6; box-shadow: 0 0 20px rgba(3, 218, 198, 0.6); margin-bottom: 30px;">
-                
                 <div onclick="window.abrirMiPerfil()" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 10px 15px; width: 100%; display: flex; align-items: center; justify-content: flex-start; gap: 15px; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
-                    <img id="sidebar-profile-pic" src="images/default-profile.png" alt="Perfil" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #03DAC6; flex-shrink: 0;">
+                    <img id="sidebar-profile-pic" src="images/invitado.jpg" alt="Perfil" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #03DAC6; flex-shrink: 0;">
                     <h2 id="display-username" style="color: white; font-size: 1.2rem; margin: 0; word-break: break-word; text-align: left;"></h2>
                 </div>
             </div>
-
             <div style="display: flex; flex-direction: column; gap: 15px; width: 100%; margin-top: 80px;">
-                <button onclick="window.abrirListaAmigosStats()" class="btn-menu" style="width: 100%; border-radius: 10px; font-weight: bold; background-color: #673AB7; color: white;">👥 Mis Amigos</button>
+                <button onclick="window.abrirListaAmigosStats()" class="btn-menu" style="position:relative; width: 100%; border-radius: 10px; font-weight: bold; background-color: #673AB7; color: white;">
+                    👥 Mis Amigos <span id="sidebar-amigos-badge" class="badge-grid" style="display:none; position:absolute; top:-10px; right:-10px;">0</span>
+                </button>
                 <button id="btn-add-friend-menu" class="btn-menu btn-info" style="width: 100%; border-radius: 10px; font-weight: bold;">➕ Añadir Amigo</button>
                 <button id="btn-logout" class="btn-menu btn-danger" style="width: 100%; border-radius: 10px; font-weight: bold; background: #D32F2F;">🚪 Cerrar Sesión</button>
             </div>
@@ -256,7 +140,6 @@
             <button id="btn-rejoin-lobby" style="display: none; background: linear-gradient(135deg, #FF9800, #FF5722); color: white; font-size: 1.2rem; border: 2px solid #FFF; box-shadow: 0 0 20px rgba(255, 87, 34, 0.7); padding: 15px 30px; border-radius: 15px; margin-bottom: 30px; cursor:pointer; font-weight:bold; transition: transform 0.2s;">
                 🔥 Volver a tu Sala Activa
             </button>
-
             <div id="main-grid-menu" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 100%; max-width: 800px; opacity: 0; transition: opacity 1s ease;">
                 <button id="btn-public-game" onclick="window.abrirSeleccionModoPublico()" class="grid-menu-btn btn-public"><span style="font-size: 4rem;">⚔️</span><span>Partida Pública</span></button>
                 <button id="btn-private-game" class="grid-menu-btn btn-private"><span style="font-size: 4rem;">🛡️</span><span>Partida Privada</span></button>
@@ -273,27 +156,22 @@
             <button onclick="window.unirseAPartidaPublica('Quizziz')" class="grid-menu-btn" style="border-color:#FF9800; background: rgba(255,152,0,0.1);"><span style="font-size: 3rem;">⚡</span><span>Quizziz Clásico</span></button>
             <button onclick="window.unirseAPartidaPublica('Battle Royale')" class="grid-menu-btn" style="border-color:#F44336; background: rgba(244,67,54,0.1);"><span style="font-size: 3rem;">🔥</span><span>Battle Royale</span></button>
         </div>
-        <button onclick="cambiarPantalla(document.getElementById('screen-public-modes'), document.getElementById('screen-menu'))" style="margin-top: 50px; background: transparent; border: 2px solid #aaa; color: #aaa; padding: 12px 40px; border-radius: 10px; cursor:pointer; font-weight: bold; font-size: 1.2rem; transition: all 0.3s;" onmouseover="this.style.color='#fff'; this.style.borderColor='#fff';" onmouseout="this.style.color='#aaa'; this.style.borderColor='#aaa';">Volver al Menú</button>
+        <button onclick="cambiarPantalla(document.getElementById('screen-public-modes'), document.getElementById('screen-menu'));" style="margin-top: 50px; background: transparent; border: 2px solid #aaa; color: #aaa; padding: 12px 40px; border-radius: 10px; cursor:pointer; font-weight: bold; font-size: 1.2rem; transition: all 0.3s;" onmouseover="this.style.color='#fff'; this.style.borderColor='#fff';" onmouseout="this.style.color='#aaa'; this.style.borderColor='#aaa';">Volver al Menú</button>
     </div>
 
     <div id="screen-voting" class="screen hidden" style="display:none; background: radial-gradient(circle, #1a0b2e, #000); flex-direction: column; justify-content: center; align-items: center; height: 100vh; width: 100vw; z-index: 10000;">
         <h2 class="cinematic-title" style="color: #03DAC6; font-size: 3rem; margin-bottom: 10px; text-shadow: 0 0 20px rgba(3,218,198,0.5);">¡VOTACIÓN DE CATEGORÍA!</h2>
         <p style="color: #ccc; margin-bottom: 40px; font-size: 1.2rem;">Elige el tema de la batalla antes de que se acabe el tiempo.</p>
-        
-        <div id="voting-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; width: 90%; max-width: 1000px;">
-            </div>
-        
+        <div id="voting-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; width: 90%; max-width: 1000px;"></div>
         <div id="voting-timer" style="margin-top: 50px; font-size: 4rem; color: #FFD700; font-weight: bold; text-shadow: 0 0 30px #FFD700;">10s</div>
     </div>
 
     <div id="screen-lobby" class="screen hidden" style="display:none; background: radial-gradient(circle, #2D0A4E, #000); min-height: 100vh; overflow-y:auto;">
         <div class="lobby-container" style="width: 100%; max-width: 900px; margin: 0 auto; padding: 20px; background: transparent; box-shadow: none;">
             <h2 id="lobby-title" style="text-align: center; color: #FFD700; font-size: 3.5rem; text-shadow: 0 0 20px rgba(255,215,0,0.5);">Sala Privada</h2>
-            
             <div class="lobby-layout">
                 <div class="lobby-config panel" style="background: rgba(0,0,0,0.7); border: 1px solid #03DAC6; box-shadow: 0 0 20px rgba(0,0,0,0.8); color: white;">
                     <h3 style="color:#03DAC6;">Configuración</h3>
-                    
                     <div id="config-private-only">
                         <div class="input-group">
                             <label for="game-mode" style="color:#ccc;">Modo de Juego:</label>
@@ -310,24 +188,20 @@
                             </select>
                         </div>
                     </div>
-
                     <div id="config-public-display" style="display:none; text-align:center; padding: 20px 0;">
                         <h4 style="color:#aaa; font-weight:normal; letter-spacing: 2px;">MODO PÚBLICO ACTIVO</h4>
                         <h2 id="public-mode-label" style="color:#FFD700; font-size: 2rem; margin: 10px 0; text-transform: uppercase;">--</h2>
                         <p style="color:#03DAC6; font-style:italic;">Categoría elegida por Votación 🗳️</p>
                     </div>
-                    
                     <div id="host-controls" style="display: none; margin-top: 20px;">
                         <button id="btn-start-game-final" class="btn-primary" style="background: #4CAF50; width: 100%; padding:15px; border-radius: 8px; font-weight: bold; font-size:1.2rem;">🚀 INICIAR PARTIDA</button>
                     </div>
                     <p id="waiting-msg" style="font-style: italic; color: #FF9800; margin-top: 15px; text-align:center;">Esperando a que se unan los jugadores...</p>
                     <button id="btn-leave-lobby" style="background: #F44336; border:none; color:white; padding:10px; width:100%; margin-top:15px; border-radius:5px; font-weight:bold; cursor:pointer;">Salir de la Sala</button>
                 </div>
-
                 <div class="lobby-players panel" id="panel-private-friends" style="background: rgba(0,0,0,0.7); border: 1px solid #FFD700; box-shadow: 0 0 20px rgba(0,0,0,0.8); color: white;">
                     <h3 style="color:#FFD700;">Jugadores en Sala</h3>
                     <ul id="lobby-players-list" class="styled-list" style="margin-bottom: 20px; font-weight: bold; color: #FFD700;"></ul>
-                    
                     <div id="lobby-add-friend-section">
                         <hr style="border-color: rgba(255,255,255,0.1);">
                         <h3 style="color:#03DAC6;">Añadir Amigo</h3>
@@ -352,19 +226,16 @@
 
     <div id="screen-game" class="screen hidden" style="display: none; background: radial-gradient(circle, #2D0A4E, #000); height: 100%; min-height: 100vh; width: 100vw; position: fixed; top:0; left:0; z-index: 9999; overflow-y: auto;">
         <button id="btn-abandon-game" onclick="window.abrirModalAbandonar()" style="position: absolute; top: 15px; right: 15px; background: #F44336; color: white; border: 2px solid white; border-radius: 8px; padding: 8px 15px; font-weight: bold; cursor: pointer; z-index: 99999; box-shadow: 0 4px 6px rgba(0,0,0,0.5);">🚪 Abandonar</button>
-
         <div id="game-loading" style="display: none; text-align: center; padding-top: 20vh; padding: 20px;">
             <h1 class="responsive-title cinematic-title" style="color: #FFD700; font-size: 3rem; text-shadow: 0 0 20px rgba(255,215,0,0.5);">¡PREPARANDO DUELO!</h1>
             <p id="opponent-name" style="font-size: 1.5rem; color: #ccc;"></p>
             <div class="loader" style="margin: 30px auto; border-top-color: #03DAC6;"></div>
         </div>
-
         <div id="game-ui" class="game-container" style="display: none; width: 100%; flex-direction: column; align-items: center; padding: 20px; margin-top: 40px;">
             <div class="score" style="font-size: 1.2rem; margin-bottom: 10px; color: #FF9800; font-weight: bold; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 10px; width: 90%; max-width: 600px; text-align: center; border: 1px solid #FF9800;">Puntuación: 0</div>
             <div class="timer" style="font-size: 1.5rem; margin-bottom: 20px; color: #03DAC6; font-weight: bold; text-align: center; text-shadow: 0 0 10px #03DAC6;">Cargando...</div>
             <div class="question responsive-question" style="font-size: 1.5rem; color: #FFF; margin-bottom: 30px; text-align: center; width: 100%; max-width: 600px; background: rgba(0,0,0,0.6); padding:20px; border-radius:15px; border-left: 5px solid #03DAC6; box-shadow: 0 10px 20px rgba(0,0,0,0.5);"></div>
             <div class="options" style="display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 600px;"></div>
-            
             <div id="spectator-controls" style="display:none; margin-top:30px; background: rgba(0,0,0,0.8); padding: 15px 30px; border-radius: 20px; align-items: center; gap: 20px; border: 1px solid #FF9800;">
                 <button id="spec-prev" class="btn-info btn-modal-style" style="font-size:1.5rem; background:transparent; border:none; color:#FF9800;">&lt;</button>
                 <div style="text-align: center;">
@@ -374,7 +245,6 @@
                 <button id="spec-next" class="btn-info btn-modal-style" style="font-size:1.5rem; background:transparent; border:none; color:#FF9800;">&gt;</button>
             </div>
         </div>
-
         <div id="game-results" style="display: none; text-align: center; padding-top: 5vh; padding-bottom: 5vh; color: white; width: 100%; height: 100%; min-height: 100vh; overflow-y: auto; padding: 20px;">
             <h1 id="personal-result-title" class="cinematic-title" style="font-size: 4rem; text-shadow: 0 0 20px rgba(0,0,0,0.8); margin-top: 20px;">🏆 RESULTADOS 🏆</h1>
             <h2 id="personal-result-message" style="font-size: 2rem; margin: 10px 0; color: #EEE;"></h2>
@@ -389,7 +259,7 @@
         <div class="modal-content" style="background: #1a0b2e; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; color: white; border: 2px solid #03DAC6; box-shadow: 0 0 40px rgba(3,218,198,0.3);">
             <h2 style="color: #FFD700; margin-top:0; font-family:'Cinzel Decorative', cursive;">Mi Perfil</h2>
             <div style="position: relative; display: inline-block; cursor: pointer;" onclick="document.getElementById('input-profile-photo').click()">
-                <img id="modal-my-photo" src="images/default-profile.png" alt="Perfil" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #03DAC6; transition: transform 0.3s;">
+                <img id="modal-my-photo" src="images/invitado.jpg" alt="Perfil" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #03DAC6; transition: transform 0.3s;">
                 <div style="position: absolute; bottom: 0; right: 0; background: #FF9800; border-radius: 50%; padding: 8px; box-shadow: 0 0 10px black;">📸</div>
                 <input type="file" id="input-profile-photo" accept="image/*" style="display:none;" onchange="window.subirFotoPerfil(event)">
             </div>
@@ -405,18 +275,68 @@
     </div>
 
     <div id="friends-stats-modal" class="modal-overlay hidden" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 100000; justify-content: center; align-items: center;">
-        <div class="modal-content" style="background: #1a0b2e; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; color: white; border: 2px solid #9C27B0; box-shadow: 0 0 40px rgba(156,39,176,0.3);">
-            <h2 style="color: #FFD700; margin-top:0; font-family:'Cinzel Decorative', cursive;">Mis Amigos</h2>
-            <ul id="friends-explorer-list" class="styled-list" style="max-height: 200px; overflow-y: auto; margin-bottom: 20px;"></ul>
-            <div id="friend-stats-details" style="display:none; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; border: 1px solid #FF9800; margin-bottom: 20px;">
-                <img id="friend-detail-photo" src="images/default-profile.png" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #FFD700; margin-bottom: 10px;">
-                <h3 id="friend-detail-name" style="margin: 0 0 15px 0;">Amigo</h3>
-                <div style="display: flex; justify-content: space-around;">
-                    <div><span style="color:#aaa;">Ganadas:</span> <strong id="friend-detail-wins" style="color:#4CAF50; font-size:1.2rem;">0</strong></div>
-                    <div><span style="color:#aaa;">Aciertos:</span> <strong id="friend-detail-corrects" style="color:#03DAC6; font-size:1.2rem;">0</strong></div>
+        <div class="modal-content" style="background: #1a0b2e; padding: 20px; border-radius: 20px; width: 95%; max-width: 900px; height: 80vh; text-align: left; color: white; border: 2px solid #9C27B0; box-shadow: 0 0 40px rgba(156,39,176,0.3); display:flex; flex-direction:column;">
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h2 style="color: #FFD700; margin:0; font-family:'Cinzel Decorative', cursive;">Mis Amigos</h2>
+                <button onclick="window.cerrarListaAmigosStats()" class="btn-secondary btn-modal-style" style="padding: 8px 15px !important;">Cerrar</button>
+            </div>
+
+            <div class="wa-layout">
+                <div class="wa-sidebar">
+                    <div style="padding:15px; background:rgba(0,0,0,0.3); font-weight:bold; border-bottom:1px solid rgba(255,255,255,0.1);">Contactos</div>
+                    <div id="wa-friend-list" style="overflow-y:auto; flex:1;"></div>
+                </div>
+
+                <div class="wa-chat-area">
+                    <div class="wa-chat-overlay"></div>
+                    
+                    <div id="wa-chat-placeholder" style="position:relative; z-index:2; flex:1; display:flex; justify-content:center; align-items:center; color:#aaa; font-style:italic;">
+                        Selecciona un amigo para chatear
+                    </div>
+
+                    <div id="wa-active-chat" style="display:none; position:relative; z-index:2; flex:1; flex-direction:column;">
+                        <div class="chat-header" style="background: rgba(156, 39, 176, 0.8); color:white; cursor:pointer;" onclick="window.verStatsAmigo()" title="Ver Estadísticas">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <img id="wa-chat-avatar" src="images/invitado.jpg" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid #FFD700;">
+                                <div style="display:flex; flex-direction:column;">
+                                    <span id="wa-chat-name" style="font-size:1.2rem; line-height:1;">Amigo</span>
+                                    <span id="wa-chat-status" style="font-size:0.8rem; color:#ccc; font-weight:normal;">Cargando...</span>
+                                </div>
+                            </div>
+                            <span style="font-size:0.8rem; opacity:0.8; align-self:center;">📊 Ver Perfil</span>
+                        </div>
+                        
+                        <div id="wa-messages" class="chat-messages" style="flex:1;"></div>
+                        
+                        <div class="chat-input-area" style="position: relative;">
+                            <button class="btn-emoji" onclick="window.toggleEmojiPicker('wa')">😀</button>
+                            <div id="emoji-picker-wa" class="emoji-picker hidden"></div>
+                            <input type="text" id="wa-chat-input" placeholder="Escribe un mensaje..." onkeypress="if(event.key==='Enter') window.enviarMensajePrivado()">
+                            <button onclick="window.enviarMensajePrivado()" style="background:#9C27B0; color:white;">➤</button>
+                        </div>
+                    </div>
+
+                    <div id="friend-stats-overlay" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(26, 11, 46, 0.95); z-index:10; flex-direction:column; align-items:center; justify-content:center;">
+                        <button onclick="document.getElementById('friend-stats-overlay').style.display='none'" style="position:absolute; top:15px; right:15px; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">X</button>
+                        <img id="friend-detail-photo" src="images/invitado.jpg" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid #FFD700; margin-bottom: 20px;">
+                        <h2 id="friend-detail-name" style="color:#03DAC6; margin:0 0 5px 0;">Amigo</h2>
+                        <p id="friend-detail-rank" style="color:#FF9800; font-weight:bold; font-size:1.2rem; margin-top:0; margin-bottom:25px;">Rango</p>
+                        
+                        <div style="display: flex; gap:20px; text-align:center;">
+                            <div style="background:rgba(0,0,0,0.5); padding:15px; border-radius:10px; border:1px solid #4CAF50; min-width:100px;">
+                                <span style="color:#aaa; font-size:0.9rem;">Ganadas</span><br>
+                                <strong id="friend-detail-wins" style="color:#4CAF50; font-size:1.8rem;">0</strong>
+                            </div>
+                            <div style="background:rgba(0,0,0,0.5); padding:15px; border-radius:10px; border:1px solid #03DAC6; min-width:100px;">
+                                <span style="color:#aaa; font-size:0.9rem;">Aciertos</span><br>
+                                <strong id="friend-detail-corrects" style="color:#03DAC6; font-size:1.8rem;">0</strong>
+                            </div>
+                        </div>
+                        <p style="color:#aaa; font-size:0.9rem; margin-top:20px;">Miembro desde: <span id="friend-detail-date" style="color:white; font-weight:bold;">--</span></p>
+                    </div>
                 </div>
             </div>
-            <button onclick="window.cerrarListaAmigosStats()" class="btn-secondary btn-modal-style" style="width: 100%;">Cerrar</button>
         </div>
     </div>
 
@@ -438,6 +358,7 @@
             <button id="close-requests" class="btn-menu btn-secondary btn-modal-style" style="width: 100%;">Cerrar Ventana</button>
         </div>
     </div>
+
     <div id="messages-modal" class="modal-overlay hidden" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center;">
         <div class="modal-content" style="background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; text-align: center; color: black;">
             <h2 style="color: #4A148C; margin-top:0;">✉️ Invitaciones a Salas</h2>
@@ -445,6 +366,7 @@
             <button id="close-messages" class="btn-menu btn-secondary btn-modal-style" style="width: 100%;">Cerrar Ventana</button>
         </div>
     </div>
+
     <div id="add-friend-modal" class="modal-overlay hidden" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center;">
         <div class="modal-content" style="background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; text-align: center; color: black;">
             <h2 style="color: #4A148C; margin-top:0;">🤝 Añadir Amigo</h2>
@@ -456,7 +378,29 @@
             </div>
         </div>
     </div>
+
+    <div id="global-chat-btn" class="floating-chat-btn" style="display:none;" onclick="window.toggleRoomChat()">
+        💬<span id="global-chat-badge" class="chat-badge">0</span>
+    </div>
+
+    <div id="room-chat-panel" class="room-chat-panel">
+        <div class="chat-header">
+            <span>Chat de Sala</span>
+            <button onclick="window.toggleRoomChat()" style="background:none;border:none;color:#1A0530;font-weight:bold;font-size:1.2rem;cursor:pointer;">X</button>
+        </div>
+        <div id="room-chat-messages" class="chat-messages">
+            <p style="text-align:center; color:#aaa; font-size:0.9rem;">Únete a una sala para chatear</p>
+        </div>
+        <div class="chat-input-area" style="position: relative;">
+            <button class="btn-emoji" onclick="window.toggleEmojiPicker('room')">😀</button>
+            <div id="emoji-picker-room" class="emoji-picker hidden"></div>
+            <input type="text" id="room-chat-input" placeholder="Escribe un mensaje..." onkeypress="if(event.key==='Enter') window.enviarMensajeSala()">
+            <button onclick="window.enviarMensajeSala()">➤</button>
+        </div>
+    </div>
+
     <div id="toast-container" class="toast-container"></div>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <script src="js/app.js"></script>

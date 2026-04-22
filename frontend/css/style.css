@@ -1,477 +1,105 @@
 /* --- style.css --- */
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #2D0A4E; color: white; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow-x: hidden; }
+.login-container { text-align: center; width: 100%; max-width: 400px; padding: 20px; box-sizing: border-box; }
+.app-title-main { font-size: 3rem; margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: 3px; color: #FFD700; text-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
+.login-box { background-color: rgba(255, 255, 255, 0.95); color: #333; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+.login-box h2 { margin-top: 0; color: #2D0A4E; }
+.input-group { text-align: left; margin-bottom: 15px; width: 100%; }
+.input-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
+.input-group input, .input-group select { width: 100%; padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box; transition: border-color 0.3s; }
+.input-group input:focus, .input-group select:focus { border-color: #2D0A4E; outline: none; }
+.btn-login { width: 100%; padding: 12px; background-color: #6200EE; color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: background-color 0.3s; margin-top: 10px; }
+.btn-login:hover { background-color: #4A00B2; }
+.login-footer { margin-top: 20px; font-size: 0.9rem; }
+.login-footer a { color: #6200EE; text-decoration: none; font-weight: bold; }
+.screen { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; min-height: 100vh; transition: opacity 0.3s ease-in-out; }
+.hidden { display: none !important; }
+.app-logo { display: block; margin: 0 auto 30px auto; max-width: 180px; height: auto; border-radius: 50%; filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.5)); animation: pulso-logo 3s ease-in-out infinite; }
+.app-logo-menu { max-width: 130px; border-radius: 50%; margin-bottom: 15px; box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
+@keyframes pulso-logo { 0%, 100% { transform: scale(1); filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.5)); } 50% { transform: scale(1.05); filter: drop-shadow(0 0 25px rgba(255, 215, 0, 0.8)); } }
 
-/* 1. Estilos Globales */
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #2D0A4E;
-    color: white;
-    margin: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    overflow-x: hidden;
-}
+.sidebar { position: fixed; top: 0; left: 0; width: 250px; height: 100vh; background-color: #1A0530; color: white; display: flex; flex-direction: column; align-items: center; padding: 30px 20px; box-shadow: 4px 0 15px rgba(0, 0, 0, 0.5); z-index: 1000; box-sizing: border-box; }
+.profile-section { text-align: center; margin-bottom: 30px; }
+.profile-picture { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #FFD700; margin-bottom: 10px; }
+.sidebar-actions { display: flex; flex-direction: column; gap: 15px; width: 100%; margin-top: auto; }
+.menu-content { margin-left: 250px; display: flex; justify-content: center; align-items: center; width: 100%; box-sizing: border-box; }
+.menu-glass-box { background: rgba(255, 255, 255, 0.05); padding: 40px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 15px 35px rgba(0,0,0,0.5); backdrop-filter: blur(10px); display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 450px; }
+.menu-buttons { display: flex; flex-direction: column; gap: 15px; width: 100%; }
+.btn-menu { width: 100%; padding: 15px; font-size: 1.1rem; border: none; border-radius: 8px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; font-weight: bold; color: white; }
+.btn-menu:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); }
 
-.login-container {
-    text-align: center;
-    width: 100%;
-    max-width: 400px;
-    padding: 20px;
-    box-sizing: border-box;
-}
+.btn-primary { background-color: #E91E63; } .btn-secondary { background-color: #6200EE; } .btn-info { background-color: #03DAC6; color: black; } .btn-danger { background-color: #cf6679; color: black; }
+.lobby-layout { display: flex; gap: 30px; align-items: flex-start; justify-content: center; margin-top: 20px; }
+.panel { background: rgba(255, 255, 255, 0.1); padding: 25px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.2); flex: 1; min-width: 280px; }
 
-.app-title-main {
-    font-size: 3rem;
-    margin-bottom: 1.5rem;
-    text-transform: uppercase;
-    letter-spacing: 3px;
-    color: #FFD700;
-    text-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
-}
+#btn-leave-lobby { background: linear-gradient(135deg, #E91E63, #C2185B); color: white; border: none; padding: 15px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; width: 100%; margin-top: 25px; box-shadow: 0 5px 15px rgba(233, 30, 99, 0.4); text-transform: uppercase; transition: all 0.3s ease; }
+#btn-leave-lobby:hover { background: linear-gradient(135deg, #FF4081, #E91E63); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(233, 30, 99, 0.6); }
 
-.login-box {
-    background-color: rgba(255, 255, 255, 0.95);
-    color: #333;
-    padding: 30px;
-    border-radius: 15px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-}
+/* TOASTS */
+.toast-container { position: fixed; top: 20px; right: 20px; z-index: 999999; display: flex; flex-direction: column; gap: 15px; }
+.toast { display: flex; align-items: center; padding: 15px; border-radius: 12px; color: white; font-weight: bold; box-shadow: 0 10px 25px rgba(0,0,0,0.5); animation: slideInRight 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; min-width: 300px; max-width: 400px; border: 1px solid rgba(255,255,255,0.2); }
+.toast.fade-out { animation: fadeOutRight 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
+.toast-logo { width: 35px; height: 35px; border-radius: 50%; margin-right: 15px; box-shadow: 0 0 10px rgba(255,215,0,0.5); }
+.toast-success { background: linear-gradient(135deg, #4CAF50, #2E7D32); } .toast-invite { background: linear-gradient(135deg, #FFC107, #FF9800); color: #1A0530; } .toast-error { background: linear-gradient(135deg, #F44336, #D32F2F); } .toast-info { background: linear-gradient(135deg, #2196F3, #1976D2); } .toast-warning { background: linear-gradient(135deg, #FF9800, #F57C00); color: white; }
+.toast-content { flex: 1; font-size: 1rem; line-height: 1.4; }
+.toast-actions { display: flex; gap: 15px; margin-left: 15px; border-left: 2px solid rgba(0,0,0,0.1); padding-left: 15px; }
+.toast-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; transition: transform 0.2s, filter 0.2s; padding: 0; }
+.toast-btn:hover { transform: scale(1.3); filter: brightness(1.2); }
 
-.login-box h2 {
-    margin-top: 0;
-    color: #2D0A4E;
-}
+@keyframes slideInRight { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes fadeOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
 
-.input-group {
-    text-align: left;
-    margin-bottom: 15px;
-    width: 100%;
-}
-
-.input-group label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 5px;
-    color: #555;
-}
-
-.input-group input, 
-.input-group select {
-    width: 100%;
-    padding: 12px 15px;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    font-size: 1rem;
-    box-sizing: border-box;
-    transition: border-color 0.3s;
-}
-
-.input-group input:focus,
-.input-group select:focus {
-    border-color: #2D0A4E;
-    outline: none;
-}
-
-.btn-login {
-    width: 100%;
-    padding: 12px;
-    background-color: #6200EE;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 1.1rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    margin-top: 10px;
-}
-
-.btn-login:hover {
-    background-color: #4A00B2;
-}
-
-.login-footer {
-    margin-top: 20px;
-    font-size: 0.9rem;
-}
-
-.login-footer a {
-    color: #6200EE;
-    text-decoration: none;
-    font-weight: bold;
-}
-
-.screen {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    height: 100%;
-    min-height: 100vh;
-    transition: opacity 0.3s ease-in-out;
-}
-
-.hidden {
-    display: none !important;
-}
-
-.app-logo {
-    display: block;
-    margin: 0 auto 30px auto; 
-    max-width: 180px;         
-    height: auto;             
-    border-radius: 50%;
-    filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.5)); 
-    animation: pulso-logo 3s ease-in-out infinite;
-}
-
-.app-logo-menu {
-    max-width: 130px;
-    border-radius: 50%;
-    margin-bottom: 15px;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
-}
-
-@keyframes pulso-logo {
-    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.5)); }
-    50% { transform: scale(1.05); filter: drop-shadow(0 0 25px rgba(255, 215, 0, 0.8)); }
-}
-
-.sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 250px;
-    height: 100vh;
-    background-color: #1A0530;
-    color: white;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 30px 20px;
-    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.5);
-    z-index: 1000;
-    box-sizing: border-box;
-}
-
-.profile-section {
-    text-align: center;
-    margin-bottom: 30px;
-}
-
-.profile-picture {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    border: 3px solid #FFD700;
-    margin-bottom: 10px;
-}
-
-.sidebar-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    width: 100%;
-    margin-top: auto;
-}
-
-.menu-content {
-    margin-left: 250px; 
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.menu-glass-box {
-    background: rgba(255, 255, 255, 0.05);
-    padding: 40px;
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-    backdrop-filter: blur(10px);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    max-width: 450px;
-}
-
-.menu-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    width: 100%;
-}
-
-.btn-menu {
-    width: 100%;
-    padding: 15px;
-    font-size: 1.1rem;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    font-weight: bold;
-    color: white;
-}
-
-.btn-menu:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-}
-
-.btn-primary { background-color: #E91E63; }
-.btn-secondary { background-color: #6200EE; }
-.btn-info { background-color: #03DAC6; color: black; }
-.btn-danger { background-color: #cf6679; color: black; }
-
-.lobby-layout {
-    display: flex;
-    gap: 30px;
-    align-items: flex-start;
-    justify-content: center;
-    margin-top: 20px;
-}
-
-.panel {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 25px;
-    border-radius: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    flex: 1;
-    min-width: 280px;
-}
-
-#btn-leave-lobby {
-    background: linear-gradient(135deg, #E91E63, #C2185B); 
-    color: white;
-    border: none;
-    padding: 15px;
-    border-radius: 8px;
-    font-size: 1.1rem;
-    font-weight: bold;
-    cursor: pointer;
-    width: 100%;
-    margin-top: 25px;
-    box-shadow: 0 5px 15px rgba(233, 30, 99, 0.4);
-    text-transform: uppercase;
-    transition: all 0.3s ease;
-}
-
-#btn-leave-lobby:hover {
-    background: linear-gradient(135deg, #FF4081, #E91E63);
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(233, 30, 99, 0.6);
-}
-
-@media screen and (max-width: 768px) {
-    .screen {
-        align-items: flex-start;
-        padding-top: 20px;
-        min-height: 100vh;
-    }
-
-    .sidebar {
-        position: relative;
-        width: 90%;
-        height: auto;
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        border-radius: 15px;
-        margin: 0 auto 20px auto;
-        padding: 15px 20px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    }
-
-    .profile-section {
-        margin-bottom: 0;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
-
-    .profile-picture {
-        width: 50px;
-        height: 50px;
-        margin-bottom: 0;
-    }
-
-    #display-username {
-        font-size: 1.2rem;
-        margin: 0;
-    }
-
-    .sidebar-actions {
-        flex-direction: row;
-        width: auto;
-        margin-top: 0;
-    }
-
-    .sidebar-actions button {
-        padding: 8px 12px;
-        font-size: 0.85rem;
-    }
-
-    .menu-content {
-        margin-left: 0;
-        padding: 10px 20px;
-    }
-
-    .app-title-main {
-        font-size: 2.2rem;
-    }
-
-    .lobby-layout {
-        flex-direction: column;
-        gap: 20px;
-        width: 100%;
-    }
-
-    .panel {
-        width: 100%;
-        box-sizing: border-box;
-    }
-}
+.badge { background-color: #F44336; color: white; border-radius: 50%; padding: 2px 8px; font-size: 0.8rem; margin-left: 5px; vertical-align: middle; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+.btn-modal-style { border: none !important; outline: none !important; border-radius: 25px !important; padding: 12px 20px !important; font-weight: bold !important; color: white !important; cursor: pointer !important; transition: transform 0.2s ease, box-shadow 0.2s ease !important; box-sizing: border-box !important; }
+#btn-send-friend-req { background: linear-gradient(135deg, #E91E63, #C2185B) !important; box-shadow: 0 4px 15px rgba(233, 30, 99, 0.4) !important; }
+#btn-close-add-friend, #close-requests, #close-messages { background: linear-gradient(135deg, #6200EE, #3700B3) !important; box-shadow: 0 4px 15px rgba(98, 0, 238, 0.4) !important; }
+#btn-add-friend-lobby { background: linear-gradient(135deg, #03DAC6, #00B3A6) !important; color: #1A0530 !important; box-shadow: 0 4px 15px rgba(3, 218, 198, 0.4) !important; }
+.btn-modal-style:hover { transform: translateY(-3px) !important; filter: brightness(1.1) !important; }
 
 /* ========================================================
-   🔥 SISTEMA DE NOTIFICACIONES FLOTANTES (TOASTS) 🔥
-   ======================================================== */
-.toast-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 999999;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.toast {
-    display: flex;
-    align-items: center;
-    padding: 15px;
-    border-radius: 12px;
-    color: white;
-    font-weight: bold;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-    animation: slideInRight 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
-    min-width: 300px;
-    max-width: 400px;
-    border: 1px solid rgba(255,255,255,0.2);
-}
-
-.toast.fade-out {
-    animation: fadeOutRight 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
-}
-
-.toast-logo {
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    margin-right: 15px;
-    box-shadow: 0 0 10px rgba(255,215,0,0.5);
-}
-
-.toast-success { background: linear-gradient(135deg, #4CAF50, #2E7D32); }
-.toast-invite { background: linear-gradient(135deg, #FFC107, #FF9800); color: #1A0530; }
-.toast-error { background: linear-gradient(135deg, #F44336, #D32F2F); }
-.toast-info { background: linear-gradient(135deg, #2196F3, #1976D2); }
-.toast-warning { background: linear-gradient(135deg, #FF9800, #F57C00); color: white; }
-
-.toast-content { 
-    flex: 1; 
-    font-size: 1rem;
-    line-height: 1.4;
-}
-
-.toast-actions {
-    display: flex;
-    gap: 15px;
-    margin-left: 15px;
-    border-left: 2px solid rgba(0,0,0,0.1);
-    padding-left: 15px;
-}
-
-.toast-btn {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    transition: transform 0.2s, filter 0.2s;
-    padding: 0;
-}
-
-.toast-btn:hover { 
-    transform: scale(1.3); 
-    filter: brightness(1.2);
-}
-
-@keyframes slideInRight {
-    from { transform: translateX(120%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-}
-
-@keyframes fadeOutRight {
-    from { transform: translateX(0); opacity: 1; }
-    to { transform: translateX(120%); opacity: 0; }
-}
-
-/* ========================================================
-   🔥 ESTILOS DE BOTONES MODALES Y BADGE (NUEVO) 🔥
+   🔥 SISTEMA DE CHAT FLOTANTE Y WHATSAPP AMIGOS 🔥
    ======================================================== */
 
-.badge {
-    background-color: #F44336;
-    color: white;
-    border-radius: 50%;
-    padding: 2px 8px;
-    font-size: 0.8rem;
-    margin-left: 5px;
-    vertical-align: middle;
-    font-weight: bold;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-}
+.floating-chat-btn { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: linear-gradient(135deg, #03DAC6, #018786); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 2rem; cursor: pointer; box-shadow: 0 5px 20px rgba(3, 218, 198, 0.5); z-index: 999999; transition: transform 0.3s; }
+.floating-chat-btn:hover { transform: scale(1.1); }
+.chat-badge { position: absolute; top: -5px; right: -5px; background: #F44336; color: white; border-radius: 50%; padding: 4px 8px; font-size: 0.8rem; font-weight: bold; display: none; box-shadow: 0 0 10px #F44336; }
 
-/* 🔥 FORZANDO EL BORRADO DE BORDES FEOS 🔥 */
-.btn-modal-style {
-    border: none !important;
-    outline: none !important;
-    border-radius: 25px !important; 
-    padding: 12px 20px !important;
-    font-weight: bold !important;
-    color: white !important;
-    cursor: pointer !important;
-    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
-    box-sizing: border-box !important;
-}
+.room-chat-panel { position: fixed; bottom: 100px; right: 30px; width: 350px; height: 500px; background: rgba(26, 11, 46, 0.95); border: 2px solid #03DAC6; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: flex; flex-direction: column; z-index: 999998; transform: scale(0); transform-origin: bottom right; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); overflow: hidden; }
+.room-chat-panel.open { transform: scale(1); }
 
-/* Gradientes específicos para cada botón */
-#btn-send-friend-req {
-    background: linear-gradient(135deg, #E91E63, #C2185B) !important;
-    box-shadow: 0 4px 15px rgba(233, 30, 99, 0.4) !important;
-}
+.chat-header { background: #03DAC6; color: #1A0530; padding: 15px; font-weight: bold; font-size: 1.2rem; display: flex; justify-content: space-between; align-items: center; }
+.chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.chat-input-area { display: flex; padding: 10px; background: rgba(0,0,0,0.5); border-top: 1px solid #555; position: relative; }
+.chat-input-area input { flex: 1; padding: 10px 15px; border-radius: 20px; border: none; outline: none; background: rgba(255,255,255,0.1); color: white; font-size: 1rem; }
+.chat-input-area button { background: #03DAC6; color: #1A0530; border: none; border-radius: 50%; width: 40px; height: 40px; margin-left: 10px; cursor: pointer; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 1.2rem; transition: transform 0.2s; }
+.chat-input-area button:hover { transform: scale(1.1); }
 
-#btn-close-add-friend, #close-requests, #close-messages {
-    background: linear-gradient(135deg, #6200EE, #3700B3) !important;
-    box-shadow: 0 4px 15px rgba(98, 0, 238, 0.4) !important;
-}
+.msg-bubble { max-width: 80%; padding: 10px 15px; border-radius: 15px; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; position: relative; }
+.msg-own { background: #03DAC6; color: #1A0530; align-self: flex-end; border-bottom-right-radius: 0; }
+.msg-own-wa { background: #9C27B0; color: white; align-self: flex-end; border-bottom-right-radius: 0; }
+.msg-other { background: rgba(255,255,255,0.1); color: white; align-self: flex-start; border-bottom-left-radius: 0; border: 1px solid rgba(255,255,255,0.2); }
+.msg-author { font-size: 0.75rem; color: #FFD700; margin-bottom: 4px; font-weight: bold; }
 
-#btn-add-friend-lobby {
-    background: linear-gradient(135deg, #03DAC6, #00B3A6) !important;
-    color: #1A0530 !important; 
-    box-shadow: 0 4px 15px rgba(3, 218, 198, 0.4) !important;
-}
+/* Layout WhatsApp Amigos */
+.wa-layout { display: flex; width: 100%; height: 65vh; background: rgba(0,0,0,0.4); border-radius: 15px; overflow: hidden; border: 1px solid #9C27B0; margin-top: 15px; }
+.wa-sidebar { width: 35%; border-right: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); display: flex; flex-direction: column; }
+.wa-chat-area { flex: 1; display: flex; flex-direction: column; position: relative; background: #0f0518; }
+.wa-friend-item { padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: background 0.2s; border-bottom: 1px solid rgba(255,255,255,0.05); position: relative; overflow: hidden; }
+.wa-friend-item:hover, .wa-friend-item.active { background: rgba(156, 39, 176, 0.3); border-left: 4px solid #FFD700; }
+.wa-friend-img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid #9C27B0; flex-shrink: 0; }
 
-.btn-modal-style:hover {
-    transform: translateY(-3px) !important;
-    filter: brightness(1.1) !important;
-}
+/* 🔥 NUEVO: BADGES, TICKS, SNIPPETS Y EMOJIS 🔥 */
+.friend-unread-badge { background: #2196F3; color: white; border-radius: 50%; padding: 4px 8px; font-size: 0.8rem; font-weight: bold; box-shadow: 0 0 10px #2196F3; position: absolute; right: 15px; top: 30%; }
+.wa-friend-snippet { font-size: 0.8rem; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; display: block; }
 
-.modal-content input[type="text"]:focus {
-    border-color: #6200EE !important;
-    box-shadow: 0 0 8px rgba(98, 0, 238, 0.3) !important;
-}
+.msg-ticks { font-size: 0.75rem; margin-left: 8px; color: rgba(255,255,255,0.5); font-weight: bold; }
+.msg-ticks-read { color: #03A9F4 !important; text-shadow: 0 0 5px #03A9F4; } /* TICK AZUL MAGICO */
+.msg-own-wa .msg-ticks { color: #FFD700; } /* Amarillos por defecto en WhatsApp */
+.msg-own .msg-ticks { color: #1A0530; }
+
+.btn-emoji { background: transparent !important; border: none; font-size: 1.5rem !important; cursor: pointer; transition: transform 0.2s; padding: 0 10px; width: auto !important; height: auto !important; border-radius: 0 !important; margin-left: 0 !important; }
+.btn-emoji:hover { transform: scale(1.2) !important; }
+
+.emoji-picker { position: absolute; bottom: 100%; left: 0; background: rgba(26, 11, 46, 0.95); border: 2px solid #03DAC6; border-radius: 10px; padding: 10px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.5); margin-bottom: 10px; }
+.emoji-picker span { font-size: 1.5rem; cursor: pointer; transition: transform 0.2s; text-align: center; }
+.emoji-picker span:hover { transform: scale(1.3); }
