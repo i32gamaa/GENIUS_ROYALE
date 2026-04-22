@@ -3,6 +3,7 @@
 /* 1. Estilos Globales */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+<<<<<<< Updated upstream
     background-color: #2D0A4E;
     color: white;
     margin: 0;
@@ -11,6 +12,53 @@ body {
     align-items: center;
     min-height: 100vh;
     overflow-x: hidden;
+=======
+    background: linear-gradient(135deg, #ffcc00, #6a0dad, #1e90ff);
+    background-size: 400% 400%;
+    animation: gradientAnimation 10s ease infinite;
+    color: #ffffff;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+@keyframes gradientAnimation {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Add some styling for text and elements to match the theme */
+h1, h2, h3, h4, h5, h6 {
+    color: #ffcc00;
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
+}
+
+a {
+    color: #1e90ff;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #6a0dad;
+    text-decoration: underline;
+}
+
+button {
+    background-color: #6a0dad;
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4);
+>>>>>>> Stashed changes
 }
 
 .login-container {
@@ -245,6 +293,7 @@ body {
     min-width: 280px;
 }
 
+<<<<<<< Updated upstream
 #btn-leave-lobby {
     background: linear-gradient(135deg, #E91E63, #C2185B); 
     color: white;
@@ -474,4 +523,52 @@ body {
 .modal-content input[type="text"]:focus {
     border-color: #6200EE !important;
     box-shadow: 0 0 8px rgba(98, 0, 238, 0.3) !important;
+=======
+.btn-info {
+    background-color: #03DAC6; /* Verde agua */
+    color: black;
+}
+
+/* Center content for both mobile and desktop */
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100%;
+    margin: 0 auto;
+    text-align: center;
+}
+
+/* Responsive design for mobile and desktop */
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+        padding: 20px;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        font-size: 1.5rem;
+    }
+
+    button {
+        width: 100%;
+        font-size: 1rem;
+    }
+}
+
+@media (min-width: 769px) {
+    .container {
+        max-width: 800px;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        font-size: 2rem;
+    }
+
+    button {
+        width: auto;
+        font-size: 1.2rem;
+    }
+>>>>>>> Stashed changes
 }
