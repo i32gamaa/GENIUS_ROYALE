@@ -603,7 +603,7 @@ html, body {
 /* 2.5. Ajuste Flexible para PARTIDAS PRIVADAS / PÚBLICAS */
 #screen-game {
     padding: 0 !important; 
-    justify-content: flex-start !important; /* Empezamos desde arriba para no chocar con "Abandonar" */
+    justify-content: flex-start !important; 
     position: fixed !important; 
     top: 0 !important; 
     left: 0 !important; 
@@ -611,37 +611,47 @@ html, body {
     bottom: 0 !important;
     height: auto !important;
     min-height: 0 !important;
-    overflow-y: auto !important; /* SÍ permitimos scroll si la pantalla es enana o hay muchos resultados */
-    overflow-x: hidden !important;
+    overflow-y: auto !important; 
+    overflow-x: hidden !important; /* 🔥 FIX: Muerte a los cortes horizontales */
     background: radial-gradient(circle, #2D0A4E, #000) !important;
+    width: 100vw !important;
+    box-sizing: border-box !important;
 }
 
-/* Espaciado interno para que no se superponga al botón Abandonar */
+/* Espaciado interno para que no se superponga al botón Abandonar ni al Chat Flotante */
 #game-ui {
     padding-top: 70px !important; 
+    padding-bottom: 120px !important; /* 🔥 FIX FOTO 1: Espacio gigante para que puedas scrollear por encima del botón de chat */
     margin-top: 0 !important;
     min-height: 100vh !important;
+    width: 100% !important;
     box-sizing: border-box !important;
+    overflow-x: hidden !important;
 }
 
 #game-results {
     padding-top: 70px !important;
-    padding-bottom: 50px !important;
+    padding-bottom: 120px !important; /* 🔥 FIX FOTO 2: Espacio gigante para que no se tape el botón de volver */
     min-height: 100vh !important;
+    width: 100% !important;
     display: flex !important;
     flex-direction: column;
     justify-content: flex-start !important;
     align-items: center;
-    box-sizing: border-box;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
 }
 
 /* ==========================================
    📱 AJUSTES MILIMÉTRICOS PARTIDA PRIVADA (MÓVIL)
    ========================================== */
 @media (max-width: 768px) {
-    #game-ui {
+    #game-ui, #game-results {
         padding-left: 15px !important;
         padding-right: 15px !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        box-sizing: border-box !important;
     }
     .score {
         font-size: 1rem !important;
@@ -654,37 +664,61 @@ html, body {
         margin-bottom: 15px !important;
     }
     .question {
-        font-size: 1.2rem !important;
+        font-size: clamp(1.1rem, 5vw, 1.5rem) !important;
         padding: 15px !important;
         width: 100% !important;
-        box-sizing: border-box !important; /* Evita que la pregunta se corte por los lados */
+        box-sizing: border-box !important; 
         margin-bottom: 20px !important;
+        word-wrap: break-word !important; /* 🔥 Obliga al texto a saltar de línea */
     }
     .options {
         width: 100% !important;
-        gap: 10px !important; /* Juntamos un poco los botones para que quepan todos */
+        gap: 10px !important; 
+        box-sizing: border-box !important;
     }
     .option-button {
         padding: 12px !important;
-        font-size: 1rem !important;
+        font-size: clamp(0.9rem, 4vw, 1.2rem) !important;
         min-height: 60px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        word-wrap: break-word !important;
     }
     
-    /* Resultados Privados/Públicos en Móvil */
+    /* 🔥 FIX FOTO 2: Resultados Privados/Públicos (Prevención de texto cortado) 🔥 */
     #personal-result-title {
-        font-size: 2.2rem !important;
-        line-height: 1.1;
+        font-size: clamp(1.8rem, 7vw, 2.8rem) !important;
+        line-height: 1.2 !important;
+        text-align: center !important;
+        width: 100% !important;
+        word-wrap: break-word !important;
+        box-sizing: border-box !important;
     }
     #personal-result-message {
-        font-size: 1.3rem !important;
+        font-size: clamp(1rem, 5vw, 1.4rem) !important; /* Texto dinámico */
+        text-align: center !important;
+        width: 100% !important;
+        word-wrap: break-word !important; /* Salto de línea forzado */
+        box-sizing: border-box !important;
+        padding: 0 10px !important;
+        margin: 10px auto 20px auto !important;
     }
     #royale-leaderboard {
         width: 100% !important;
-        max-width: 95vw !important;
+        max-width: 100% !important;
         box-sizing: border-box !important;
         padding: 15px !important;
     }
+    
+    /* Obligamos al botón de volver a estar centrado y a la vista */
+    #btn-back-to-lobby, .btn-primary {
+        width: 100% !important;
+        max-width: 300px !important;
+        margin: 10px auto !important;
+        display: block !important;
+    }
 }
+
 
 /* 3. Distribución perfecta de la vista del jugador (Invitado) */
 #kg-guest-view {
