@@ -448,3 +448,73 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
         display: block !important;
     }
 }
+
+/* ==========================================
+   🛠️ FIX DEFINITIVO: CINEMÁTICAS, CENTRADOS EN PARTIDA Y FONDOS
+   ========================================== */
+
+/* 1. FOTO 5: Arreglar el corte morado del fondo (Background Fijo Universal) */
+html, body {
+    background: radial-gradient(circle, #2D0A4E, #000) !important;
+    background-attachment: fixed !important;
+    background-size: cover !important;
+    min-height: 100vh !important;
+}
+.screen {
+    background: transparent !important; /* Deja que el fondo universal del body brille */
+}
+
+/* 2. FOTO 1: Textos de la Intro Cinemática auto-ajustables (Móvil) */
+#dyn-intro-title, #intro-title { font-size: clamp(2.5rem, 8vw, 5rem) !important; line-height: 1.1 !important; }
+#dyn-intro-mode, #intro-mode { font-size: clamp(1.5rem, 5vw, 3rem) !important; }
+#dyn-intro-category, #intro-category { font-size: clamp(1.2rem, 4vw, 2.5rem) !important; }
+#dyn-intro-start, #intro-start { font-size: clamp(3rem, 10vw, 6rem) !important; margin-top: 20px !important; }
+
+/* 3. FOTOS 2, 3 Y 4: Excepción de centrado para las pantallas de Partida */
+#screen-game-code, #screen-result-code, #screen-game {
+    padding: 0 !important; /* Quitamos el padding global que aplastaba el contenido */
+    justify-content: center !important; /* Permite centrar verticalmente de nuevo */
+}
+
+/* Hacer que las vistas de Invitado ocupen toda la pantalla y se centren */
+#kg-guest-view, #kr-guest-view, #kr-guest-final-view {
+    min-height: 100vh !important;
+    justify-content: center !important; 
+    padding: 20px !important;
+    box-sizing: border-box !important;
+}
+
+/* FOTO 2: Centrar los 4 botones en vertical y hacerlos respirar */
+#kg-guest-controls {
+    align-content: center !important; 
+    flex: 1 !important; 
+}
+
+/* FOTO 4: Centrar el mensaje de "Respuesta Enviada" en medio de la pantalla */
+#kg-guest-wait {
+    justify-content: center !important; 
+    flex: 1 !important;
+}
+
+/* 4. AJUSTES ESPECÍFICOS PARA TABLET VERTICAL (Portrait) */
+@media (min-width: 768px) and (orientation: portrait) {
+    /* FOTO 2: Los botones del Kahoot se vuelven más grandecillos y separados en Tablet */
+    #kg-guest-controls {
+        gap: 30px !important;
+        padding: 40px !important;
+    }
+    #kg-guest-controls button {
+        font-size: clamp(1.8rem, 4vw, 3rem) !important;
+        border-width: 5px !important;
+        border-radius: 20px !important;
+    }
+    
+    /* FOTO 3: El número "#1" se hace colosal en Tablet para más epicidad */
+    #kr-guest-rank {
+        font-size: 14rem !important; 
+        margin-bottom: 40px !important;
+    }
+    #kr-guest-motivational {
+        font-size: 3.5rem !important;
+    }
+}
