@@ -571,16 +571,28 @@ html, body {
    🛡️ ESCUDO ABSOLUTO: PANTALLA PARTIDA Y RESULTADOS (TABLET Y MÓVIL) 🛡️
    ========================================== */
 
-/* 1. Bloqueo de altura estricto (Evita que las barras inferiores desaparezcan) */
+/* 1. Muerte a la franja blanca de Safari (El "rebote" será negro, no blanco) */
+html, body {
+    background-color: #05010a !important; 
+}
+
+/* 2. Bloqueo de Pantalla Nativo (Se clava a las 4 esquinas reales del móvil) */
 #screen-game-code, #screen-result-code, #screen-game {
     padding: 0 !important; 
     justify-content: center !important; 
-    height: 100vh !important;
-    height: 100dvh !important; /* 🔥 LA MAGIA: Dynamic Viewport Height (Mide la pantalla real en Tablets/Móviles) */
-    overflow: hidden !important; /* Prohibido hacer scroll en partida */
+    position: fixed !important; /* 🔥 LA MAGIA: Convierte la web en App Nativa 🔥 */
+    top: 0 !important; 
+    left: 0 !important; 
+    right: 0 !important; 
+    bottom: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: hidden !important; /* Prohibido hacer scroll en la partida */
+    background: radial-gradient(circle, #2D0A4E, #000) !important;
 }
 
 #kg-guest-view, #kr-guest-view, #kr-guest-final-view, #kg-host-view, #kr-host-view {
+    /* 🔥 ERROR CORREGIDO: Eliminado el display: flex !important. JS vuelve a tener el control 🔥 */
     height: 100% !important; 
     min-height: 100% !important;
     max-height: 100% !important;
@@ -588,15 +600,14 @@ html, body {
     overflow: hidden !important; 
 }
 
-/* 2. Distribución perfecta de la vista del jugador (Invitado) */
+/* 3. Distribución perfecta de la vista del jugador (Invitado) */
 #kg-guest-view {
-    display: flex !important;
     flex-direction: column !important;
-    justify-content: space-between !important; /* Barra PIN arriba, Puntuación abajo */
+    justify-content: space-between !important; 
     padding: 0 !important; 
 }
 
-/* Blindaje de las barras superior e inferior para que JAMÁS se aplasten */
+/* Blindaje de las barras superior e inferior (Nombre y Puntos) */
 #kg-guest-view > div:first-child,
 #kg-guest-view > div:last-child {
     flex-shrink: 0 !important; 
@@ -606,10 +617,10 @@ html, body {
 /* El panel de los 4 botones */
 #kg-guest-controls {
     flex: 1 !important; 
-    min-height: 0 !important; /* 🔥 FIX FLEXBOX: Impide que los textos grandes rompan el contenedor */
+    min-height: 0 !important; 
     padding: 15px !important;
     gap: 15px !important;
-    align-content: stretch !important; /* Obliga a los botones a ocupar el espacio exacto, ni más ni menos */
+    align-content: stretch !important; 
 }
 
 #kg-guest-controls button {
@@ -622,19 +633,17 @@ html, body {
     border-width: 4px !important;
 }
 
-/* 3. Reajuste Milimétrico para Tablet (Horizontal y Vertical) */
+/* 4. Reajuste Milimétrico para Tablet (Horizontal y Vertical) */
 @media (min-width: 768px) {
     #kg-guest-controls {
         padding: 25px !important;
         gap: 20px !important;
     }
     #kg-guest-controls button {
-        /* Reduce un poco la letra gigante para que quepa todo el texto sin desbordar */
         font-size: clamp(1.8rem, 4vw, 2.5rem) !important; 
         border-radius: 20px !important;
     }
     
-    /* FIX FOTO 3 (Ranking Tablet): Evitar que el "#1" crezca tanto que oculte los puntos */
     #kr-guest-rank {
         font-size: clamp(6rem, 12vw, 9rem) !important; 
         margin-bottom: 20px !important;
