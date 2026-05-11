@@ -155,16 +155,17 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
     overflow-y: auto !important;
 }
 
+/* 🔥 FIX PC: El contenedor de botones debe tomar solo el espacio sobrante (flex: 1) 🔥 */
 #screen-menu > div:last-child {
     display: flex;
     flex-direction: column;
-    justify-content: flex-start !important; 
+    justify-content: center !important; /* Centrado vertical perfecto en PC */
     align-items: center;
-    flex: none !important;
+    flex: 1 !important; /* ¡LA CLAVE PARA PC! Reparte el espacio respetando la barra lateral */
+    width: auto !important; /* Anula el 100% del móvil en PC */
     padding: 40px 20px !important;
     box-sizing: border-box;
     overflow-y: auto !important;
-    width: 100% !important;
 }
 
 #main-grid-menu {
@@ -188,10 +189,14 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
         align-items: center !important;
     }
     
+    /* 🔥 REGLA EXCLUSIVA DE MÓVIL: Aquí sí ocupa el 100% y empieza desde arriba 🔥 */
     #screen-menu > div:last-child {
+        justify-content: flex-start !important; 
         padding-top: 100px !important; 
         padding-bottom: 50px !important;
         min-height: 100vh !important;
+        width: 100% !important;
+        flex: none !important;
         max-width: 500px !important;   
     }
 
