@@ -720,7 +720,7 @@ html, body {
         width: 100% !important;
         box-sizing: border-box !important; 
         margin-bottom: 20px !important;
-        word-wrap: break-word !important; 
+        word-wrap: break-word !important; /* 🔥 Obliga al texto a saltar de línea */
     }
     .options {
         width: 100% !important;
@@ -736,6 +736,7 @@ html, body {
         word-wrap: break-word !important;
     }
     
+    /* 🔥 FIX FOTO 2: Resultados Privados/Públicos (Prevención de texto cortado) 🔥 */
     #personal-result-title {
         font-size: clamp(1.8rem, 7vw, 2.8rem) !important;
         line-height: 1.2 !important;
@@ -745,10 +746,10 @@ html, body {
         box-sizing: border-box !important;
     }
     #personal-result-message {
-        font-size: clamp(1rem, 5vw, 1.4rem) !important; 
+        font-size: clamp(1rem, 5vw, 1.4rem) !important; /* Texto dinámico */
         text-align: center !important;
         width: 100% !important;
-        word-wrap: break-word !important; 
+        word-wrap: break-word !important; /* Salto de línea forzado */
         box-sizing: border-box !important;
         padding: 0 10px !important;
         margin: 10px auto 20px auto !important;
@@ -760,6 +761,7 @@ html, body {
         padding: 15px !important;
     }
     
+    /* Obligamos al botón de volver a estar centrado y a la vista */
     #btn-back-to-lobby, .btn-primary {
         width: 100% !important;
         max-width: 300px !important;
@@ -768,6 +770,7 @@ html, body {
     }
 }
 
+
 /* 3. Distribución perfecta de la vista del jugador (Invitado) */
 #kg-guest-view {
     flex-direction: column !important;
@@ -775,12 +778,14 @@ html, body {
     padding: 0 !important; 
 }
 
+/* Blindaje de las barras superior e inferior (Nombre y Puntos) */
 #kg-guest-view > div:first-child,
 #kg-guest-view > div:last-child {
     flex-shrink: 0 !important; 
     padding: 12px 15px !important;
 }
 
+/* El panel de los 4 botones */
 #kg-guest-controls {
     flex: 1 !important; 
     min-height: 0 !important; 
@@ -817,74 +822,4 @@ html, body {
     #kr-guest-motivational {
         font-size: clamp(2rem, 4vw, 3rem) !important;
     }
-}
-
-/* ==========================================
-   📱 MODO DIOS: MÓVIL HORIZONTAL ESTRICTO (CERO SCROLL)
-   ========================================== */
-@media (max-height: 600px) and (orientation: landscape) {
-    
-    #dyn-intro-title { font-size: clamp(2rem, 5vw, 3rem) !important; margin-bottom: 5px !important; }
-    #dyn-intro-mode { font-size: 1.2rem !important; margin-top: 5px !important; }
-    #dyn-intro-category { font-size: 1rem !important; margin-top: 5px !important; }
-    #dyn-intro-start { font-size: 2rem !important; margin-top: 10px !important; }
-
-    #screen-game { 
-        overflow: hidden !important; 
-        padding: 0 !important;
-    }
-
-    #game-ui {
-        padding: 5px 15px 5px 15px !important; 
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        height: 100vh !important;
-        height: 100dvh !important;
-        box-sizing: border-box !important;
-    }
-
-    .score { font-size: 0.8rem !important; padding: 4px 10px !important; margin-bottom: 2px !important; }
-    #btn-leave-lobby, .btn-danger { padding: 5px 10px !important; font-size: 0.8rem !important; margin-top: 0 !important; }
-    #game-ui h2, #game-ui h3 { font-size: 1.1rem !important; margin: 2px 0 !important; line-height: 1.1 !important; }
-    
-    .question {
-        font-size: 1rem !important;
-        padding: 5px 10px !important;
-        margin-bottom: 5px !important;
-    }
-
-    .options {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important; 
-        gap: 5px !important;
-        flex: 1 !important; 
-        align-content: stretch !important;
-        margin-bottom: 5px !important;
-    }
-    
-    .option-button {
-        height: 100% !important;
-        min-height: 0 !important;
-        padding: 2px !important;
-        font-size: 0.9rem !important;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    #game-results {
-        padding: 5px 15px !important;
-        justify-content: center !important;
-        height: 100vh !important;
-        height: 100dvh !important;
-        overflow: hidden !important;
-    }
-    #personal-result-title { font-size: 1.5rem !important; margin: 5px 0 !important; }
-    #personal-result-message { font-size: 0.9rem !important; margin: 5px 0 !important; padding: 0 !important; }
-    #royale-leaderboard { padding: 5px !important; margin-bottom: 5px !important; flex: 1; overflow-y: auto !important; }
-    #royale-leaderboard div { padding: 5px 10px !important; margin-bottom: 2px !important; font-size: 0.8rem !important; }
-    #btn-back-to-lobby { margin: 5px auto !important; padding: 8px !important; font-size: 0.9rem !important; }
-
-    .floating-chat-btn { transform: scale(0.6) !important; bottom: -5px !important; right: -5px !important; }
 }
