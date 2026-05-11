@@ -305,6 +305,21 @@ function conectarWebSocket(token, username) {
             }
         }
 
+        // ==========================================
+        // 🛡️ RE-ENGANCHE AUTOMÁTICO POST-F5 (MATCHMAKING PÚBLICO)
+        // ==========================================
+        if (sessionStorage.getItem('is_public_room') === 'true') {
+            const modoPublico = sessionStorage.getItem('public_room_mode') || 'Battle Royale';
+            console.log('🔄 Re-enviando solicitud de Matchmaking tras F5: ' + modoPublico);
+            
+            // Le damos un pequeño respiro de medio segundo para que las suscripciones se asienten
+            setTimeout(() => {
+                if (stompClient && stompClient.connected) {
+                    stompClient.send("/app/game.public.join", {}, JSON.stringify({ gameMode: modoPublico }));
+                }
+            }, 500);
+        }
+
         setInterval(() => {
             if (stompClient && stompClient.connected) {
                 stompClient.send("/app/user.ping", {}, JSON.stringify({}));
@@ -353,6 +368,11 @@ function conectarWebSocket(token, username) {
                 if(data.type === "KICKED") window.mostrarToastError("❌ Has sido expulsado de la sala.");
                 if(data.type === "ROOM_CLOSED") window.mostrarToastError(`❌ La sala ha sido cerrada.`); 
                 sessionStorage.removeItem('current_game_id'); sessionStorage.removeItem('current_host_name'); sessionStorage.removeItem('last_voluntary_game_id'); 
+                
+                // 🔥 Asegurarnos de limpiar la nota pública si nos echan 🔥
+                sessionStorage.removeItem('is_public_room');
+                sessionStorage.removeItem('public_room_mode');
+
                 const sMenu = document.getElementById('screen-menu'); const sLobby = document.getElementById('screen-lobby');
                 if (typeof cambiarPantalla === "function") cambiarPantalla(sLobby, sMenu);
                 if (typeof verificarBotonReconexion === "function") verificarBotonReconexion();
@@ -444,7 +464,15 @@ function conectarWebSocket(token, username) {
                         if (waitingMsg) waitingMsg.style.display = 'none';
                     } else {
                         if (hostControls) hostControls.style.display = 'none';
-                        if (waitingMsg) { waitingMsg.innerText = `Esperando a que se unan los jugadores (Máx 10)...`; waitingMsg.style.display = 'block'; }
+                        if (waitingMsg) { 
+                            // 🔥 TEXTO DINÁMICO PARA MATCHMAKING 🔥
+                            if (sessionStorage.getItem('is_public_room') === 'true') {
+                                waitingMsg.innerText = `Buscando oponentes (${data.players.length}/10)...`;
+                            } else {
+                                waitingMsg.innerText = `Esperando a que se unan los jugadores (Máx 10)...`; 
+                            }
+                            waitingMsg.style.display = 'block'; 
+                        }
                     }
                 } else {
                     if (selectMode) selectMode.disabled = true; if (selectCat) selectCat.disabled = true;
@@ -454,7 +482,15 @@ function conectarWebSocket(token, username) {
                         if(!exists) { selectCat.add(new Option(data.categoryName, data.categoryName)); }
                         selectCat.value = data.categoryName; selectCat.style.border = "2px solid #FF9800"; setTimeout(() => selectCat.style.border = "none", 1000);
                     }
-                    if (waitingMsg) { waitingMsg.innerText = `Esperando al Host (${data.players.length}/10)...`; waitingMsg.style.display = 'block'; }
+                    if (waitingMsg) { 
+                        // 🔥 TEXTO DINÁMICO PARA MATCHMAKING 🔥
+                        if (sessionStorage.getItem('is_public_room') === 'true') {
+                            waitingMsg.innerText = `Buscando oponentes (${data.players.length}/10)...`;
+                        } else {
+                            waitingMsg.innerText = `Esperando al Host (${data.players.length}/10)...`; 
+                        }
+                        waitingMsg.style.display = 'block'; 
+                    }
                     if (hostControls) hostControls.style.display = 'none';
                 }
                 sessionStorage.setItem('current_game_id', data.gameId); sessionStorage.setItem('current_host_name', data.hostName);
@@ -471,6 +507,11 @@ function conectarWebSocket(token, username) {
         stompClient.subscribe(`/topic/game.start.${currentUser}`, function (message) {
             const gameData = JSON.parse(message.body);
             sessionStorage.removeItem('last_voluntary_game_id'); 
+            
+            // 🔥 LIMPIEZA: Una vez empieza la partida, borramos la marca de "Matchmaking" para que un F5 dentro de la partida no te vuelva a meter a la cola.
+            sessionStorage.removeItem('is_public_room');
+            sessionStorage.removeItem('public_room_mode');
+
             sessionStorage.setItem('current_game_mode', gameData.gameMode || "Quizziz"); sessionStorage.setItem('current_game_category', gameData.category || "Cultura General"); sessionStorage.setItem('current_game_players', JSON.stringify(gameData.players));
             
             document.getElementById('global-chat-btn').style.display = 'flex';

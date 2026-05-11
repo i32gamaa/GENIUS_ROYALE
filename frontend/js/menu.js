@@ -63,6 +63,10 @@ window.unirseAPartidaPublica = function(modo) {
     const sPublic = document.getElementById('screen-public-modes'); const sLobby = document.getElementById('screen-lobby');
     if (typeof cambiarPantalla === "function") cambiarPantalla(sPublic, sLobby);
     
+    // 🔥 ESCUDO ANTI-F5: Guardamos que estamos en una sala pública 🔥
+    sessionStorage.setItem('is_public_room', 'true');
+    sessionStorage.setItem('public_room_mode', modo);
+    
     document.getElementById('lobby-title').innerText = "Matchmaking Público"; document.getElementById('config-private-only').style.display = 'none'; document.getElementById('config-public-display').style.display = 'block'; document.getElementById('public-mode-label').innerText = modo.toUpperCase(); document.getElementById('lobby-add-friend-section').style.display = 'none'; document.getElementById('waiting-msg').innerText = "Buscando jugadores..."; 
     const list = document.getElementById('lobby-players-list'); if (list) list.innerHTML = "";
     
@@ -337,23 +341,79 @@ window.verStatsAmigo = function() {
 };
 
 function inicializarMenu() {
-    const sMenu = document.getElementById('screen-menu'); const sLobby = document.getElementById('screen-lobby'); const btnPrivate = document.getElementById('btn-private-game'); const btnLogout = document.getElementById('btn-logout'); const btnLeaveLobby = document.getElementById('btn-leave-lobby'); const btnStart = document.getElementById('btn-start-game-final'); const btnRejoin = document.getElementById('btn-rejoin-lobby'); const btnRequests = document.getElementById('btn-requests'); const requestsModal = document.getElementById('requests-modal'); const closeReq = document.getElementById('close-requests'); const btnMessages = document.getElementById('btn-messages'); const messagesModal = document.getElementById('messages-modal'); const closeMessages = document.getElementById('close-messages'); const btnAddMenu = document.getElementById('btn-add-friend-menu'); const addFriendModal = document.getElementById('add-friend-modal'); const btnCloseAddFriend = document.getElementById('btn-close-add-friend'); const btnSendFriendReq = document.getElementById('btn-send-friend-req'); const modalFriendUsername = document.getElementById('modal-friend-username'); const btnAddLobby = document.getElementById('btn-add-friend-lobby'); const inputFriendName = document.getElementById('input-friend-name');
+    const sMenu = document.getElementById('screen-menu'); 
+    const sLobby = document.getElementById('screen-lobby'); 
+    const btnPrivate = document.getElementById('btn-private-game'); 
+    const btnLogout = document.getElementById('btn-logout'); 
+    const btnLeaveLobby = document.getElementById('btn-leave-lobby'); 
+    const btnStart = document.getElementById('btn-start-game-final'); 
+    const btnRejoin = document.getElementById('btn-rejoin-lobby'); 
+    const btnRequests = document.getElementById('btn-requests'); 
+    const requestsModal = document.getElementById('requests-modal'); 
+    const closeReq = document.getElementById('close-requests'); 
+    const btnMessages = document.getElementById('btn-messages'); 
+    const messagesModal = document.getElementById('messages-modal'); 
+    const closeMessages = document.getElementById('close-messages'); 
+    const btnAddMenu = document.getElementById('btn-add-friend-menu'); 
+    const addFriendModal = document.getElementById('add-friend-modal'); 
+    const btnCloseAddFriend = document.getElementById('btn-close-add-friend'); 
+    const btnSendFriendReq = document.getElementById('btn-send-friend-req'); 
+    const modalFriendUsername = document.getElementById('modal-friend-username'); 
+    const btnAddLobby = document.getElementById('btn-add-friend-lobby'); 
+    const inputFriendName = document.getElementById('input-friend-name');
 
-    window.cargarMiPerfil(); window.verificarBotonReconexion(); window.actualizarBandejaMensajes(); window.actualizarBandeja(); 
+    window.cargarMiPerfil(); 
+    window.verificarBotonReconexion(); 
+    window.actualizarBandejaMensajes(); 
+    window.actualizarBandeja(); 
 
-    if (btnLogout) { btnLogout.onclick = () => { sessionStorage.clear(); location.reload(); }; }
+    // ==========================================
+    // 🔥 ESCUDO ANTI-F5 PARA SALAS PÚBLICAS 🔥
+    // ==========================================
+    if (sessionStorage.getItem('is_public_room') === 'true') {
+        const modo = sessionStorage.getItem('public_room_mode') || 'Battle Royale';
+        document.getElementById('lobby-title').innerText = "Matchmaking Público"; 
+        document.getElementById('config-private-only').style.display = 'none'; 
+        document.getElementById('config-public-display').style.display = 'block'; 
+        document.getElementById('public-mode-label').innerText = modo.toUpperCase(); 
+        document.getElementById('lobby-add-friend-section').style.display = 'none'; 
+        document.getElementById('waiting-msg').innerText = "Buscando jugadores..."; 
+    }
+
+    if (btnLogout) { 
+        btnLogout.onclick = () => { 
+            sessionStorage.clear(); 
+            location.reload(); 
+        }; 
+    }
 
     if (btnLeaveLobby) {
         btnLeaveLobby.onclick = () => { 
-            const gameId = sessionStorage.getItem('current_game_id'); const hostName = sessionStorage.getItem('current_host_name'); const myName = sessionStorage.getItem('genius_username');
+            // 🔥 LIMPIEZA: Al salir de la sala, borramos el rastro público
+            sessionStorage.removeItem('is_public_room'); 
+            sessionStorage.removeItem('public_room_mode');
+
+            const gameId = sessionStorage.getItem('current_game_id'); 
+            const hostName = sessionStorage.getItem('current_host_name'); 
+            const myName = sessionStorage.getItem('genius_username');
+
             if (gameId && stompClient && stompClient.connected) {
                 stompClient.send("/app/lobby.leave", {}, JSON.stringify({ gameId: gameId }));
-                if (hostName !== myName) { sessionStorage.setItem('last_voluntary_game_id', gameId); } else { sessionStorage.removeItem('last_voluntary_game_id'); }
+                if (hostName !== myName) { 
+                    sessionStorage.setItem('last_voluntary_game_id', gameId); 
+                } else { 
+                    sessionStorage.removeItem('last_voluntary_game_id'); 
+                }
             }
-            sessionStorage.removeItem('current_game_id'); sessionStorage.removeItem('current_host_name'); window.verificarBotonReconexion(); window.location.hash = '#screen-menu';
-            if (typeof cambiarPantalla === "function") { cambiarPantalla(sLobby, sMenu); }
+            sessionStorage.removeItem('current_game_id'); 
+            sessionStorage.removeItem('current_host_name'); 
+            window.verificarBotonReconexion(); 
+            window.location.hash = '#screen-menu';
             
-            // Ocultar y limpiar chat al abandonar sala
+            if (typeof cambiarPantalla === "function") { 
+                cambiarPantalla(sLobby, sMenu); 
+            }
+            
             document.getElementById('global-chat-btn').style.display = 'none';
             document.getElementById('room-chat-messages').innerHTML = '<p style="text-align:center; color:#aaa; font-size:0.9rem;">Únete a una sala para chatear</p>';
         };
@@ -363,10 +423,13 @@ function inicializarMenu() {
         btnRejoin.onclick = () => {
             const lastGameId = sessionStorage.getItem('last_voluntary_game_id');
             if (lastGameId && stompClient && stompClient.connected) {
-                if (typeof cambiarPantalla === "function") { cambiarPantalla(sMenu, sLobby); }
-                window.location.hash = '#screen-lobby'; document.getElementById('waiting-msg').innerText = "Reconectando con tu sala..."; document.getElementById('waiting-msg').style.display = 'block';
+                if (typeof cambiarPantalla === "function") { 
+                    cambiarPantalla(sMenu, sLobby); 
+                }
+                window.location.hash = '#screen-lobby'; 
+                document.getElementById('waiting-msg').innerText = "Reconectando con tu sala..."; 
+                document.getElementById('waiting-msg').style.display = 'block';
                 stompClient.send("/app/lobby.rejoin", {}, JSON.stringify({ gameId: lastGameId }));
-                // Reactivamos botón chat
                 document.getElementById('global-chat-btn').style.display = 'flex';
             }
         };
@@ -374,33 +437,69 @@ function inicializarMenu() {
 
     if (btnPrivate) {
         btnPrivate.onclick = () => {
-            if (typeof cambiarPantalla === "function") { cambiarPantalla(sMenu, sLobby); }
-            document.getElementById('lobby-title').innerText = "Sala Privada"; document.getElementById('config-private-only').style.display = 'block'; document.getElementById('config-public-display').style.display = 'none'; document.getElementById('lobby-add-friend-section').style.display = 'block';
-            const list = document.getElementById('lobby-players-list'); const myAvatar = sessionStorage.getItem('genius_avatar') || 'images/invitado.jpg'; const myName = sessionStorage.getItem('genius_username');
-            if(list) { list.innerHTML = `<li style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 10px;"><div style="display:flex; align-items:center;"><img src="${myAvatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover; margin-right:10px; border:2px solid #FFD700; vertical-align:middle;"> 👑 <strong style="color:#FFD700; margin-left:5px;">${myName} (Host)</strong></div></li>`; }
-            document.getElementById('host-controls').style.display = 'none'; document.getElementById('waiting-msg').innerText = 'Esperando a que se unan los jugadores (Máx 10)...'; document.getElementById('waiting-msg').style.display = 'block';
-            sessionStorage.setItem('current_host_name', myName); cargarListaAmigos(); cargarCategorias();
+            // 🔥 LIMPIEZA: Si entramos en privada, nos aseguramos de no llevar rastro público
+            sessionStorage.removeItem('is_public_room'); 
+            sessionStorage.removeItem('public_room_mode');
+
+            if (typeof cambiarPantalla === "function") { 
+                cambiarPantalla(sMenu, sLobby); 
+            }
+            document.getElementById('lobby-title').innerText = "Sala Privada"; 
+            document.getElementById('config-private-only').style.display = 'block'; 
+            document.getElementById('config-public-display').style.display = 'none'; 
+            document.getElementById('lobby-add-friend-section').style.display = 'block';
             
-            // Activar botón chat y limpiar anterior
+            const list = document.getElementById('lobby-players-list'); 
+            const myAvatar = sessionStorage.getItem('genius_avatar') || 'images/invitado.jpg'; 
+            const myName = sessionStorage.getItem('genius_username');
+            
+            if(list) { 
+                list.innerHTML = `<li style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 10px;"><div style="display:flex; align-items:center;"><img src="${myAvatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover; margin-right:10px; border:2px solid #FFD700; vertical-align:middle;"> 👑 <strong style="color:#FFD700; margin-left:5px;">${myName} (Host)</strong></div></li>`; 
+            }
+            
+            document.getElementById('host-controls').style.display = 'none'; 
+            document.getElementById('waiting-msg').innerText = 'Esperando a que se unan los jugadores (Máx 10)...'; 
+            document.getElementById('waiting-msg').style.display = 'block';
+            
+            sessionStorage.setItem('current_host_name', myName); 
+            cargarListaAmigos(); 
+            cargarCategorias();
+            
             document.getElementById('global-chat-btn').style.display = 'flex';
             document.getElementById('room-chat-messages').innerHTML = '<p style="text-align:center; color:#aaa; font-size:0.9rem;">Únete a una sala para chatear</p>';
         };
     }
 
     function notificarCambioLobby() {
-        const gameId = sessionStorage.getItem('current_game_id'); const myName = sessionStorage.getItem('genius_username'); const hostName = sessionStorage.getItem('current_host_name');
+        const gameId = sessionStorage.getItem('current_game_id'); 
+        const myName = sessionStorage.getItem('genius_username'); 
+        const hostName = sessionStorage.getItem('current_host_name');
         if (gameId && myName === hostName && stompClient && stompClient.connected) {
-            stompClient.send("/app/lobby.settings.change", {}, JSON.stringify({ gameId: gameId, gameMode: document.getElementById('game-mode').value, categoryName: document.getElementById('game-category').value }));
+            stompClient.send("/app/lobby.settings.change", {}, JSON.stringify({ 
+                gameId: gameId, 
+                gameMode: document.getElementById('game-mode').value, 
+                categoryName: document.getElementById('game-category').value 
+            }));
         }
     }
+
     document.getElementById('game-mode').addEventListener('change', notificarCambioLobby);
     document.getElementById('game-category').addEventListener('change', notificarCambioLobby);
 
     if (btnStart) {
         btnStart.onclick = () => {
-            btnStart.disabled = true; setTimeout(() => btnStart.disabled = false, 3000);
-            const gameId = sessionStorage.getItem('current_game_id'); const gameMode = document.getElementById('game-mode').value; const selectedCategory = document.getElementById('game-category').value; 
-            if (stompClient && stompClient.connected) { stompClient.send("/app/game.start.private", {}, JSON.stringify({ gameId: gameId, categoryName: selectedCategory, gameMode: gameMode })); }
+            btnStart.disabled = true; 
+            setTimeout(() => btnStart.disabled = false, 3000);
+            const gameId = sessionStorage.getItem('current_game_id'); 
+            const gameMode = document.getElementById('game-mode').value; 
+            const selectedCategory = document.getElementById('game-category').value; 
+            if (stompClient && stompClient.connected) { 
+                stompClient.send("/app/game.start.private", {}, JSON.stringify({ 
+                    gameId: gameId, 
+                    categoryName: selectedCategory, 
+                    gameMode: gameMode 
+                })); 
+            }
         };
     }
 
@@ -415,11 +514,19 @@ function inicializarMenu() {
 
     function enviarSolicitud(usernameToTarget) {
         if (!usernameToTarget) { window.mostrarToastError("⚠️ Por favor, introduce un nombre de usuario."); return; }
-        fetch(`${window.API_BASE_URL}/api/amistad/solicitar`, { method: 'POST', headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ username: usernameToTarget }) })
+        fetch(`${window.API_BASE_URL}/api/amistad/solicitar`, { 
+            method: 'POST', 
+            headers: { 
+                'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}`, 
+                'Content-Type': 'application/json' 
+            }, 
+            body: JSON.stringify({ username: usernameToTarget }) 
+        })
         .then(res => res.json())
         .then(d => {
             if (d.success) { window.mostrarToastExito(d.message); } else { window.mostrarToastError(d.message); }
-            if (modalFriendUsername) modalFriendUsername.value = ""; if (inputFriendName) inputFriendName.value = "";
+            if (modalFriendUsername) modalFriendUsername.value = ""; 
+            if (inputFriendName) inputFriendName.value = "";
             if (addFriendModal) { addFriendModal.classList.add('hidden'); addFriendModal.style.display = 'none'; }
         });
     }
