@@ -720,7 +720,7 @@ html, body {
         width: 100% !important;
         box-sizing: border-box !important; 
         margin-bottom: 20px !important;
-        word-wrap: break-word !important; /* 🔥 Obliga al texto a saltar de línea */
+        word-wrap: break-word !important; 
     }
     .options {
         width: 100% !important;
@@ -736,7 +736,6 @@ html, body {
         word-wrap: break-word !important;
     }
     
-    /* 🔥 FIX FOTO 2: Resultados Privados/Públicos (Prevención de texto cortado) 🔥 */
     #personal-result-title {
         font-size: clamp(1.8rem, 7vw, 2.8rem) !important;
         line-height: 1.2 !important;
@@ -746,10 +745,10 @@ html, body {
         box-sizing: border-box !important;
     }
     #personal-result-message {
-        font-size: clamp(1rem, 5vw, 1.4rem) !important; /* Texto dinámico */
+        font-size: clamp(1rem, 5vw, 1.4rem) !important; 
         text-align: center !important;
         width: 100% !important;
-        word-wrap: break-word !important; /* Salto de línea forzado */
+        word-wrap: break-word !important; 
         box-sizing: border-box !important;
         padding: 0 10px !important;
         margin: 10px auto 20px auto !important;
@@ -761,7 +760,6 @@ html, body {
         padding: 15px !important;
     }
     
-    /* Obligamos al botón de volver a estar centrado y a la vista */
     #btn-back-to-lobby, .btn-primary {
         width: 100% !important;
         max-width: 300px !important;
@@ -770,7 +768,6 @@ html, body {
     }
 }
 
-
 /* 3. Distribución perfecta de la vista del jugador (Invitado) */
 #kg-guest-view {
     flex-direction: column !important;
@@ -778,14 +775,12 @@ html, body {
     padding: 0 !important; 
 }
 
-/* Blindaje de las barras superior e inferior (Nombre y Puntos) */
 #kg-guest-view > div:first-child,
 #kg-guest-view > div:last-child {
     flex-shrink: 0 !important; 
     padding: 12px 15px !important;
 }
 
-/* El panel de los 4 botones */
 #kg-guest-controls {
     flex: 1 !important; 
     min-height: 0 !important; 
@@ -821,5 +816,51 @@ html, body {
     }
     #kr-guest-motivational {
         font-size: clamp(2rem, 4vw, 3rem) !important;
+    }
+}
+
+/* ==========================================
+   📱 MODO HORIZONTAL MÓVIL (SCROLL LIBRE)
+   ========================================== */
+@media (max-height: 600px) and (orientation: landscape) {
+    
+    /* 🔥 Magia: Dejamos que el usuario pueda hacer scroll hacia abajo 🔥 */
+    #screen-game {
+        overflow-y: auto !important; 
+        height: auto !important;
+        min-height: 100vh !important;
+    }
+
+    #game-ui, #game-results {
+        height: auto !important;
+        min-height: 100vh !important;
+        padding-top: 20px !important;
+        padding-bottom: 90px !important; /* Espacio extra para que puedas bajar y ver el botón de chat/volver */
+        justify-content: flex-start !important;
+    }
+
+    /* Cinemática reducida para que no tengas que bajar 3 pantallas */
+    #dyn-intro-title { font-size: 3rem !important; margin-bottom: 10px !important; }
+    #dyn-intro-mode, #dyn-intro-category { font-size: 1.5rem !important; margin-top: 10px !important; }
+    #dyn-intro-start { font-size: 3rem !important; margin-top: 20px !important; }
+
+    /* Los botones en 2x2 para aprovechar el ancho del móvil tumbado */
+    .options {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important; 
+        gap: 10px !important;
+    }
+    
+    .option-button {
+        min-height: 50px !important;
+        padding: 10px !important;
+        font-size: 1rem !important;
+    }
+
+    /* Chat flotante un poco más pequeño para que no estorbe */
+    .floating-chat-btn { 
+        transform: scale(0.8) !important; 
+        bottom: 10px !important; 
+        right: 10px !important; 
     }
 }
