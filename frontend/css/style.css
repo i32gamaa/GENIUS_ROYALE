@@ -576,28 +576,114 @@ html, body {
     background-color: #05010a !important; 
 }
 
-/* 2. Bloqueo de Pantalla Nativo (Se clava a las 4 esquinas reales del móvil) */
-#screen-game-code, #screen-result-code, #screen-game {
+/* 2. Bloqueo de Pantalla Nativo EXCLUSIVO PARA KAHOOT */
+#screen-game-code, #screen-result-code {
     padding: 0 !important; 
     justify-content: center !important; 
-    position: fixed !important; /* 🔥 LA MAGIA: Convierte la web en App Nativa 🔥 */
+    position: fixed !important; 
     top: 0 !important; 
     left: 0 !important; 
     right: 0 !important; 
     bottom: 0 !important;
     height: auto !important;
     min-height: 0 !important;
-    overflow: hidden !important; /* Prohibido hacer scroll en la partida */
+    overflow: hidden !important; /* Prohibido hacer scroll en Kahoot */
     background: radial-gradient(circle, #2D0A4E, #000) !important;
 }
 
+/* 🔥 ESTA ES LA REGLA QUE TE FALTABA PARA QUE NO SE ROMPA EL HOST 🔥 */
 #kg-guest-view, #kr-guest-view, #kr-guest-final-view, #kg-host-view, #kr-host-view {
-    /* 🔥 ERROR CORREGIDO: Eliminado el display: flex !important. JS vuelve a tener el control 🔥 */
     height: 100% !important; 
     min-height: 100% !important;
     max-height: 100% !important;
     box-sizing: border-box !important;
     overflow: hidden !important; 
+}
+
+/* 2.5. Ajuste Flexible para PARTIDAS PRIVADAS / PÚBLICAS */
+#screen-game {
+    padding: 0 !important; 
+    justify-content: flex-start !important; /* Empezamos desde arriba para no chocar con "Abandonar" */
+    position: fixed !important; 
+    top: 0 !important; 
+    left: 0 !important; 
+    right: 0 !important; 
+    bottom: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important; /* SÍ permitimos scroll si la pantalla es enana o hay muchos resultados */
+    overflow-x: hidden !important;
+    background: radial-gradient(circle, #2D0A4E, #000) !important;
+}
+
+/* Espaciado interno para que no se superponga al botón Abandonar */
+#game-ui {
+    padding-top: 70px !important; 
+    margin-top: 0 !important;
+    min-height: 100vh !important;
+    box-sizing: border-box !important;
+}
+
+#game-results {
+    padding-top: 70px !important;
+    padding-bottom: 50px !important;
+    min-height: 100vh !important;
+    display: flex !important;
+    flex-direction: column;
+    justify-content: flex-start !important;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+/* ==========================================
+   📱 AJUSTES MILIMÉTRICOS PARTIDA PRIVADA (MÓVIL)
+   ========================================== */
+@media (max-width: 768px) {
+    #game-ui {
+        padding-left: 15px !important;
+        padding-right: 15px !important;
+    }
+    .score {
+        font-size: 1rem !important;
+        padding: 8px 20px !important;
+        width: auto !important;
+        margin-bottom: 10px !important;
+    }
+    .timer {
+        font-size: 1.3rem !important;
+        margin-bottom: 15px !important;
+    }
+    .question {
+        font-size: 1.2rem !important;
+        padding: 15px !important;
+        width: 100% !important;
+        box-sizing: border-box !important; /* Evita que la pregunta se corte por los lados */
+        margin-bottom: 20px !important;
+    }
+    .options {
+        width: 100% !important;
+        gap: 10px !important; /* Juntamos un poco los botones para que quepan todos */
+    }
+    .option-button {
+        padding: 12px !important;
+        font-size: 1rem !important;
+        min-height: 60px !important;
+    }
+    
+    /* Resultados Privados/Públicos en Móvil */
+    #personal-result-title {
+        font-size: 2.2rem !important;
+        line-height: 1.1;
+    }
+    #personal-result-message {
+        font-size: 1.3rem !important;
+    }
+    #royale-leaderboard {
+        width: 100% !important;
+        max-width: 95vw !important;
+        box-sizing: border-box !important;
+        padding: 15px !important;
+    }
 }
 
 /* 3. Distribución perfecta de la vista del jugador (Invitado) */
