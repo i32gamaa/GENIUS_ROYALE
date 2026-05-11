@@ -40,8 +40,7 @@ function enrutarPantalla() {
 
     // 🔥 ESCUDO ANTI-SECUESTROS: 
     // Si es la primera carga y auth.js intenta forzarnos al Menú, pero nosotros queríamos el Lobby... ¡Lo bloqueamos!
-    if (primeraCarga && token && hash === '#screen-menu' && (rutaInicialF5 === '#screen-lobby' || rutaInicialF5 === '#screen-game')) {
-        window.location.hash = rutaInicialF5; // Devolvemos el golpe y mantenemos la ruta original
+    if (primeraCarga && token && hash === '#screen-menu' && (rutaInicialF5 === '#screen-lobby' || rutaInicialF5 === '#screen-game' || rutaInicialF5 === '#screen-lobby-code')) {        window.location.hash = rutaInicialF5; // Devolvemos el golpe y mantenemos la ruta original
         return;
     }
 
@@ -73,8 +72,7 @@ setTimeout(() => { primeraCarga = false; }, 1000);
 window.cambiarPantalla = function(pantallaOcultar, pantallaMostrar) {
     if (pantallaMostrar) {
         // Doble validación del escudo por si se llama directamente a esta función al arrancar
-        if (primeraCarga && pantallaMostrar.id === 'screen-menu' && (rutaInicialF5 === '#screen-lobby' || rutaInicialF5 === '#screen-game')) {
-            window.location.hash = rutaInicialF5;
+    if (primeraCarga && pantallaMostrar.id === 'screen-menu' && (rutaInicialF5 === '#screen-lobby' || rutaInicialF5 === '#screen-game' || rutaInicialF5 === '#screen-lobby-code')) {            window.location.hash = rutaInicialF5;
         } else {
             window.location.hash = '#' + pantallaMostrar.id;
         }

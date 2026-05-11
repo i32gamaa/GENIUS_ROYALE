@@ -119,7 +119,6 @@ window.mostrarPantallaVotacion = function(categorias) {
     const sVote = document.getElementById('screen-voting');
     if (sVote) { sVote.classList.remove('hidden'); sVote.style.display = 'flex'; }
     
-    // Ocultar chat en la votación
     document.getElementById('global-chat-btn').style.display = 'none';
 
     const grid = document.getElementById('voting-grid');
@@ -190,7 +189,6 @@ window.procesarResultadoVotacion = function(ganador, esEmpate, opcionesEmpatadas
     }
 };
 
-// 🔥 CHAT GLOBAL FUNCIONALIDADES 🔥
 window.toggleRoomChat = function() {
     const panel = document.getElementById('room-chat-panel');
     const badge = document.getElementById('global-chat-badge');
@@ -241,7 +239,6 @@ window.recibirMensajeSala = function(data) {
     }
 };
 
-// 🔥 RECIBIR CHAT PRIVADO WHATSAPP 🔥
 window.recibirMensajePrivado = function(data) {
     const chatBox = document.getElementById('wa-messages');
     const panelAmigos = document.getElementById('friends-stats-modal');
@@ -252,11 +249,9 @@ window.recibirMensajePrivado = function(data) {
             chatBox.scrollTop = chatBox.scrollHeight;
         }
         
-        // Actualizar snippet
         const snippetEl = document.getElementById(`wa-snippet-${data.sender}`);
         if (snippetEl) snippetEl.innerText = data.message;
         
-        // Confirmar lectura automáticamente porque tenemos el chat abierto
         if (stompClient && stompClient.connected) {
             stompClient.send("/app/chat.read", {}, JSON.stringify({ sender: data.sender }));
         }
@@ -284,7 +279,32 @@ function conectarWebSocket(token, username) {
     stompClient.connect({'Authorization': 'Bearer ' + token}, function (frame) {
         console.log('✅ Conectado como: ' + currentUser);
 
-        // 🔥 EL PING CONSTANTE PARA "EN LÍNEA" 🔥
+        // 🔥 INYECCIÓN QUIRÚRGICA: MÓDULO AISLADO KAHOOT 🔥
+        if (sessionStorage.getItem('is_pin_room') === 'true') {
+            if (typeof window.suscribirseAKahoot === "function") {
+                window.suscribirseAKahoot(stompClient, currentUser);
+                
+                const roomPin = sessionStorage.getItem('current_game_id');
+                const payload = JSON.stringify({ gameId: roomPin, username: currentUser });
+
+                setTimeout(() => {
+                    if (sessionStorage.getItem('is_guest') === 'true') {
+                        stompClient.send("/app/kahoot.join", {}, payload);
+                    } else {
+                        stompClient.send("/app/kahoot.sync", {}, payload);
+                    }
+                }, 300);
+
+                // REDUNDANCIA ANTI-F5: Si tras 1.5s la lista sigue vacía, pide sync de nuevo
+                setTimeout(() => {
+                    const list = document.getElementById('lobby-pin-players-list');
+                    if (list && list.children.length === 0) {
+                        stompClient.send("/app/kahoot.sync", {}, payload);
+                    }
+                }, 1500);
+            }
+        }
+
         setInterval(() => {
             if (stompClient && stompClient.connected) {
                 stompClient.send("/app/user.ping", {}, JSON.stringify({}));
@@ -294,7 +314,6 @@ function conectarWebSocket(token, username) {
         stompClient.subscribe(`/topic/chat.room.${currentUser}`, function (message) { window.recibirMensajeSala(JSON.parse(message.body)); });
         stompClient.subscribe(`/topic/chat.private.${currentUser}`, function (message) { window.recibirMensajePrivado(JSON.parse(message.body)); });
 
-        // 🔥 RECIBIR EL "ESCRIBIENDO..." 🔥
         stompClient.subscribe(`/topic/chat.typing.${currentUser}`, function (message) {
             const data = JSON.parse(message.body);
             if (window.waActiveFriend === data.sender) {
@@ -303,13 +322,12 @@ function conectarWebSocket(token, username) {
                     if (data.isTyping) {
                         statusEl.innerText = "Escribiendo..."; statusEl.style.color = "#03DAC6";
                     } else {
-                        window.actualizarEstadoAmigo(); // Vuelve a comprobar estado
+                        window.actualizarEstadoAmigo(); 
                     }
                 }
             }
         });
 
-        // 🔥 RECIBIR EL DOBLE TICK AZUL 🔥
         stompClient.subscribe(`/topic/chat.read.${currentUser}`, function (message) {
             const data = JSON.parse(message.body);
             if (window.waActiveFriend === data.reader) {
@@ -339,7 +357,6 @@ function conectarWebSocket(token, username) {
                 if (typeof cambiarPantalla === "function") cambiarPantalla(sLobby, sMenu);
                 if (typeof verificarBotonReconexion === "function") verificarBotonReconexion();
                 
-                // Limpiar Chat Global
                 document.getElementById('global-chat-btn').style.display = 'none';
                 document.getElementById('room-chat-messages').innerHTML = '<p style="text-align:center; color:#aaa; font-size:0.9rem;">Únete a una sala para chatear</p>';
                 return; 

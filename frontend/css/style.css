@@ -103,3 +103,63 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
 .emoji-picker { position: absolute; bottom: 100%; left: 0; background: rgba(26, 11, 46, 0.95); border: 2px solid #03DAC6; border-radius: 10px; padding: 10px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.5); margin-bottom: 10px; }
 .emoji-picker span { font-size: 1.5rem; cursor: pointer; transition: transform 0.2s; text-align: center; }
 .emoji-picker span:hover { transform: scale(1.3); }
+
+/* ==========================================
+   📱 RESPONSIVE DESIGN: LOBBY & MENÚ (MOBILE FIRST)
+   ========================================== */
+
+/* Tablet y Móviles (< 900px) */
+@media (max-width: 900px) {
+    /* Menú Principal: De 2 columnas a 1 columna */
+    #main-grid-menu {
+        grid-template-columns: 1fr !important;
+        gap: 15px !important;
+        padding: 10px;
+    }
+    .grid-menu-btn { padding: 20px 10px !important; }
+    .grid-menu-btn.btn-pin { grid-column: span 1 !important; }
+    
+    /* Textos Cinemáticos Escalables */
+    .cinematic-title { font-size: clamp(2.5rem, 8vw, 4rem) !important; }
+    .cinematic-subtitle { font-size: clamp(1rem, 4vw, 1.5rem) !important; letter-spacing: 4px !important; }
+    
+    /* El Lobby pasa de Horizontal a Vertical */
+    .lobby-layout {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 20px !important;
+    }
+    .panel { width: 100% !important; box-sizing: border-box !important; }
+    
+    /* El PIN Gigante se ajusta a la pantalla */
+    #lobby-code-pin, #lobby-pin {
+        font-size: clamp(2.5rem, 10vw, 5rem) !important;
+        letter-spacing: clamp(5px, 2vw, 15px) !important;
+        padding: 15px !important;
+    }
+
+    /* Modal de Amigos WhatsApp: Pasa a Vertical */
+    .wa-layout {
+        flex-direction: column !important;
+        height: 75vh !important;
+    }
+    .wa-sidebar {
+        width: 100% !important;
+        height: 40% !important;
+        border-right: none !important;
+        border-bottom: 2px solid #9C27B0 !important;
+    }
+    .wa-chat-area { height: 60% !important; }
+}
+
+/* Teléfonos Pequeños (< 480px) */
+@media (max-width: 480px) {
+    .login-box { padding: 20px 15px !important; }
+    
+    /* Ajuste del botón flotante y panel de chat para que no tapen todo */
+    .floating-chat-btn { bottom: 15px !important; right: 15px !important; width: 50px !important; height: 50px !important; font-size: 1.5rem !important; }
+    .room-chat-panel { width: 90vw !important; right: 5vw !important; bottom: 80px !important; height: 60vh !important; }
+    
+    /* Modales a pantalla completa para facilitar pulsación */
+    .modal-content { width: 95% !important; padding: 20px !important; }
+}
