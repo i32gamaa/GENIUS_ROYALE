@@ -115,9 +115,9 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
 
 /* 2. REPARACIÓN GLOBAL PARA EVITAR CORTES EN TABLET Y PC */
 .screen {
-    display: flex !important;
+    /* 🔥 HEMOS BORRADO EL DISPLAY: FLEX !IMPORTANT DE AQUÍ 🔥 */
     flex-direction: column !important;
-    align-items: center !important;       /* Centrado horizontal (Corrige Foto 3) */
+    align-items: center !important;       
     justify-content: flex-start !important; 
     min-height: 100vh !important;
     height: auto !important;
