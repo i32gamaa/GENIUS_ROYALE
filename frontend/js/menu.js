@@ -464,3 +464,21 @@ window.actualizarBandeja = function() {
 };
 
 document.addEventListener('DOMContentLoaded', inicializarMenu);
+
+// ==========================================
+// 🔥 LÓGICA DEL MENÚ MÓVIL DESPLEGABLE 🔥
+// ==========================================
+
+window.abrirMenuLateral = function() {
+    const sidebar = document.getElementById('menu-sidebar');
+    const overlay = document.getElementById('mobile-menu-overlay');
+    if (sidebar) sidebar.classList.add('sidebar-open');
+    if (overlay) overlay.classList.add('active');
+};
+
+window.cerrarMenuLateral = function() {
+    const sidebar = document.getElementById('menu-sidebar');
+    const overlay = document.getElementById('mobile-menu-overlay');
+    if (sidebar) sidebar.classList.remove('sidebar-open');
+    if (overlay) overlay.classList.remove('active');
+};
