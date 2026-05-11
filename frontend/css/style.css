@@ -165,7 +165,68 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
 }
 
 /* ==========================================
-   📱 RESPONSIVE: MENÚ OFF-CANVAS (DESPLEGABLE) Y ANTI-CORTES
+   🛡️ FIX DEFINITIVO: SCROLL UNIVERSAL Y CENTRADO PERFECTO 🛡️
+   ========================================== */
+
+/* 1. REPARACIÓN GLOBAL PARA EVITAR CORTES EN TABLET Y PC */
+.screen {
+    display: flex !important;
+    flex-direction: column !important;    /* Todas las pantallas en columna por defecto */
+    align-items: center !important;       /* Centrado horizontal garantizado */
+    justify-content: flex-start !important; /* Empieza siempre arriba para evitar que se corte la cabecera */
+    min-height: 100vh !important;
+    height: auto !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box;
+    padding: 40px 15px !important;        /* Espacio de respiro arriba y abajo */
+}
+
+/* Excepción: El Menú Principal en Escritorio (Es de Izquierda a Derecha) */
+#screen-menu {
+    flex-direction: row !important;
+    align-items: stretch !important;
+    padding: 0 !important;
+}
+
+/* MAGIA NEGRA DEL CENTRADO: 
+   Usar 'margin: auto' empuja el contenedor al centro exacto si sobra espacio, 
+   pero lo deja arriba si falta espacio. ¡Nunca se corta! */
+.login-container, 
+.lobby-container, 
+#screen-public-modes > div,
+#screen-lobby-code > div {
+    margin: auto !important;
+    width: 100% !important;
+    box-sizing: border-box;
+}
+
+/* 2. FIX TABLET HORIZONTAL (Evitar que se corte el menú en escritorio apaisado) */
+#menu-sidebar {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+}
+
+#screen-menu > div:last-child {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start !important; /* Evita el corte superior */
+    align-items: center;
+    flex: 1;
+    padding: 40px 20px !important;
+    box-sizing: border-box;
+    overflow-y: auto !important;
+}
+
+#main-grid-menu {
+    margin: auto !important; /* Centrado inteligente */
+    width: 100%;
+    max-width: 800px;
+}
+
+/* ==========================================
+   📱 MODO MÓVIL Y PANTALLAS DIVIDIDAS (< 1100px)
    ========================================== */
 
 /* Por defecto (Ordenadores), ocultamos los botones de móvil */
@@ -173,40 +234,21 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
 .mobile-menu-close { display: none; }
 #mobile-menu-overlay { display: none; }
 
-/* Cuando la pantalla se achica (Tablet, Mitad de pantalla, Móvil) */
 @media (max-width: 1100px) {
     
-    /* 🔥 FIX DEFINITIVO: Altura dinámica y scroll natural 🔥 */
-    .screen {
-        flex-direction: column !important;
-        align-items: center !important;    
-        justify-content: flex-start !important; 
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-        padding: 0 10px;
-        box-sizing: border-box;
-        height: auto !important;
-        min-height: 100vh !important;
-    }
-
     #screen-menu {
         flex-direction: column !important;
-        justify-content: flex-start !important;
+        align-items: center !important;
     }
     
-    /* 🔥 LA CLAVE MAGICA: Quitar flex:1 para que no se aplaste y corte por arriba 🔥 */
     #screen-menu > div:last-child {
-        flex: none !important; 
-        justify-content: flex-start !important; 
-        padding-top: 110px !important; /* Espacio para que el logo flotante no tape el primer botón */
+        padding-top: 100px !important; /* Espacio para el logo flotante */
         padding-bottom: 50px !important;
-        height: auto !important;
-        width: 100% !important;
-        max-width: 500px;
-        margin: 0 auto;
+        min-height: 100vh !important;
+        max-width: 500px !important;   /* Evita que los botones se vean gigantes/estirados */
     }
 
-    /* 1. Botón Flotante del Logo (Arriba a la Izquierda) */
+    /* 1. Botón Flotante del Logo */
     .mobile-menu-toggle {
         display: block;
         position: fixed; 
@@ -239,6 +281,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
         top: 0 !important;
         left: 0 !important;
         height: 100vh !important;
+        min-height: -webkit-fill-available !important; /* Ajuste nativo para iOS Safari */
         width: 320px !important;
         max-width: 85vw !important; 
         background: rgba(15, 5, 24, 0.98) !important;
@@ -274,23 +317,32 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
         width: 100% !important;
         margin-top: 0 !important;
     }
-    .grid-menu-btn { padding: 25px 15px !important; }
+    .grid-menu-btn { padding: 20px 15px !important; }
     .grid-menu-btn.btn-pin { grid-column: span 1 !important; }
     
     /* Pantalla Selección de Modos Públicos */
-    #screen-public-modes {
-        padding-top: 50px !important;
-    }
     #screen-public-modes > div {
         grid-template-columns: 1fr !important; 
         gap: 15px !important;
         width: 100% !important;
-        max-width: 450px;
-        margin: 0 auto !important; 
+        max-width: 450px !important;
+        margin: auto !important;
     }
-    #screen-public-modes h2 {
-        text-align: center;
-        margin-top: 20px;
+    
+    /* Centrado estético de los paneles de las Salas (Privada y Kahoot) */
+    .lobby-container {
+        max-width: 500px !important;
+        margin: auto !important;
+    }
+    .lobby-layout {
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 20px !important;
+    }
+    .panel {
+        width: 100% !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
     }
 }
 
@@ -300,7 +352,6 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
     .mobile-menu-toggle { top: 10px; left: 10px; }
     .grid-menu-btn { padding: 15px !important; font-size: 1.3rem !important; }
     .grid-menu-btn span:first-child { font-size: 2.2rem !important; } 
-    .cinematic-title { font-size: 3rem !important; }
-    
+    .cinematic-title { font-size: 2.5rem !important; }
     #screen-menu > div:last-child { padding-top: 80px !important; }
 }
