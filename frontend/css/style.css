@@ -159,13 +159,13 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
 #screen-menu > div:last-child {
     display: flex;
     flex-direction: column;
-    justify-content: center !important; /* Centrado vertical perfecto en PC */
+    justify-content: flex-start !important; /* 🔥 LA MAGIA: Empieza desde arriba para NUNCA cortar el botón naranja 🔥 */
     align-items: center;
-    flex: 1 !important; /* ¡LA CLAVE PARA PC! Reparte el espacio respetando la barra lateral */
-    width: auto !important; /* Anula el 100% del móvil en PC */
-    padding: 40px 20px !important;
+    flex: 1 !important; 
+    width: auto !important; 
+    padding: 60px 20px 40px 20px !important; /* Un poco más de aire arriba por si aparece el botón */
     box-sizing: border-box;
-    overflow-y: auto !important;
+    overflow-y: auto !important; /* Activa el scroll natural de la parte derecha si hiciera falta */
 }
 
 #main-grid-menu {
@@ -521,5 +521,125 @@ html, body {
     }
     #kr-guest-motivational {
         font-size: 3.5rem !important;
+    }
+}
+
+/* ==========================================
+   🖥️ FIX PC: SCROLL INTELIGENTE EN LOGIN Y PRESENTACIÓN
+   ========================================== */
+@media (min-width: 1101px) {
+    
+    /* 1. Login y Registro: Centrado absoluto, pero PERMITIENDO SCROLL si el monitor es pequeño */
+    #screen-login, #screen-register {
+        height: auto !important; /* Deja que crezca si lo necesita */
+        min-height: 100vh !important;
+        overflow-y: auto !important; /* SCROLL INTELIGENTE: Solo sale si no cabe */
+        overflow-x: hidden !important;
+        padding: 40px 0 !important; /* Un poco de aire arriba y abajo para que no se pegue al techo */
+        justify-content: center !important;
+    }
+
+    /* Ajuste sutil del logo del login para que ocupe menos espacio vertical */
+    .app-logo {
+        max-width: 140px !important;
+        margin-bottom: 20px !important;
+    }
+
+    /* 2. Menú Principal y Cinemática: Bloqueo de scroll global (las cajas internas ya tienen su propio scroll) */
+    #screen-menu {
+        height: 100vh !important;
+        min-height: 100vh !important;
+        overflow: hidden !important;
+    }
+
+    /* 3. Redimensionado inteligente de la Intro para que encaje perfecto */
+    #cinematic-logo {
+        width: 120px !important;
+        height: 120px !important;
+        margin-bottom: 20px !important;
+    }
+    #cinematic-title {
+        font-size: clamp(4rem, 6vw, 6rem) !important;
+    }
+    #cinematic-subtitle {
+        font-size: clamp(1rem, 1.5vw, 1.5rem) !important;
+        margin-top: 10px !important;
+    }
+}
+
+/* ==========================================
+   🛡️ ESCUDO ABSOLUTO: PANTALLA PARTIDA Y RESULTADOS (TABLET Y MÓVIL) 🛡️
+   ========================================== */
+
+/* 1. Bloqueo de altura estricto (Evita que las barras inferiores desaparezcan) */
+#screen-game-code, #screen-result-code, #screen-game {
+    padding: 0 !important; 
+    justify-content: center !important; 
+    height: 100vh !important;
+    height: 100dvh !important; /* 🔥 LA MAGIA: Dynamic Viewport Height (Mide la pantalla real en Tablets/Móviles) */
+    overflow: hidden !important; /* Prohibido hacer scroll en partida */
+}
+
+#kg-guest-view, #kr-guest-view, #kr-guest-final-view, #kg-host-view, #kr-host-view {
+    height: 100% !important; 
+    min-height: 100% !important;
+    max-height: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important; 
+}
+
+/* 2. Distribución perfecta de la vista del jugador (Invitado) */
+#kg-guest-view {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important; /* Barra PIN arriba, Puntuación abajo */
+    padding: 0 !important; 
+}
+
+/* Blindaje de las barras superior e inferior para que JAMÁS se aplasten */
+#kg-guest-view > div:first-child,
+#kg-guest-view > div:last-child {
+    flex-shrink: 0 !important; 
+    padding: 12px 15px !important;
+}
+
+/* El panel de los 4 botones */
+#kg-guest-controls {
+    flex: 1 !important; 
+    min-height: 0 !important; /* 🔥 FIX FLEXBOX: Impide que los textos grandes rompan el contenedor */
+    padding: 15px !important;
+    gap: 15px !important;
+    align-content: stretch !important; /* Obliga a los botones a ocupar el espacio exacto, ni más ni menos */
+}
+
+#kg-guest-controls button {
+    height: 100% !important; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    word-break: break-word;
+    border-width: 4px !important;
+}
+
+/* 3. Reajuste Milimétrico para Tablet (Horizontal y Vertical) */
+@media (min-width: 768px) {
+    #kg-guest-controls {
+        padding: 25px !important;
+        gap: 20px !important;
+    }
+    #kg-guest-controls button {
+        /* Reduce un poco la letra gigante para que quepa todo el texto sin desbordar */
+        font-size: clamp(1.8rem, 4vw, 2.5rem) !important; 
+        border-radius: 20px !important;
+    }
+    
+    /* FIX FOTO 3 (Ranking Tablet): Evitar que el "#1" crezca tanto que oculte los puntos */
+    #kr-guest-rank {
+        font-size: clamp(6rem, 12vw, 9rem) !important; 
+        margin-bottom: 20px !important;
+    }
+    #kr-guest-motivational {
+        font-size: clamp(2rem, 4vw, 3rem) !important;
     }
 }
