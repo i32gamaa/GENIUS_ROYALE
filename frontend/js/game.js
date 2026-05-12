@@ -1,5 +1,5 @@
 // ==========================================
-// js/game.js - VERSIÓN COMPLETA: ANIMACIONES, AVATARES Y TENSION 🤫🎲
+// js/game.js - VERSIÓN COMPLETA: ANIMACIONES, AVATARES, TENSION Y COMODINES 🤫🎲🃏
 // ==========================================
 
 let preguntas = [];
@@ -15,7 +15,19 @@ let alivePlayers = [];
 let targetSpectatorIndex = 0;
 let respuestasRondaLive = {}; 
 
-// 🔥 ESCUDO: Si cierran la pestaña, se rinden en el juego pero mantienen su hueco en la Sala 🔥
+// 🔥 SISTEMA DE COMODINES 🔥
+const ALL_WILDCARDS = [
+    { id: '5050', name: '50:50', icon: '✂️', desc: 'Elimina 2 respuestas incorrectas.' },
+    { id: 'CAMBIO', name: 'Cambio', icon: '🔄', desc: 'Sustituye la pregunta actual para ti.' },
+    { id: 'RULETA', name: 'Ruleta', icon: '🎰', desc: 'Elimina de 0 a 3 fallos al azar.' },
+    { id: 'BOMBA', name: 'Bomba', icon: '💣', desc: 'Fuerza una pregunta nueva para TODOS.' },
+    { id: 'ANGEL', name: 'Ángel', icon: '👼', desc: 'Revive el último comodín gastado.' }
+];
+let myWildcards = [];
+let usedWildcards = [];
+let lastUsedWildcard = null;
+let localSubstituteQuestion = null; 
+
 window.addEventListener('beforeunload', () => {
     if (stompClient && stompClient.connected) {
         if (gameIdActual && !estoyEliminado) {
@@ -36,19 +48,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnAbandon) {
         btnAbandon.addEventListener('click', () => {
-            if (modalAbandon) {
-                modalAbandon.classList.remove('hidden');
-                modalAbandon.style.display = 'flex';
-            }
+            if (modalAbandon) { modalAbandon.classList.remove('hidden'); modalAbandon.style.display = 'flex'; }
         });
     }
 
     if (btnCancel) {
         btnCancel.addEventListener('click', () => {
-            if (modalAbandon) {
-                modalAbandon.classList.add('hidden');
-                modalAbandon.style.display = 'none';
-            }
+            if (modalAbandon) { modalAbandon.classList.add('hidden'); modalAbandon.style.display = 'none'; }
         });
     }
 
@@ -57,10 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (stompClient && stompClient.connected) {
                 stompClient.send("/app/game.leave", {}, JSON.stringify({ gameId: gameIdActual }));
             }
-            if (modalAbandon) {
-                modalAbandon.classList.add('hidden');
-                modalAbandon.style.display = 'none';
-            }
+            if (modalAbandon) { modalAbandon.classList.add('hidden'); modalAbandon.style.display = 'none'; }
             resetearVistasDeJuego();
             window.location.replace(window.location.pathname + window.location.search + '#screen-lobby');
             if (typeof cambiarPantalla === "function") cambiarPantalla(document.getElementById('screen-game'), document.getElementById('screen-lobby'));
@@ -74,6 +77,25 @@ function inicializarJuego(gameData) {
     gameOverData = null; 
     estoyEliminado = false;
     respuestasRondaLive = {};
+    localSubstituteQuestion = null;
+
+    const isBR = sessionStorage.getItem('current_game_mode') === "Battle Royale";
+    
+    // 🔥 SORTEO DE COMODINES (Sin mostrarlos aún) 🔥
+    myWildcards = [];
+    usedWildcards = [];
+    lastUsedWildcard = null;
+    
+    // Ocultamos todo al empezar la cinemática
+    if (document.getElementById('btn-wildcards')) document.getElementById('btn-wildcards').style.display = 'none';
+    if (document.getElementById('global-chat-btn')) document.getElementById('global-chat-btn').style.display = 'none';
+
+    if (!isBR) {
+        let shuffled = [...ALL_WILDCARDS].sort(() => 0.5 - Math.random());
+        myWildcards = shuffled.slice(0, 3);
+        window.renderWildcards();
+        // Ya no los mostramos aquí, esperamos a la pregunta
+    }
 
     const playersStr = sessionStorage.getItem('current_game_players');
     alivePlayers = playersStr ? JSON.parse(playersStr) : [];
@@ -85,19 +107,150 @@ function inicializarJuego(gameData) {
     document.getElementById('spectator-controls').style.display = 'none';
     
     const scoreElement = document.querySelector('.score');
-    const isBR = sessionStorage.getItem('current_game_mode') === "Battle Royale";
     if (scoreElement) scoreElement.textContent = isBR ? "🏆 Aciertos: 0" : "🏆 Puntuación: 0 pts";
 
     const btnAbandon = document.getElementById('btn-abandon-game');
-    if(btnAbandon) {
-        btnAbandon.style.display = 'none';
-        btnAbandon.classList.add('hidden');
-    }
+    if(btnAbandon) { btnAbandon.style.display = 'none'; btnAbandon.classList.add('hidden'); }
 
     ejecutarIntroEpica(() => {
         descargarPreguntasConReintento();
     });
 }
+
+// 🔥 MENÚ DE COMODINES 🔥
+window.toggleWildcards = function() {
+    const panel = document.getElementById('wildcards-panel');
+    if (panel) panel.classList.toggle('open');
+};
+
+window.renderWildcards = function() {
+    const list = document.getElementById('wildcards-list');
+    if (!list) return;
+    list.innerHTML = '';
+    myWildcards.forEach(w => {
+        const isUsed = usedWildcards.includes(w.id);
+        list.innerHTML += `
+            <div class="wildcard-btn ${isUsed ? 'used' : ''}" onclick="window.usarComodin('${w.id}')">
+                <span style="font-size:2rem;">${w.icon}</span>
+                <div style="display:flex; flex-direction:column; text-align:left;">
+                    <span style="color:#FFD700; font-size:1.1rem;">${w.name}</span>
+                    <span style="color:#aaa; font-size:0.8rem; font-weight:normal;">${w.desc}</span>
+                </div>
+            </div>
+        `;
+    });
+};
+
+window.usarComodin = function(id) {
+    if (usedWildcards.includes(id)) return;
+    if (respuestaElegida !== null || estoyEliminado) {
+        window.mostrarToastError("No puedes usar un comodín ahora mismo.");
+        return; 
+    }
+
+    if (id !== 'ANGEL') {
+        usedWildcards.push(id);
+        lastUsedWildcard = id;
+    } else {
+        usedWildcards.push('ANGEL');
+        if (lastUsedWildcard) {
+            usedWildcards = usedWildcards.filter(w => w !== lastUsedWildcard);
+        } else {
+            window.mostrarToastError("No hay ningún comodín gastado para revivir.");
+            return;
+        }
+    }
+    
+    window.renderWildcards();
+    window.toggleWildcards(); 
+
+    // ==========================================
+    // 🔥 FIX: AVISO AL CHAT USANDO EL ID DEL LOBBY 🔥
+    // ==========================================
+    const wc = ALL_WILDCARDS.find(w => w.id === id);
+    const myName = sessionStorage.getItem('genius_username');
+    const lobbyId = sessionStorage.getItem('current_game_id'); // 👈 Aquí estaba el fallo. Necesitamos el ID de la Sala, no el de la BBDD.
+
+    if (stompClient && stompClient.connected && lobbyId) {
+        stompClient.send("/app/chat.room", {}, JSON.stringify({ 
+            gameId: lobbyId, 
+            message: `🤖 SISTEMA: ¡${myName} ha utilizado el comodín ${wc.icon} ${wc.name}!` 
+        }));
+    }
+
+    const btnOptions = Array.from(document.querySelectorAll('.option-button'));
+    const currentQ = localSubstituteQuestion || preguntas[preguntaActual];
+    const correctText = currentQ.correctAnswer || currentQ.correct; 
+    let wrongBtns = btnOptions.filter(b => b.textContent !== correctText);
+
+    if (id === '5050') {
+        wrongBtns.sort(() => 0.5 - Math.random());
+        wrongBtns[0].style.opacity = '0.2'; wrongBtns[0].style.pointerEvents = 'none';
+        wrongBtns[1].style.opacity = '0.2'; wrongBtns[1].style.pointerEvents = 'none';
+    } 
+    else if (id === 'RULETA') {
+        let count = Math.floor(Math.random() * 4); 
+        wrongBtns.sort(() => 0.5 - Math.random());
+        for(let i=0; i<count; i++) {
+            wrongBtns[i].style.opacity = '0.2'; 
+            wrongBtns[i].style.pointerEvents = 'none';
+        }
+    }
+    else if (id === 'CAMBIO') {
+        fetch(`${window.API_BASE_URL}/api/game/random`, { headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}` } })
+        .then(res => res.json())
+        .then(data => {
+            localSubstituteQuestion = data;
+            document.querySelector('.question').textContent = `🔄 (CAMBIO) ${data.questionText}`;
+            let mix = [data.correctAnswer, data.wrongAnswer1, data.wrongAnswer2, data.wrongAnswer3].sort(() => 0.5 - Math.random());
+            const opContainer = document.querySelector('.options');
+            opContainer.innerHTML = '';
+            
+            mix.forEach(op => {
+                const b = document.createElement('button');
+                b.textContent = op;
+                b.classList.add('option-button');
+                b.onclick = () => {
+                    if (respuestaElegida !== null || estoyEliminado) return;
+                    respuestaElegida = op;
+                    clearInterval(temporizador);
+                    b.style.border = "3px solid #FFD700";
+                    document.querySelectorAll('.option-button').forEach(btn => btn.style.pointerEvents = 'none');
+                    if (op === data.correctAnswer) {
+                        enviarRespuesta(gameIdActual, preguntas[preguntaActual].correctAnswer);
+                    } else {
+                        enviarRespuesta(gameIdActual, "WRONG_ANSWER");
+                    }
+                    document.querySelector('.timer').textContent = "¡Respuesta enviada! Esperando... ⏳";
+                };
+                opContainer.appendChild(b);
+            });
+        });
+    }
+    else if (id === 'BOMBA') {
+        if (stompClient && stompClient.connected) {
+            stompClient.send("/app/game.bomb", {}, JSON.stringify({ gameId: gameIdActual })); // La bomba sí usa el ID de la partida en vivo
+        }
+    }
+};
+
+window.aplicarBombaLive = function(update) {
+    respuestaElegida = null;
+    clearInterval(temporizador);
+    localSubstituteQuestion = null;
+    
+    let newQ = JSON.parse(update.correctAnswer);
+    preguntas[preguntaActual] = {
+        questionText: "💣 " + newQ.text,
+        correctAnswer: newQ.correct,
+        wrongAnswer1: newQ.w1,
+        wrongAnswer2: newQ.w2,
+        wrongAnswer3: newQ.w3
+    };
+    
+    // 🔥 Eliminado el cartelito gigante de arriba a la derecha. Ahora todos se enteran por el Chat.
+    mostrarPregunta(); 
+};
 
 function ejecutarIntroEpica(callback) {
     const introBox = document.getElementById('game-intro');
@@ -159,6 +312,31 @@ function mostrarPregunta() {
     const gameUI = document.getElementById('game-ui');
     const podium = document.getElementById('game-results');
     
+    localSubstituteQuestion = null;
+
+    // ==========================================
+    // 🔥 PASO 2: ACTIVAR ICONOS AL SALIR LA PREGUNTA 🔥
+    // ==========================================
+    const isBR = sessionStorage.getItem('current_game_mode') === "Battle Royale";
+    
+    // Mostramos los comodines solo si NO es Battle Royale
+    if (!isBR && document.getElementById('btn-wildcards')) {
+        document.getElementById('btn-wildcards').style.display = 'flex';
+        // Solo lanzamos el aviso visual en la pregunta 1 para no cansar al usuario
+        if (preguntaActual === 0) {
+            setTimeout(() => {
+                if (typeof window.mostrarToastInfo === "function") {
+                    window.mostrarToastInfo("🃏 ¡Ya puedes consultar tus comodines!");
+                }
+            }, 1000);
+        }
+    }
+
+    // Mostramos el botón del chat de sala
+    if (document.getElementById('global-chat-btn')) {
+        document.getElementById('global-chat-btn').style.display = 'flex';
+    }
+
     if (loadingScreen) loadingScreen.style.display = 'none';
     if (gameUI) gameUI.style.display = 'flex';
     if (podium) podium.style.display = 'none';
@@ -404,25 +582,19 @@ function forzarFinalAbrupto(update) {
 }
 
 function animarDados(sortedScores, diceStr, leaderboardDiv, myUsername, isBR, updateType, callback) {
-    
     let scoreCounts = {};
-    sortedScores.forEach(s => {
-        scoreCounts[s[1]] = (scoreCounts[s[1]] || 0) + 1;
-    });
+    sortedScores.forEach(s => { scoreCounts[s[1]] = (scoreCounts[s[1]] || 0) + 1; });
     
     let tiedScores = new Set();
     for (let score in scoreCounts) {
         if (scoreCounts[score] > 1) tiedScores.add(parseInt(score));
     }
 
-    // 🔥 FIX: EL ÚNICO LUGAR DONDE SE LANZAN DADOS ES SI HAY EMPATE REAL DE PUNTOS 🔥
-    // Ahora hemos quitado el "|| updateType === 'GAME_OVER_ABORTED'", para que si hay empate a 0 SÍ salgan los dados
     if (tiedScores.size === 0) {
         callback(sortedScores, {});
         return;
     }
 
-    // 🔥 Títulos cinemáticos durante la tirada 🔥
     const titleText = document.getElementById('personal-result-title');
     const msgText = document.getElementById('personal-result-message');
     const winnerText = document.getElementById('winner-announcement');
@@ -503,12 +675,11 @@ function animarDados(sortedScores, diceStr, leaderboardDiv, myUsername, isBR, up
 function mostrarPodioFinal(update) {
     document.getElementById('game-ui').style.display = 'none';
     document.getElementById('spectator-controls').style.display = 'none';
+    document.getElementById('btn-wildcards').style.display = 'none'; // 🔥 OCULTAR COMODINES 🔥
+    document.getElementById('wildcards-panel').classList.remove('open');
     
     const btnAbandon = document.getElementById('btn-abandon-game');
-    if(btnAbandon) {
-        btnAbandon.classList.add('hidden');
-        btnAbandon.style.display = 'none';
-    }
+    if(btnAbandon) { btnAbandon.classList.add('hidden'); btnAbandon.style.display = 'none'; }
 
     const podium = document.getElementById('game-results');
     if (podium) podium.style.display = 'block';
@@ -520,7 +691,6 @@ function mostrarPodioFinal(update) {
     const msgText = document.getElementById('personal-result-message');
     const winnerText = document.getElementById('winner-announcement');
 
-    // Limpiamos los textos antes de los dados para que no haya sustos
     if (titleText) { titleText.textContent = "🏆 CALCULANDO RESULTADOS 🏆"; titleText.style.color = "#FFF"; }
     if (msgText) msgText.textContent = "Procesando...";
     if (winnerText) winnerText.textContent = "";
@@ -543,7 +713,6 @@ function mostrarPodioFinal(update) {
     if (update.scores) {
         let sortedScores = Object.entries(update.scores).sort((a, b) => b[1] - a[1]);
         
-        // Empujamos al superviviente al Puesto 1 automáticamente si el otro huyó y no había empate de puntos
         if (update.type === "GAME_OVER_ABORTED" && update.winnerUsername !== "Empate") {
             sortedScores.sort((a, b) => {
                 if (a[0] === update.winnerUsername) return -1;
@@ -592,10 +761,7 @@ function mostrarPodioFinal(update) {
                 else if (index === 1) medalla = "🥈";
                 else if (index === 2) medalla = "🥉";
 
-                if (name === myUsername) {
-                    colorNombre = "#03DAC6"; 
-                    fontWeight = "bold";
-                }
+                if (name === myUsername) { colorNombre = "#03DAC6"; fontWeight = "bold"; }
 
                 let scoreText = pts + ' pts';
                 if (isBR) scoreText = pts === 1 ? pts + ' pregun. acertada' : pts + ' pregun. acertadas';
@@ -642,28 +808,12 @@ function mostrarPodioFinal(update) {
 
 window.abrirModalAbandonar = function() {
     const modal = document.getElementById('abandon-modal');
-    if (modal) {
-        modal.classList.remove('hidden'); 
-        modal.style.display = 'flex';
-    }
+    if (modal) { modal.classList.remove('hidden'); modal.style.display = 'flex'; }
 };
 
 window.cerrarModalAbandonar = function() {
     const modal = document.getElementById('abandon-modal');
-    if (modal) {
-        modal.classList.add('hidden');
-        modal.style.display = 'none';
-    }
-};
-
-window.abandonarHaciaLobby = function() {
-    if (stompClient && stompClient.connected) {
-        stompClient.send("/app/game.leave", {}, JSON.stringify({ gameId: gameIdActual }));
-    }
-    window.cerrarModalAbandonar();
-    resetearVistasDeJuego();
-    window.location.replace(window.location.pathname + window.location.search + '#screen-lobby');
-    if (typeof cambiarPantalla === "function") cambiarPantalla(document.getElementById('screen-game'), document.getElementById('screen-lobby'));
+    if (modal) { modal.classList.add('hidden'); modal.style.display = 'none'; }
 };
 
 function resetearVistasDeJuego() {
@@ -675,18 +825,16 @@ function resetearVistasDeJuego() {
     if (loading) loading.style.display = 'none'; 
     const spec = document.getElementById('spectator-controls');
     if (spec) spec.style.display = 'none';
+    
+    document.getElementById('btn-wildcards').style.display = 'none';
+    document.getElementById('wildcards-panel').classList.remove('open');
+    
     const btnAbandon = document.getElementById('btn-abandon-game');
-    if(btnAbandon) {
-        btnAbandon.classList.add('hidden');
-        btnAbandon.style.display = 'none';
-    }
+    if(btnAbandon) { btnAbandon.classList.add('hidden'); btnAbandon.style.display = 'none'; }
     
     gameOverData = null; 
     estoyEliminado = false;
     
     const sGame = document.getElementById('screen-game');
-    if (sGame) {
-        sGame.style.display = 'none';
-        sGame.classList.add('hidden');
-    }
+    if (sGame) { sGame.style.display = 'none'; sGame.classList.add('hidden'); }
 }

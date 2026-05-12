@@ -402,6 +402,19 @@
         </div>
     </div>
 
+    <div id="btn-wildcards" class="floating-chat-btn" style="display:none; bottom: 100px; background: linear-gradient(135deg, #FFD700, #F57F17);" onclick="window.toggleWildcards()">
+        <span style="font-size: 2.2rem; text-shadow: 0 0 10px rgba(0,0,0,0.5);">❓</span>
+    </div>
+
+    <div id="wildcards-panel" class="room-chat-panel" style="bottom: 170px; height: auto; min-height: 200px; border-color: #FFD700;">
+        <div class="chat-header" style="background: #FFD700; color: #1A0530;">
+            <span>Tus Comodines</span>
+            <button onclick="window.toggleWildcards()" style="background:none;border:none;color:#1A0530;font-weight:bold;font-size:1.2rem;cursor:pointer;">X</button>
+        </div>
+        <div id="wildcards-list" style="padding: 15px; display: flex; flex-direction: column; gap: 10px; background: rgba(0,0,0,0.8);">
+            </div>
+    </div>
+
     <div id="global-chat-btn" class="floating-chat-btn" style="display:none;" onclick="window.toggleRoomChat()">
         💬<span id="global-chat-badge" class="chat-badge">0</span>
     </div>

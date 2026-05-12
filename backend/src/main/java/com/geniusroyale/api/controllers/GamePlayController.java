@@ -59,6 +59,45 @@ public class GamePlayController {
         }
     }
 
+    // 🔥 NUEVO: LÓGICA DEL COMODÍN BOMBA 🔥
+    @MessageMapping("/game.bomb")
+    @Transactional
+    public void dropBomb(Principal principal, @Payload Map<String, String> payload) {
+        String username = userRepository.findByEmail(principal.getName()).orElseThrow().getUsername();
+        String gameId = payload.get("gameId");
+        Game game = gameRepository.findById(gameId).orElse(null);
+        
+        if (game == null || "FINISHED".equals(game.getGameState())) return;
+
+        List<Question> pool = questionRepository.findAllByDifficultyLevel(Difficulty.intermedia);
+        if(!pool.isEmpty()) {
+            Collections.shuffle(pool);
+            Question newQ = pool.get(0);
+            
+            String[] qIds = game.getQuestionIds().split(",");
+            int idx = game.getCurrentQuestionIndex();
+            if(idx < qIds.length) {
+                qIds[idx] = String.valueOf(newQ.getId());
+                game.setQuestionIds(String.join(",", qIds));
+                gameRepository.save(game);
+            }
+            
+            RESPUESTAS_EN_VIVO.remove(gameId); 
+            
+            GameUpdateDTO bombUpdate = new GameUpdateDTO();
+            bombUpdate.setType("BOMB_DROPPED");
+            bombUpdate.setWinnerUsername(username);
+            String qJson = String.format("{\"text\":\"%s\", \"correct\":\"%s\", \"w1\":\"%s\", \"w2\":\"%s\", \"w3\":\"%s\"}",
+                newQ.getQuestionText().replace("\"","'"), newQ.getCorrectAnswer().replace("\"","'"), 
+                newQ.getWrongAnswer1().replace("\"","'"), newQ.getWrongAnswer2().replace("\"","'"), newQ.getWrongAnswer3().replace("\"","'"));
+            bombUpdate.setCorrectAnswer(qJson);
+
+            for (User u : game.getPlayers()) {
+                messagingTemplate.convertAndSend("/topic/game.updates." + u.getUsername(), bombUpdate);
+            }
+        }
+    }
+
     @MessageMapping("/game.answer")
     @Transactional
     public void handleAnswer(Principal principal, @Payload PlayerAnswerDTO answer) {
@@ -206,7 +245,6 @@ public class GamePlayController {
             messagingTemplate.convertAndSend("/topic/game.updates." + u.getUsername(), gameOver);
         }
         
-        // 🔥 FIX: Reseteamos la sala pública para Re-Matchmaking 🔥
         GameLobbyController.finalizarJuegoEnLobby(game.getPlayers());
         gameRepository.save(game);
     }
@@ -229,7 +267,6 @@ public class GamePlayController {
             }
         }
 
-        // 🔥 FIX: Dados TRUCADOS. El superviviente saca un 6. Evita bugs visuales de undefined 🔥
         Map<String, String> diceRolls = new HashMap<>();
         for (User p : game.getPlayers()) {
             if (p.getUsername().equals(winner)) {
@@ -243,13 +280,12 @@ public class GamePlayController {
         gameOver.setType("GAME_OVER_ABORTED"); 
         gameOver.setWinnerUsername(winner);
         gameOver.setScores(game.getScores());
-        gameOver.setCorrectAnswer(diceRolls.toString()); // Mandamos los dados trucados
+        gameOver.setCorrectAnswer(diceRolls.toString()); 
         
         for (User u : game.getPlayers()) {
             messagingTemplate.convertAndSend("/topic/game.updates." + u.getUsername(), gameOver);
         }
         
-        // 🔥 FIX: Reseteamos la sala pública para Re-Matchmaking 🔥
         GameLobbyController.finalizarJuegoEnLobby(game.getPlayers());
         gameRepository.save(game);
     }

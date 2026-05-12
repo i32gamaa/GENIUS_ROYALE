@@ -279,11 +279,9 @@ function conectarWebSocket(token, username) {
     stompClient.connect({'Authorization': 'Bearer ' + token}, function (frame) {
         console.log('✅ Conectado como: ' + currentUser);
 
-        // 🔥 INYECCIÓN QUIRÚRGICA: MÓDULO AISLADO KAHOOT 🔥
         if (sessionStorage.getItem('is_pin_room') === 'true') {
             if (typeof window.suscribirseAKahoot === "function") {
                 window.suscribirseAKahoot(stompClient, currentUser);
-                
                 const roomPin = sessionStorage.getItem('current_game_id');
                 const payload = JSON.stringify({ gameId: roomPin, username: currentUser });
 
@@ -294,8 +292,6 @@ function conectarWebSocket(token, username) {
                         stompClient.send("/app/kahoot.sync", {}, payload);
                     }
                 }, 300);
-
-                // REDUNDANCIA ANTI-F5: Si tras 1.5s la lista sigue vacía, pide sync de nuevo
                 setTimeout(() => {
                     const list = document.getElementById('lobby-pin-players-list');
                     if (list && list.children.length === 0) {
@@ -305,14 +301,8 @@ function conectarWebSocket(token, username) {
             }
         }
 
-        // ==========================================
-        // 🛡️ RE-ENGANCHE AUTOMÁTICO POST-F5 (MATCHMAKING PÚBLICO)
-        // ==========================================
         if (sessionStorage.getItem('is_public_room') === 'true') {
             const modoPublico = sessionStorage.getItem('public_room_mode') || 'Battle Royale';
-            console.log('🔄 Re-enviando solicitud de Matchmaking tras F5: ' + modoPublico);
-            
-            // Le damos un pequeño respiro de medio segundo para que las suscripciones se asienten
             setTimeout(() => {
                 if (stompClient && stompClient.connected) {
                     stompClient.send("/app/game.public.join", {}, JSON.stringify({ gameMode: modoPublico }));
@@ -368,8 +358,6 @@ function conectarWebSocket(token, username) {
                 if(data.type === "KICKED") window.mostrarToastError("❌ Has sido expulsado de la sala.");
                 if(data.type === "ROOM_CLOSED") window.mostrarToastError(`❌ La sala ha sido cerrada.`); 
                 sessionStorage.removeItem('current_game_id'); sessionStorage.removeItem('current_host_name'); sessionStorage.removeItem('last_voluntary_game_id'); 
-                
-                // 🔥 Asegurarnos de limpiar la nota pública si nos echan 🔥
                 sessionStorage.removeItem('is_public_room');
                 sessionStorage.removeItem('public_room_mode');
 
@@ -465,7 +453,6 @@ function conectarWebSocket(token, username) {
                     } else {
                         if (hostControls) hostControls.style.display = 'none';
                         if (waitingMsg) { 
-                            // 🔥 TEXTO DINÁMICO PARA MATCHMAKING 🔥
                             if (sessionStorage.getItem('is_public_room') === 'true') {
                                 waitingMsg.innerText = `Buscando oponentes (${data.players.length}/10)...`;
                             } else {
@@ -483,7 +470,6 @@ function conectarWebSocket(token, username) {
                         selectCat.value = data.categoryName; selectCat.style.border = "2px solid #FF9800"; setTimeout(() => selectCat.style.border = "none", 1000);
                     }
                     if (waitingMsg) { 
-                        // 🔥 TEXTO DINÁMICO PARA MATCHMAKING 🔥
                         if (sessionStorage.getItem('is_public_room') === 'true') {
                             waitingMsg.innerText = `Buscando oponentes (${data.players.length}/10)...`;
                         } else {
@@ -507,13 +493,9 @@ function conectarWebSocket(token, username) {
         stompClient.subscribe(`/topic/game.start.${currentUser}`, function (message) {
             const gameData = JSON.parse(message.body);
             sessionStorage.removeItem('last_voluntary_game_id'); 
-            
-            // 🔥 LIMPIEZA: Una vez empieza la partida, borramos la marca de "Matchmaking" para que un F5 dentro de la partida no te vuelva a meter a la cola.
             sessionStorage.removeItem('is_public_room');
             sessionStorage.removeItem('public_room_mode');
-
             sessionStorage.setItem('current_game_mode', gameData.gameMode || "Quizziz"); sessionStorage.setItem('current_game_category', gameData.category || "Cultura General"); sessionStorage.setItem('current_game_players', JSON.stringify(gameData.players));
-            
             document.getElementById('global-chat-btn').style.display = 'flex';
             irAPantallaDeJuego(gameData.players, gameData.gameMode); 
             if (typeof inicializarJuego === "function") inicializarJuego(gameData);
@@ -524,6 +506,7 @@ function conectarWebSocket(token, username) {
             if (update.type === "PLAYER_ANSWERED_LIVE") { if (typeof rivalHaRespondidoLive === "function") rivalHaRespondidoLive(update); } 
             else if (update.type === "RIVAL_ANSWERED") { if (typeof rivalHaRespondido === "function") rivalHaRespondido(); } 
             else if (update.type === "ROUND_RESULT") { if (typeof procesarResultadoRonda === "function") procesarResultadoRonda(update); } 
+            else if (update.type === "BOMB_DROPPED") { if (typeof aplicarBombaLive === "function") aplicarBombaLive(update); } 
             else if (update.type === "GAME_OVER") { sessionStorage.removeItem('last_voluntary_game_id'); if (typeof finalizarJuego === "function") finalizarJuego(update); } 
             else if (update.type === "GAME_OVER_ABORTED") { sessionStorage.removeItem('last_voluntary_game_id'); if (typeof forzarFinalAbrupto === "function") forzarFinalAbrupto(update); } 
             else if (update.type === "PLAYER_LEFT") { window.mostrarToastInfo(`🚪 ${update.winnerUsername} ha abandonado la partida.`); }

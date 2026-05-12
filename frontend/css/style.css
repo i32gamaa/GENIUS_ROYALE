@@ -875,3 +875,31 @@ html, body {
         right: 10px !important; 
     }
 }
+
+/* ==========================================
+   🃏 ESTILOS PARA LOS COMODINES (POWER-UPS) 🃏
+   ========================================== */
+.wildcard-btn {
+    background: rgba(255,255,255,0.1);
+    border: 2px solid #FFD700;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: all 0.2s ease-in-out;
+    box-shadow: inset 0 0 10px rgba(255,215,0,0.1);
+}
+.wildcard-btn:hover { 
+    background: rgba(255,215,0,0.2); 
+    transform: scale(1.03); 
+    box-shadow: 0 0 15px rgba(255,215,0,0.4);
+}
+.wildcard-btn.used {
+    opacity: 0.3; 
+    pointer-events: none; 
+    border-color: #555; 
+    filter: grayscale(1);
+}

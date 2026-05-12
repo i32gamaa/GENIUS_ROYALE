@@ -2,6 +2,7 @@ package com.geniusroyale.api.controllers;
 
 import com.geniusroyale.api.dto.QuestionDTO;
 import com.geniusroyale.api.models.Category;
+import com.geniusroyale.api.models.Difficulty;
 import com.geniusroyale.api.models.Game;
 import com.geniusroyale.api.models.Question;
 import com.geniusroyale.api.repositories.CategoryRepository;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,39 +36,23 @@ public class GameController {
         return ResponseEntity.ok(categories);
     }
 
-    // --- ¡ENDPOINT ACTUALIZADO! ---
-    // Ahora es /api/game/{gameId}/questions
     @GetMapping("/{gameId}/questions")
     public ResponseEntity<List<QuestionDTO>> getGameQuestions(@PathVariable String gameId) {
-
-        System.out.println("Petición recibida para /api/game/" + gameId + "/questions");
-
-        // 1. Buscar la partida en la BBDD
-        Game game = gameRepository.findById(gameId)
-                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
-
-        // 2. Coger el string de IDs (ej: "5,12,3,45")
+        Game game = gameRepository.findById(gameId).orElseThrow(() -> new RuntimeException("Partida no encontrada"));
         String idListString = game.getQuestionIds();
-
-        // 3. Convertir el string a una Lista de Integers
-        List<Integer> questionIdInts = Arrays.stream(idListString.split(","))
-                .map(Integer::parseInt)
-                .collect(Collectors.toList());
-
-        // 4. Buscar todas esas preguntas en la BBDD
+        List<Integer> questionIdInts = Arrays.stream(idListString.split(",")).map(Integer::parseInt).collect(Collectors.toList());
         List<Question> questions = questionRepository.findAllById(questionIdInts);
-
-        // 5. RE-ORDENAR las preguntas para que coincidan con el orden guardado
-        Map<Integer, Question> questionMap = questions.stream()
-                .collect(Collectors.toMap(Question::getId, q -> q));
-
-        List<QuestionDTO> sortedQuestions = questionIdInts.stream()
-                .map(questionMap::get)
-                .map(QuestionDTO::new)
-                .collect(Collectors.toList());
-
-        System.out.println("Enviando " + sortedQuestions.size() + " preguntas ORDENADAS.");
-
+        Map<Integer, Question> questionMap = questions.stream().collect(Collectors.toMap(Question::getId, q -> q));
+        List<QuestionDTO> sortedQuestions = questionIdInts.stream().map(questionMap::get).map(QuestionDTO::new).collect(Collectors.toList());
         return ResponseEntity.ok(sortedQuestions);
+    }
+
+    // 🔥 NUEVO: ENDPOINT PARA EL COMODÍN DE "CAMBIO DE PREGUNTA" 🔥
+    @GetMapping("/random")
+    public ResponseEntity<QuestionDTO> getRandomQuestion() {
+        List<Question> list = questionRepository.findAllByDifficultyLevel(Difficulty.intermedia);
+        if(list.isEmpty()) return ResponseEntity.notFound().build();
+        Collections.shuffle(list);
+        return ResponseEntity.ok(new QuestionDTO(list.get(0)));
     }
 }
