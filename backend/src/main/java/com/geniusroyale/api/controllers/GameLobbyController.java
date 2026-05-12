@@ -32,6 +32,9 @@ public class GameLobbyController {
     private static final Map<String, Map<String, String>> ESTADOS_SALA = new ConcurrentHashMap<>();
     private static final Map<String, Map<String, String>> AJUSTES_SALA = new ConcurrentHashMap<>();
 
+    // 🔥 MEMORIA PARA EL HISTORIAL DEL CHAT DE LAS SALAS 🔥
+    private static final Map<String, List<Map<String, Object>>> HISTORIAL_CHAT_SALA = new ConcurrentHashMap<>();
+
     private static final Map<String, Map<String, Integer>> VOTOS_SALA = new ConcurrentHashMap<>();
     private static final Map<String, ScheduledFuture<?>> TIMERS_VOTACION = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5);
@@ -72,11 +75,38 @@ public class GameLobbyController {
             chatMsg.put("message", message.trim());
             chatMsg.put("timestamp", System.currentTimeMillis());
 
+            // 🔥 LA MAGIA: Guardamos el mensaje en el historial temporal de la sala 🔥
+            HISTORIAL_CHAT_SALA.computeIfAbsent(sala.getId(), k -> new ArrayList<>()).add(chatMsg);
+
             // Enviar a todos los jugadores que estén en esa sala
             for (User p : sala.getPlayers()) {
                 messagingTemplate.convertAndSend("/topic/chat.room." + p.getUsername(), chatMsg);
             }
         }
+    }
+
+    // 🔥 NUEVO ENDPOINT: Crear Sala Privada INMEDIATAMENTE para poder chatear solo 🔥
+    @MessageMapping("/game.private.create")
+    @Transactional
+    public void createPrivateGame(Principal principal) {
+        User host = userRepository.findByEmail(principal.getName()).orElse(null);
+        if (host == null) return;
+
+        Game sala = SALAS_EN_VIVO.get(host.getId());
+        if (sala == null) {
+            sala = new Game();
+            sala.setId(UUID.randomUUID().toString());
+            sala.setGameState("WAITING_FOR_PLAYER");
+            sala.setPlayers(new ArrayList<>());
+            sala.setScores(new HashMap<>());
+            sala.getPlayers().add(host);
+            sala.getScores().put(host.getUsername(), 0);
+            SALAS_EN_VIVO.put(host.getId(), sala);
+        }
+        ESTADOS_SALA.computeIfAbsent(sala.getId(), k -> new ConcurrentHashMap<>());
+        ESTADOS_SALA.get(sala.getId()).put(host.getUsername(), "Listo");
+        
+        broadcastLobbyUpdate(sala);
     }
 
     @MessageMapping("/game.public.join")
@@ -102,6 +132,12 @@ public class GameLobbyController {
         if (!sala.getPlayers().stream().anyMatch(p -> p.getUsername().equals(user.getUsername()))) {
             sala.getPlayers().add(user);
             sala.getScores().put(user.getUsername(), 0);
+
+            // 🔥 Enviar el historial de chat al nuevo jugador 🔥
+            List<Map<String, Object>> history = HISTORIAL_CHAT_SALA.getOrDefault(sala.getId(), new ArrayList<>());
+            for (Map<String, Object> msg : history) {
+                messagingTemplate.convertAndSend("/topic/chat.room." + user.getUsername(), msg);
+            }
         }
 
         ESTADOS_SALA.computeIfAbsent(sala.getId(), k -> new ConcurrentHashMap<>());
@@ -189,6 +225,12 @@ public class GameLobbyController {
             if (!existe) {
                 sala.getPlayers().add(guest);
                 sala.getScores().put(guest.getUsername(), 0);
+
+                // 🔥 Enviar el historial de chat al invitado 🔥
+                List<Map<String, Object>> history = HISTORIAL_CHAT_SALA.getOrDefault(sala.getId(), new ArrayList<>());
+                for (Map<String, Object> msg : history) {
+                    messagingTemplate.convertAndSend("/topic/chat.room." + guest.getUsername(), msg);
+                }
             }
 
             invite.setStatus("ACCEPTED");
@@ -231,6 +273,7 @@ public class GameLobbyController {
                 if (hostKey != null) SALAS_EN_VIVO.remove(hostKey);
                 
                 ESTADOS_SALA.remove(sala.getId());
+                HISTORIAL_CHAT_SALA.remove(sala.getId()); // 🔥 Limpiar historial de RAM
                 
             } else {
                 if (SALAS_PUBLICAS.containsKey(gameId)) {
@@ -478,6 +521,13 @@ public class GameLobbyController {
                     ESTADOS_SALA.get(salaEncontrada.getId()).put(user.getUsername(), "Listo");
                 }
                 broadcastLobbyUpdate(salaEncontrada);
+                
+                // 🔥 ENVIAR HISTORIAL DE CHAT AL RECONECTAR / REFRESCAR 🔥
+                List<Map<String, Object>> history = HISTORIAL_CHAT_SALA.getOrDefault(salaEncontrada.getId(), new ArrayList<>());
+                for (Map<String, Object> msg : history) {
+                    messagingTemplate.convertAndSend("/topic/chat.room." + user.getUsername(), msg);
+                }
+
                 inRoom = true;
             }
 

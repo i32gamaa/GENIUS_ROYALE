@@ -71,6 +71,7 @@ window.unirseAPartidaPublica = function(modo) {
     const list = document.getElementById('lobby-players-list'); if (list) list.innerHTML = "";
     
     document.getElementById('global-chat-btn').style.display = 'flex';
+    document.getElementById('room-chat-messages').innerHTML = ''; // 🔥 Dejamos el chat limpio para escribir
     
     if (stompClient && stompClient.connected) stompClient.send("/app/game.public.join", {}, JSON.stringify({ gameMode: modo }));
 };
@@ -449,6 +450,11 @@ function inicializarMenu() {
             document.getElementById('config-public-display').style.display = 'none'; 
             document.getElementById('lobby-add-friend-section').style.display = 'block';
             
+            // 🔥 MAGIA: Creamos la sala privada en el servidor AL INSTANTE 🔥
+            if (stompClient && stompClient.connected) {
+                stompClient.send("/app/game.private.create", {}, JSON.stringify({}));
+            }
+            
             const list = document.getElementById('lobby-players-list'); 
             const myAvatar = sessionStorage.getItem('genius_avatar') || 'images/invitado.jpg'; 
             const myName = sessionStorage.getItem('genius_username');
@@ -466,7 +472,7 @@ function inicializarMenu() {
             cargarCategorias();
             
             document.getElementById('global-chat-btn').style.display = 'flex';
-            document.getElementById('room-chat-messages').innerHTML = '<p style="text-align:center; color:#aaa; font-size:0.9rem;">Únete a una sala para chatear</p>';
+            document.getElementById('room-chat-messages').innerHTML = ''; // 🔥 Dejamos el chat listo
         };
     }
 
