@@ -7,10 +7,13 @@ import com.geniusroyale.api.models.ApiResponse;
 import com.geniusroyale.api.models.User;
 import com.geniusroyale.api.repositories.UserRepository;
 import com.geniusroyale.api.services.JwtService;
+import jakarta.annotation.PostConstruct; // 🔥 IMPORTANTE: Necesario para que el script se ejecute al arrancar
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder; 
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -21,6 +24,32 @@ public class AuthController {
     @Autowired private UserRepository userRepository;
     @Autowired private JwtService jwtService;
     @Autowired private ActiveUserManager activeUserManager; 
+    @Autowired private PasswordEncoder passwordEncoder; 
+
+    // ==========================================
+    // 🔥 SCRIPT MÁGICO DE MIGRACIÓN DE CONTRASEÑAS 🔥
+    // ==========================================
+    @PostConstruct
+    public void encriptarContrasenasAntiguas() {
+        List<User> usuarios = userRepository.findAll();
+        int actualizados = 0;
+        
+        for (User u : usuarios) {
+            // Si la contraseña no es nula y NO empieza por $2a$ (que es la firma de BCrypt)
+            if (u.getPassword() != null && !u.getPassword().startsWith("$2a$")) {
+                u.setPassword(passwordEncoder.encode(u.getPassword()));
+                userRepository.save(u);
+                actualizados++;
+            }
+        }
+        
+        if (actualizados > 0) {
+            System.out.println("✅ MIGRACIÓN EXITOSA: Se han encriptado " + actualizados + " contraseñas antiguas a BCrypt.");
+        } else {
+            System.out.println("🛡️ La base de datos ya está segura. No hay contraseñas en texto plano.");
+        }
+    }
+    // ==========================================
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody RegisterRequest registerRequest) {
@@ -34,7 +63,7 @@ public class AuthController {
         User newUser = new User();
         newUser.setUsername(registerRequest.getUsername());
         newUser.setEmail(registerRequest.getEmail());
-        newUser.setPassword(registerRequest.getPassword());
+        newUser.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
 
         userRepository.save(newUser);
         return ResponseEntity.ok(new ApiResponse(true, "¡Usuario registrado con éxito!"));
@@ -50,7 +79,8 @@ public class AuthController {
 
         if (userOptional.isPresent()) {
             User user = userOptional.get();
-            if (loginRequest.getPassword().equals(user.getPassword())) {
+            
+            if (passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
                 if (activeUserManager.isUserActive(user.getEmail())) {
                     return ResponseEntity.status(403).body(new ApiResponse(false, "Ya tienes una sesión iniciada. Ciérrala primero."));
                 }
@@ -61,7 +91,6 @@ public class AuthController {
         return ResponseEntity.status(401).body(new ApiResponse(false, "Credenciales inválidas"));
     }
 
-    // 🔥 NUEVO: Obtener mi perfil completo
     @GetMapping("/me")
     public ResponseEntity<?> getMyProfile(@RequestHeader("Authorization") String authHeader) {
         String token = authHeader.substring(7);
@@ -70,7 +99,6 @@ public class AuthController {
         return ResponseEntity.ok(user);
     }
 
-    // 🔥 NUEVO: Subir foto de perfil en Base64
     @PostMapping("/photo")
     public ResponseEntity<?> uploadPhoto(@RequestHeader("Authorization") String authHeader, @RequestBody Map<String, String> payload) {
         try {
