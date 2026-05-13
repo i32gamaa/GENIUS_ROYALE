@@ -905,29 +905,125 @@ html, body {
 }
 
 /* ==========================================
-   🏆 SCROLL PARA LA CLASIFICACIÓN DE KAHOOT 🏆
+   🏆 SCROLL Y AJUSTE DE TAMAÑO PARA EL TOP 10 DE KAHOOT 🏆
    ========================================== */
-#kr-host-leaderboard {
-    max-height: 55vh; /* Ocupará como máximo el 55% de la altura de la pantalla */
-    overflow-y: auto; /* Activa el scroll vertical solo si es necesario */
-    padding-right: 10px; /* Deja un poco de aire para que no se pegue la barra */
+#kr-leaderboard-container {
+    max-height: 50vh !important; /* Tope de altura para que NUNCA se coma el botón */
+    overflow-y: auto !important; /* Activa la barra para bajar */
+    padding-right: 10px !important;
+    gap: 8px !important; /* Junta un poco más a los jugadores */
+}
+
+/* 🔥 Domando los tamaños gigantes que vienen del JavaScript 🔥 */
+#kr-leaderboard-container > div {
+    padding: 8px 15px !important; /* Filas más finas */
+}
+#kr-leaderboard-container > div > span:nth-child(1) {
+    font-size: 1.5rem !important; /* El número de posición (#1) */
+    width: 45px !important;
+}
+#kr-leaderboard-container > div > span:nth-child(2) {
+    font-size: 1.3rem !important; /* El nombre del jugador */
+}
+#kr-leaderboard-container > div > div > span[id^="lb-score"] {
+    font-size: 1.6rem !important; /* Los puntos totales */
+}
+#kr-leaderboard-container > div > div > span[id^="lb-gained"] {
+    font-size: 1.2rem !important; /* Los puntos ganados (+800) */
 }
 
 /* 🔥 Diseño personalizado de la barra de Scroll (Estilo Gamer) 🔥 */
-#kr-host-leaderboard::-webkit-scrollbar {
+#kr-leaderboard-container::-webkit-scrollbar {
     width: 8px;
 }
+#kr-leaderboard-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05); 
+    border-radius: 10px;
+}
+#kr-leaderboard-container::-webkit-scrollbar-thumb {
+    background: #03DAC6; 
+    border-radius: 10px;
+}
+#kr-leaderboard-container::-webkit-scrollbar-thumb:hover {
+    background: #FFD700; 
+}
 
-#kr-host-leaderboard::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05); /* Fondo oscuro transparente */
+/* ==========================================
+   📱 FIX DEFINITIVO: CHAT WHATSAPP Y ESTADÍSTICAS (MÓVIL) 📱
+   ========================================== */
+
+/* 1. Muro de contención para que el chat no empuje la caja de texto hacia abajo */
+.wa-layout, .wa-chat-area, #wa-active-chat {
+    min-height: 0 !important; 
+    max-height: 100% !important;
+}
+
+#wa-messages {
+    flex: 1 1 auto !important;
+    min-height: 0 !important; /* 🔥 La magia que evita que la caja crezca al infinito 🔥 */
+    overflow-y: auto !important; /* Activa el scroll vertical para los mensajes antiguos */
+}
+
+/* 2. Reparación del perfil de estadísticas para que no se corte por arriba */
+#friend-stats-overlay {
+    overflow-y: auto !important; /* Permite bajar si la pantalla es muy pequeña */
+    justify-content: flex-start !important; /* Obliga al contenido a empezar desde arriba */
+    padding-top: 50px !important; /* Deja espacio para no pisar la X de cerrar */
+    padding-bottom: 20px !important;
+    box-sizing: border-box !important;
+}
+
+/* 3. Diseño de la barrita de scroll (Estilo WhatsApp/Genius Royale) */
+#wa-messages::-webkit-scrollbar, #friend-stats-overlay::-webkit-scrollbar {
+    width: 6px;
+}
+#wa-messages::-webkit-scrollbar-track, #friend-stats-overlay::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+#wa-messages::-webkit-scrollbar-thumb, #friend-stats-overlay::-webkit-scrollbar-thumb {
+    background: #9C27B0; /* El color morado de la interfaz */
     border-radius: 10px;
 }
 
-#kr-host-leaderboard::-webkit-scrollbar-thumb {
-    background: #03DAC6; /* Color cian a juego con tu interfaz */
-    border-radius: 10px;
+/* ==========================================
+   💬 SISTEMA DE RESPUESTAS (WHATSAPP STYLE) 💬
+   ========================================== */
+.wa-reply-preview {
+    background: rgba(15, 5, 24, 0.95);
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #555;
 }
-
-#kr-host-leaderboard::-webkit-scrollbar-thumb:hover {
-    background: #FFD700; /* Se vuelve dorado al pasar el ratón */
+.replied-msg-bubble {
+    background: rgba(0, 0, 0, 0.4);
+    border-left: 4px solid #03DAC6;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+    color: #eee;
+    display: block;
+}
+.msg-own-wa .replied-msg-bubble {
+    border-left: 4px solid #FFD700;
+}
+.reply-icon-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 5px;
+    margin-right: 10px;
+    margin-top: 2px;
+    transition: all 0.2s;
+    float: left;
+}
+.reply-icon-btn:hover {
+    transform: scale(1.2);
+    background: #9C27B0;
+    border-color: #9C27B0;
 }

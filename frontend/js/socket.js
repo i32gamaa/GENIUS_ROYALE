@@ -245,12 +245,16 @@ window.recibirMensajePrivado = function(data) {
     
     if (panelAmigos && panelAmigos.style.display !== 'none' && window.waActiveFriend === data.sender) {
         if (chatBox) {
-            chatBox.innerHTML += `<div class="msg-bubble msg-other">${data.message}</div>`;
+            // 🔥 Añadimos el botón de respuesta al mensaje que acaba de llegar 🔥
+            let replyBtn = `<button class="reply-icon-btn" onclick="window.iniciarRespuesta('${data.sender}', this)" title="Responder">↩️</button>`;
+            chatBox.innerHTML += `<div class="msg-bubble msg-other">${replyBtn}${data.message}</div>`;
             chatBox.scrollTop = chatBox.scrollHeight;
         }
         
         const snippetEl = document.getElementById(`wa-snippet-${data.sender}`);
-        if (snippetEl) snippetEl.innerText = data.message;
+        // Limpiamos el HTML para que el snippet no muestre código raro
+        let plainSnippet = data.message.replace(/<[^>]*>?/gm, '').trim();
+        if (snippetEl) snippetEl.innerText = plainSnippet;
         
         if (stompClient && stompClient.connected) {
             stompClient.send("/app/chat.read", {}, JSON.stringify({ sender: data.sender }));
@@ -261,10 +265,13 @@ window.recibirMensajePrivado = function(data) {
         window.unreadPrivates[data.sender] = (window.unreadPrivates[data.sender] || 0) + 1;
         
         const snippetEl = document.getElementById(`wa-snippet-${data.sender}`);
-        if (snippetEl) snippetEl.innerText = data.message;
+        let plainSnippet = data.message.replace(/<[^>]*>?/gm, '').trim();
+        if (snippetEl) snippetEl.innerText = plainSnippet;
 
-        if (typeof actualizarBadgesAmigos === "function") window.actualizarBadgesAmigos();
-        window.mostrarToastInfo(`💬 Mensaje de ${data.sender}: ${data.message}`);
+        if (typeof window.actualizarBadgesAmigos === "function") window.actualizarBadgesAmigos();
+        
+        // El Toast muestra solo texto limpio sin HTML
+        window.mostrarToastInfo(`💬 Mensaje de ${data.sender}: ${plainSnippet.substring(0, 30)}...`);
     }
 };
 

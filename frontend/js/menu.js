@@ -63,7 +63,6 @@ window.unirseAPartidaPublica = function(modo) {
     const sPublic = document.getElementById('screen-public-modes'); const sLobby = document.getElementById('screen-lobby');
     if (typeof cambiarPantalla === "function") cambiarPantalla(sPublic, sLobby);
     
-    // 🔥 ESCUDO ANTI-F5: Guardamos que estamos en una sala pública 🔥
     sessionStorage.setItem('is_public_room', 'true');
     sessionStorage.setItem('public_room_mode', modo);
     
@@ -71,7 +70,7 @@ window.unirseAPartidaPublica = function(modo) {
     const list = document.getElementById('lobby-players-list'); if (list) list.innerHTML = "";
     
     document.getElementById('global-chat-btn').style.display = 'flex';
-    document.getElementById('room-chat-messages').innerHTML = ''; // 🔥 Dejamos el chat limpio para escribir
+    document.getElementById('room-chat-messages').innerHTML = ''; 
     
     if (stompClient && stompClient.connected) stompClient.send("/app/game.public.join", {}, JSON.stringify({ gameMode: modo }));
 };
@@ -192,7 +191,6 @@ window.abrirListaAmigosStats = function() {
 
 window.cerrarListaAmigosStats = function() { document.getElementById('friends-stats-modal').style.display = 'none'; };
 
-// 🔥 ESTADO EN LÍNEA / ESCRIBIENDO 🔥
 window.actualizarEstadoAmigo = function() {
     if (!window.waActiveFriend) return;
     fetch(`${window.API_BASE_URL}/api/amistad/amigo/${window.waActiveFriend}/status`)
@@ -212,6 +210,53 @@ window.actualizarEstadoAmigo = function() {
             }
         }
     });
+};
+
+// ==========================================
+// 🔥 SISTEMA DE RESPUESTAS (WHATSAPP STYLE) 🔥
+// ==========================================
+window.waReplyingTo = null;
+
+window.iniciarRespuesta = function(sender, btnElement) {
+    const bubble = btnElement.closest('.msg-bubble');
+    const clone = bubble.cloneNode(true);
+    
+    // Limpiamos el clon para quedarnos solo con el texto real
+    const rBtn = clone.querySelector('.reply-icon-btn');
+    if (rBtn) rBtn.remove();
+    const oldQuote = clone.querySelector('.replied-msg-bubble');
+    if (oldQuote) oldQuote.remove();
+    
+    let text = clone.innerText.replace(/✓✓/g, '').replace(/✓/g, '').trim();
+
+    window.waReplyingTo = { sender: sender, text: text };
+
+    let previewArea = document.getElementById('wa-reply-preview');
+    if (!previewArea) {
+        previewArea = document.createElement('div');
+        previewArea.id = 'wa-reply-preview';
+        previewArea.className = 'wa-reply-preview';
+        
+        // Inyectar justo encima del input de escribir
+        const inputArea = document.querySelector('.wa-chat-area .chat-input-area');
+        inputArea.parentNode.insertBefore(previewArea, inputArea);
+    }
+    
+    previewArea.innerHTML = `
+        <div style="flex: 1; overflow: hidden; border-left: 4px solid #03DAC6; padding-left: 10px;">
+            <strong style="color: #03DAC6; font-size: 0.9rem;">Respondiendo a ${sender}</strong>
+            <div style="color: #ccc; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${text}</div>
+        </div>
+        <button onclick="window.cancelarRespuesta()" style="background: none; border: none; color: #F44336; font-size: 1.5rem; cursor: pointer; margin-left: 15px;">✖</button>
+    `;
+    previewArea.style.display = 'flex';
+    document.getElementById('wa-chat-input').focus();
+};
+
+window.cancelarRespuesta = function() {
+    window.waReplyingTo = null;
+    const previewArea = document.getElementById('wa-reply-preview');
+    if (previewArea) previewArea.style.display = 'none';
 };
 
 window.abrirChatAmigo = function(username, avatar) {
@@ -241,6 +286,8 @@ window.abrirChatAmigo = function(username, avatar) {
 
     const chatBox = document.getElementById('wa-messages');
     chatBox.innerHTML = "<div class='loader' style='margin:20px auto;'></div>";
+    
+    window.cancelarRespuesta(); // Limpiamos respuestas previas
 
     fetch(`${window.API_BASE_URL}/api/amistad/chat/${username}`, { headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}` } })
     .then(res => res.json())
@@ -253,19 +300,19 @@ window.abrirChatAmigo = function(username, avatar) {
             msgs.forEach(m => {
                 const isOwn = m.sender === myName;
                 let tick = isOwn ? (m.isRead ? '<span class="msg-ticks msg-ticks-read">✓✓</span>' : '<span class="msg-ticks">✓✓</span>') : '';
-                chatBox.innerHTML += `<div class="msg-bubble ${isOwn ? 'msg-own-wa' : 'msg-other'}">${m.message} ${tick}</div>`;
+                // 🔥 Inyectamos el botón de respuesta
+                let replyBtn = `<button class="reply-icon-btn" onclick="window.iniciarRespuesta('${m.sender}', this)" title="Responder">↩️</button>`;
+                chatBox.innerHTML += `<div class="msg-bubble ${isOwn ? 'msg-own-wa' : 'msg-other'}">${replyBtn}${m.message} ${tick}</div>`;
             });
         }
         chatBox.scrollTop = chatBox.scrollHeight;
         
-        // Confirmamos lectura al servidor
         if(stompClient && stompClient.connected) {
             stompClient.send("/app/chat.read", {}, JSON.stringify({ sender: username }));
         }
     });
 };
 
-// 🔥 ESCRIBIENDO... 🔥
 window.isTyping = false;
 document.addEventListener('input', function(e) {
     if (e.target.id === 'wa-chat-input' && window.waActiveFriend && stompClient && stompClient.connected) {
@@ -283,33 +330,42 @@ document.addEventListener('input', function(e) {
 
 window.enviarMensajePrivado = function() {
     const input = document.getElementById('wa-chat-input');
-    const msg = input.value.trim();
-    if (!msg || !window.waActiveFriend) return;
+    const msgTexto = input.value.trim();
+    if (!msgTexto || !window.waActiveFriend) return;
+
+    // 🔥 Añadimos la burbuja de cita si hay respuesta pendiente
+    let finalMsg = msgTexto;
+    if (window.waReplyingTo) {
+        finalMsg = `<div class="replied-msg-bubble"><strong>${window.waReplyingTo.sender}</strong><br>${window.waReplyingTo.text}</div>` + msgTexto;
+    }
 
     const chatBox = document.getElementById('wa-messages');
     if(chatBox.innerHTML.includes("Empieza la conversación")) chatBox.innerHTML = "";
     
-    // Un tick (Enviado)
     let tempId = Date.now();
-    chatBox.innerHTML += `<div id="msg-${tempId}" class="msg-bubble msg-own-wa">${msg} <span class="msg-ticks">✓</span></div>`;
+    let replyBtn = `<button class="reply-icon-btn" onclick="window.iniciarRespuesta('Tú', this)" title="Responder">↩️</button>`;
+    
+    chatBox.innerHTML += `<div id="msg-${tempId}" class="msg-bubble msg-own-wa">${replyBtn}${finalMsg} <span class="msg-ticks">✓</span></div>`;
     chatBox.scrollTop = chatBox.scrollHeight;
     input.value = "";
     document.getElementById('emoji-picker-wa').classList.add('hidden');
 
+    window.cancelarRespuesta(); // Ocultamos el modo respuesta
+
     const snippetEl = document.getElementById(`wa-snippet-${window.waActiveFriend}`);
-    if(snippetEl) snippetEl.innerText = "Tú: " + msg;
+    if(snippetEl) snippetEl.innerText = "Tú: " + msgTexto;
 
     fetch(`${window.API_BASE_URL}/api/amistad/chat/${window.waActiveFriend}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg, tempId: tempId.toString() })
+        body: JSON.stringify({ message: finalMsg, tempId: tempId.toString() })
     })
     .then(res => res.json())
     .then(data => {
-        // Doble tick gris (Recibido por servidor)
         const msgElement = document.getElementById(`msg-${data.tempId}`);
         if(msgElement) {
-            msgElement.innerHTML = `${data.message} <span class="msg-ticks">✓✓</span>`;
+            let rBtn = `<button class="reply-icon-btn" onclick="window.iniciarRespuesta('Tú', this)" title="Responder">↩️</button>`;
+            msgElement.innerHTML = `${rBtn}${data.message} <span class="msg-ticks">✓✓</span>`;
         }
     });
 };
@@ -368,9 +424,6 @@ function inicializarMenu() {
     window.actualizarBandejaMensajes(); 
     window.actualizarBandeja(); 
 
-    // ==========================================
-    // 🔥 ESCUDO ANTI-F5 PARA SALAS PÚBLICAS 🔥
-    // ==========================================
     if (sessionStorage.getItem('is_public_room') === 'true') {
         const modo = sessionStorage.getItem('public_room_mode') || 'Battle Royale';
         document.getElementById('lobby-title').innerText = "Matchmaking Público"; 
@@ -390,7 +443,6 @@ function inicializarMenu() {
 
     if (btnLeaveLobby) {
         btnLeaveLobby.onclick = () => { 
-            // 🔥 LIMPIEZA: Al salir de la sala, borramos el rastro público
             sessionStorage.removeItem('is_public_room'); 
             sessionStorage.removeItem('public_room_mode');
 
@@ -438,7 +490,6 @@ function inicializarMenu() {
 
     if (btnPrivate) {
         btnPrivate.onclick = () => {
-            // 🔥 LIMPIEZA: Si entramos en privada, nos aseguramos de no llevar rastro público
             sessionStorage.removeItem('is_public_room'); 
             sessionStorage.removeItem('public_room_mode');
 
@@ -450,7 +501,6 @@ function inicializarMenu() {
             document.getElementById('config-public-display').style.display = 'none'; 
             document.getElementById('lobby-add-friend-section').style.display = 'block';
             
-            // 🔥 MAGIA: Creamos la sala privada en el servidor AL INSTANTE 🔥
             if (stompClient && stompClient.connected) {
                 stompClient.send("/app/game.private.create", {}, JSON.stringify({}));
             }
@@ -472,7 +522,7 @@ function inicializarMenu() {
             cargarCategorias();
             
             document.getElementById('global-chat-btn').style.display = 'flex';
-            document.getElementById('room-chat-messages').innerHTML = ''; // 🔥 Dejamos el chat listo
+            document.getElementById('room-chat-messages').innerHTML = ''; 
         };
     }
 
@@ -577,10 +627,6 @@ window.actualizarBandeja = function() {
 };
 
 document.addEventListener('DOMContentLoaded', inicializarMenu);
-
-// ==========================================
-// 🔥 LÓGICA DEL MENÚ MÓVIL DESPLEGABLE 🔥
-// ==========================================
 
 window.abrirMenuLateral = function() {
     const sidebar = document.getElementById('menu-sidebar');
