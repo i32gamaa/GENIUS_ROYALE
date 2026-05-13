@@ -32,7 +32,6 @@ public class GameLobbyController {
     private static final Map<String, Map<String, String>> ESTADOS_SALA = new ConcurrentHashMap<>();
     private static final Map<String, Map<String, String>> AJUSTES_SALA = new ConcurrentHashMap<>();
 
-    // 🔥 MEMORIA PARA EL HISTORIAL DEL CHAT DE LAS SALAS 🔥
     private static final Map<String, List<Map<String, Object>>> HISTORIAL_CHAT_SALA = new ConcurrentHashMap<>();
 
     private static final Map<String, Map<String, Integer>> VOTOS_SALA = new ConcurrentHashMap<>();
@@ -59,7 +58,6 @@ public class GameLobbyController {
         }
     }
 
-    // 🔥 ENDPOINT PARA RECIBIR Y REENVIAR MENSAJES DEL CHAT DE SALA 🔥
     @MessageMapping("/chat.room")
     public void sendRoomChat(Principal principal, @Payload Map<String, String> payload) {
         String gameId = payload.get("gameId");
@@ -75,17 +73,14 @@ public class GameLobbyController {
             chatMsg.put("message", message.trim());
             chatMsg.put("timestamp", System.currentTimeMillis());
 
-            // 🔥 LA MAGIA: Guardamos el mensaje en el historial temporal de la sala 🔥
             HISTORIAL_CHAT_SALA.computeIfAbsent(sala.getId(), k -> new ArrayList<>()).add(chatMsg);
 
-            // Enviar a todos los jugadores que estén en esa sala
             for (User p : sala.getPlayers()) {
                 messagingTemplate.convertAndSend("/topic/chat.room." + p.getUsername(), chatMsg);
             }
         }
     }
 
-    // 🔥 NUEVO ENDPOINT: Crear Sala Privada INMEDIATAMENTE para poder chatear solo 🔥
     @MessageMapping("/game.private.create")
     @Transactional
     public void createPrivateGame(Principal principal) {
@@ -109,14 +104,55 @@ public class GameLobbyController {
         broadcastLobbyUpdate(sala);
     }
 
+    // =======================================================
+    // 🔥 EL EXORCISTA DE CLONES FANTASMAS (SISTEMA ANTI-BUG F5) 🔥
+    // =======================================================
     @MessageMapping("/game.public.join")
     @Transactional
-    public void joinPublicGame(Principal principal, @Payload Map<String, String> payload) {
+    public synchronized void joinPublicGame(Principal principal, @Payload Map<String, String> payload) {
         String mode = payload.get("gameMode");
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
 
+        // 1. ANTES DE NADA: Buscamos si el usuario ya estaba en alguna sala
+        Game oldRoom = buscarSalaPorIdEnCualquierLado(user.getId());
+        if (oldRoom != null) {
+            if (SALAS_PUBLICAS.containsKey(oldRoom.getId()) 
+                && oldRoom.getGameMode().equalsIgnoreCase(mode) 
+                && "WAITING_FOR_PLAYER".equals(oldRoom.getGameState())) {
+                
+                ESTADOS_SALA.computeIfAbsent(oldRoom.getId(), k -> new ConcurrentHashMap<>()).put(user.getUsername(), "Listo");
+                broadcastLobbyUpdate(oldRoom);
+                return; // ⛔ CORTAMOS AQUÍ. Previene las duplicaciones de jugadores.
+            } else {
+                oldRoom.getPlayers().removeIf(p -> p.getId().equals(user.getId()));
+                oldRoom.getScores().remove(user.getUsername());
+                if (ESTADOS_SALA.containsKey(oldRoom.getId())) {
+                    ESTADOS_SALA.get(oldRoom.getId()).remove(user.getUsername());
+                }
+                if (oldRoom.getPlayers().isEmpty()) {
+                    SALAS_PUBLICAS.remove(oldRoom.getId());
+                    SALAS_EN_VIVO.entrySet().removeIf(entry -> entry.getValue().getId().equals(oldRoom.getId()));
+                } else {
+                    broadcastLobbyUpdate(oldRoom);
+                }
+            }
+        }
+
+        // =======================================================
+        // 🔥 FIX SUPREMO: DETECCIÓN INTELIGENTE DEL MODO 1V1 🔥
+        // =======================================================
+        boolean isDuelo = mode != null && (
+            mode.equalsIgnoreCase("1v1") || 
+            mode.equalsIgnoreCase("1vs1") || 
+            mode.toLowerCase().contains("1 vs 1") || 
+            mode.toLowerCase().contains("1 v 1") ||
+            mode.toLowerCase().contains("duelo")
+        );
+        
+        int maxPlayers = isDuelo ? 2 : 10;
+
         Game sala = SALAS_PUBLICAS.values().stream()
-                .filter(g -> g.getGameMode().equals(mode) && g.getPlayers().size() < 10 && "WAITING_FOR_PLAYER".equals(g.getGameState()))
+                .filter(g -> g.getGameMode().equalsIgnoreCase(mode) && g.getPlayers().size() < maxPlayers && "WAITING_FOR_PLAYER".equals(g.getGameState()))
                 .findFirst().orElse(null);
 
         if (sala == null) {
@@ -129,14 +165,16 @@ public class GameLobbyController {
             SALAS_PUBLICAS.put(sala.getId(), sala);
         }
 
+        // 3. CANDADO FINAL: Comprobación de aforo con el maxPlayers dinámico
         if (!sala.getPlayers().stream().anyMatch(p -> p.getUsername().equals(user.getUsername()))) {
-            sala.getPlayers().add(user);
-            sala.getScores().put(user.getUsername(), 0);
+            if (sala.getPlayers().size() < maxPlayers) {
+                sala.getPlayers().add(user);
+                sala.getScores().put(user.getUsername(), 0);
 
-            // 🔥 Enviar el historial de chat al nuevo jugador 🔥
-            List<Map<String, Object>> history = HISTORIAL_CHAT_SALA.getOrDefault(sala.getId(), new ArrayList<>());
-            for (Map<String, Object> msg : history) {
-                messagingTemplate.convertAndSend("/topic/chat.room." + user.getUsername(), msg);
+                List<Map<String, Object>> history = HISTORIAL_CHAT_SALA.getOrDefault(sala.getId(), new ArrayList<>());
+                for (Map<String, Object> msg : history) {
+                    messagingTemplate.convertAndSend("/topic/chat.room." + user.getUsername(), msg);
+                }
             }
         }
 
@@ -226,7 +264,6 @@ public class GameLobbyController {
                 sala.getPlayers().add(guest);
                 sala.getScores().put(guest.getUsername(), 0);
 
-                // 🔥 Enviar el historial de chat al invitado 🔥
                 List<Map<String, Object>> history = HISTORIAL_CHAT_SALA.getOrDefault(sala.getId(), new ArrayList<>());
                 for (Map<String, Object> msg : history) {
                     messagingTemplate.convertAndSend("/topic/chat.room." + guest.getUsername(), msg);
@@ -273,7 +310,7 @@ public class GameLobbyController {
                 if (hostKey != null) SALAS_EN_VIVO.remove(hostKey);
                 
                 ESTADOS_SALA.remove(sala.getId());
-                HISTORIAL_CHAT_SALA.remove(sala.getId()); // 🔥 Limpiar historial de RAM
+                HISTORIAL_CHAT_SALA.remove(sala.getId());
                 
             } else {
                 if (SALAS_PUBLICAS.containsKey(gameId)) {
@@ -522,7 +559,6 @@ public class GameLobbyController {
                 }
                 broadcastLobbyUpdate(salaEncontrada);
                 
-                // 🔥 ENVIAR HISTORIAL DE CHAT AL RECONECTAR / REFRESCAR 🔥
                 List<Map<String, Object>> history = HISTORIAL_CHAT_SALA.getOrDefault(salaEncontrada.getId(), new ArrayList<>());
                 for (Map<String, Object> msg : history) {
                     messagingTemplate.convertAndSend("/topic/chat.room." + user.getUsername(), msg);

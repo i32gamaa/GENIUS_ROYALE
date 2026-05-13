@@ -903,3 +903,31 @@ html, body {
     border-color: #555; 
     filter: grayscale(1);
 }
+
+/* ==========================================
+   🏆 SCROLL PARA LA CLASIFICACIÓN DE KAHOOT 🏆
+   ========================================== */
+#kr-host-leaderboard {
+    max-height: 55vh; /* Ocupará como máximo el 55% de la altura de la pantalla */
+    overflow-y: auto; /* Activa el scroll vertical solo si es necesario */
+    padding-right: 10px; /* Deja un poco de aire para que no se pegue la barra */
+}
+
+/* 🔥 Diseño personalizado de la barra de Scroll (Estilo Gamer) 🔥 */
+#kr-host-leaderboard::-webkit-scrollbar {
+    width: 8px;
+}
+
+#kr-host-leaderboard::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05); /* Fondo oscuro transparente */
+    border-radius: 10px;
+}
+
+#kr-host-leaderboard::-webkit-scrollbar-thumb {
+    background: #03DAC6; /* Color cian a juego con tu interfaz */
+    border-radius: 10px;
+}
+
+#kr-host-leaderboard::-webkit-scrollbar-thumb:hover {
+    background: #FFD700; /* Se vuelve dorado al pasar el ratón */
+}
