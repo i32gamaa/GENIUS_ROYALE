@@ -267,7 +267,7 @@ window.prepararVistaSalaKahoot = function(isHost, pin) {
             // Creamos el link exacto de tu web pasándole el PIN por la URL
             const joinUrl = window.location.origin + window.location.pathname + '?pin=' + pin;
             // Usamos una API gratuita que nos devuelve la foto del QR al instante
-            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(joinUrl)}&color=000000&bgcolor=ffffff`;            qrImg.style.display = 'block';
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=450x450&data=${encodeURIComponent(joinUrl)}&color=000000&bgcolor=ffffff`;            qrImg.style.display = 'block';
         }
 
         const catSelect = document.getElementById('pin-game-category'); 
