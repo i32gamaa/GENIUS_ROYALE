@@ -1029,28 +1029,36 @@ html, body {
 }
 
 /* ==========================================
-   📱 FIX: SCROLL PARA EL ANFITRIÓN EN MODO KAHOOT (MÓVIL) 📱
+   📱 FIX DEFINITIVO: SCROLL PARA EL ANFITRIÓN EN MODO KAHOOT (PREGUNTAS Y RESULTADOS) 📱
    ========================================== */
-#kr-host-view {
+#kr-host-view, #kg-host-view {
     overflow-y: auto !important; /* Activa la barra de bajar si falta espacio */
     justify-content: flex-start !important; /* Evita que el centrado corte la pregunta por arriba */
     padding-top: 30px !important; /* Le da aire por arriba */
     padding-bottom: 50px !important; /* Le da aire por abajo para que no se pegue al borde del móvil */
     box-sizing: border-box !important;
+    height: 100% !important;
+    max-height: 100% !important;
+}
+
+/* 🔥 Quitar la altura fija de las opciones para que el scroll fluya bien en horizontal 🔥 */
+#kg-host-options {
+    height: auto !important;
+    min-height: min-content !important;
 }
 
 /* 🔥 Diseño de la barrita de scroll (Estilo Genius Royale) 🔥 */
-#kr-host-view::-webkit-scrollbar {
+#kr-host-view::-webkit-scrollbar, #kg-host-view::-webkit-scrollbar {
     width: 8px;
 }
-#kr-host-view::-webkit-scrollbar-track {
+#kr-host-view::-webkit-scrollbar-track, #kg-host-view::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 10px;
 }
-#kr-host-view::-webkit-scrollbar-thumb {
+#kr-host-view::-webkit-scrollbar-thumb, #kg-host-view::-webkit-scrollbar-thumb {
     background: #03DAC6; /* Color cian a juego con la interfaz */
     border-radius: 10px;
 }
-#kr-host-view::-webkit-scrollbar-thumb:hover {
+#kr-host-view::-webkit-scrollbar-thumb:hover, #kg-host-view::-webkit-scrollbar-thumb:hover {
     background: #FFD700;
 }
