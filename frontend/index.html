@@ -459,18 +459,18 @@
         
         <div id="pin-host-area" style="display:none; flex-direction: column; align-items: center; width: 100%;">
             <p id="pin-host-instructions" style="color: #ccc; font-size: 1.5rem; text-align: center; margin-bottom: 5px;">Introduce este PIN en tu dispositivo:</p>
-            <div id="lobby-pin-display" style="font-size: 6rem; font-weight: bold; color: white; background: rgba(0,0,0,0.5); padding: 20px 50px; border-radius: 20px; border: 4px solid #03DAC6; margin: 10px 0 20px 0; letter-spacing: 15px; box-shadow: 0 0 30px rgba(3,218,198,0.5); text-align: center;">------</div>
+            <div id="lobby-pin-display" style="font-size: 6rem; font-weight: bold; color: white; background: rgba(0,0,0,0.5); padding: 20px 50px; border-radius: 20px; border: 4px solid #03DAC6; margin: 10px 0 30px 0; letter-spacing: 15px; box-shadow: 0 0 30px rgba(3,218,198,0.5); text-align: center;">------</div>
             
             <p style="color: #03DAC6; font-size: 1.2rem; text-align: center; margin-bottom: 10px; font-weight: bold;">O escanea este QR para entrar directo:</p>
-            <img id="lobby-qr-code" src="" alt="QR de la sala" style="width: 180px; height: 180px; border: 4px solid #FFD700; border-radius: 15px; box-shadow: 0 0 20px rgba(255,215,0,0.5); display: none; background: white; padding: 10px;">
+            <img id="lobby-qr-code" src="" alt="QR de la sala" style="width: 350px; height: 350px; border: 6px solid #FFD700; border-radius: 15px; box-shadow: 0 0 30px rgba(255,215,0,0.6); display: none; background: white; padding: 15px;">
         </div>
         
-        <div id="pin-host-settings" style="display:none; background: rgba(0,0,0,0.7); padding: 20px; border-radius: 15px; border: 1px solid #FF9800; margin-bottom: 20px; gap: 15px; flex-wrap: wrap; justify-content: center;">
-            <select id="pin-game-mode" style="background: #1a0b2e; color: white; padding: 10px; border: 1px solid #555; border-radius: 8px; font-weight: bold; outline: none;">
+        <div id="pin-host-settings" style="display:none; background: rgba(0,0,0,0.7); padding: 20px; border-radius: 15px; border: 1px solid #FF9800; margin: 30px auto 20px auto; gap: 15px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 500px;">
+            <select id="pin-game-mode" style="background: #1a0b2e; color: white; padding: 10px; border: 1px solid #555; border-radius: 8px; font-weight: bold; outline: none; cursor: pointer;">
                 <option value="Quizziz">Quizziz Clásico</option>
                 <option value="Battle Royale">🔥 Battle Royale</option>
             </select>
-            <select id="pin-game-category" style="background: #1a0b2e; color: white; padding: 10px; border: 1px solid #555; border-radius: 8px; font-weight: bold; outline: none;">
+            <select id="pin-game-category" style="background: #1a0b2e; color: white; padding: 10px; border: 1px solid #555; border-radius: 8px; font-weight: bold; outline: none; cursor: pointer;">
                 <option value="Cultura General">Cultura General</option>
             </select>
         </div>
