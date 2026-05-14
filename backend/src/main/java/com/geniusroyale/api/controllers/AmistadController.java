@@ -2,8 +2,10 @@ package com.geniusroyale.api.controllers;
 
 import com.geniusroyale.api.models.Amistad;
 import com.geniusroyale.api.models.ApiResponse;
+import com.geniusroyale.api.models.ChatMessage;
 import com.geniusroyale.api.models.User;
 import com.geniusroyale.api.repositories.AmistadRepository;
+import com.geniusroyale.api.repositories.ChatMessageRepository;
 import com.geniusroyale.api.repositories.UserRepository;
 import com.geniusroyale.api.services.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,25 +26,21 @@ public class AmistadController {
 
     @Autowired private UserRepository userRepository;
     @Autowired private AmistadRepository amistadRepository;
+    @Autowired private ChatMessageRepository chatMessageRepository; // 🔥 INYECTAMOS EL NUEVO REPO
     @Autowired private JwtService jwtService;
     @Autowired private SimpMessagingTemplate messagingTemplate;
 
-    // 🔥 MEMORIA PARA EL WHATSAPP 🔥
-    private static final Map<String, List<Map<String, Object>>> privateChats = new ConcurrentHashMap<>();
+    // 🔥 Mantenemos esto SOLO para saber el estado instantáneo (En línea) sin saturar la DB
     public static final Map<String, Long> LAST_PING = new ConcurrentHashMap<>();
 
-    private String getChatKey(String u1, String u2) {
-        return (u1.compareTo(u2) < 0) ? u1 + "_" + u2 : u2 + "_" + u1;
-    }
-
-    // 🔥 PING CADA 5 SEGUNDOS PARA EL ESTADO EN LÍNEA 🔥
     @MessageMapping("/user.ping")
     public void handlePing(Principal principal) {
         String username = userRepository.findByEmail(principal.getName()).orElseThrow().getUsername();
-        LAST_PING.put(username, System.currentTimeMillis());
+        long now = System.currentTimeMillis();
+        LAST_PING.put(username, now);
+        userRepository.updateLastSeen(username, now); // 🔥 Guardamos en Base de Datos para que no se pierda
     }
 
-    // 🔥 AVISO DE "ESCRIBIENDO..." 🔥
     @MessageMapping("/chat.typing")
     public void handleTyping(Principal principal, @Payload Map<String, Object> payload) {
         String sender = userRepository.findByEmail(principal.getName()).orElseThrow().getUsername();
@@ -55,21 +53,13 @@ public class AmistadController {
         messagingTemplate.convertAndSend("/topic/chat.typing." + to, msg);
     }
 
-    // 🔥 EL DOBLE TICK AZUL CUANDO ABRES EL CHAT 🔥
     @MessageMapping("/chat.read")
     public void handleRead(Principal principal, @Payload Map<String, String> payload) {
         String reader = userRepository.findByEmail(principal.getName()).orElseThrow().getUsername();
         String sender = payload.get("sender");
         
-        String key = getChatKey(sender, reader);
-        List<Map<String, Object>> msgs = privateChats.get(key);
-        if(msgs != null) {
-            for(Map<String, Object> m : msgs) {
-                if(m.get("sender").equals(sender)) {
-                    m.put("isRead", true);
-                }
-            }
-        }
+        // 🔥 Actualizamos directamente en PostgreSQL 🔥
+        chatMessageRepository.markAsRead(sender, reader);
         
         Map<String, Object> msg = new HashMap<>();
         msg.put("reader", reader);
@@ -128,7 +118,6 @@ public class AmistadController {
         }
     }
 
-    // 🔥 FIX: ARREGLADO PARA MANDAR FOTOS Y ÚLTIMO MENSAJE 🔥
     @GetMapping("/lista")
     public ResponseEntity<List<Map<String, Object>>> listarAmigos(@RequestHeader("Authorization") String authHeader) {
         String token = authHeader.substring(7);
@@ -150,17 +139,17 @@ public class AmistadController {
             map.put("username", amigo.getUsername());
             map.put("fotoPerfil", amigo.getFotoPerfil() != null ? amigo.getFotoPerfil() : "images/invitado.jpg");
 
-            String chatKey = getChatKey(me.getUsername(), amigo.getUsername());
-            List<Map<String, Object>> history = privateChats.getOrDefault(chatKey, new ArrayList<>());
+            // 🔥 FIX: Buscamos los mensajes en PostgreSQL
+            List<ChatMessage> history = chatMessageRepository.findChatHistory(me.getUsername(), amigo.getUsername());
             
             String lastMsg = "Toca para chatear";
             int unread = 0;
             if (!history.isEmpty()) {
-                Map<String, Object> last = history.get(history.size() - 1);
-                lastMsg = (String) last.get("message");
+                ChatMessage last = history.get(history.size() - 1);
+                lastMsg = last.getMessage();
                 
-                for(Map<String, Object> m : history) {
-                    if (!m.get("sender").equals(me.getUsername()) && !(Boolean)m.getOrDefault("isRead", false)) {
+                for(ChatMessage m : history) {
+                    if (m.getSender().equals(amigo.getUsername()) && !m.getIsRead()) {
                         unread++;
                     }
                 }
@@ -222,7 +211,6 @@ public class AmistadController {
         return ResponseEntity.ok(new ApiResponse(true, "Solicitud rechazada"));
     }
 
-    // 🔥 ESTADÍSTICAS DEL AMIGO (CON RANGO/TÍTULO) 🔥
     @GetMapping("/amigo/{username}/stats")
     public ResponseEntity<?> getAmigoStats(@RequestHeader("Authorization") String authHeader, @PathVariable String username) {
         User amigo = userRepository.findByUsername(username).orElse(null);
@@ -246,18 +234,23 @@ public class AmistadController {
         return ResponseEntity.ok(stats);
     }
 
-    // 🔥 ESTADO DE CONEXIÓN (EN LÍNEA / ÚLTIMA VEZ) 🔥
     @GetMapping("/amigo/{username}/status")
     public ResponseEntity<?> getStatus(@PathVariable String username) {
-        long lastPing = LAST_PING.getOrDefault(username, 0L);
-        boolean isOnline = (System.currentTimeMillis() - lastPing) < 15000; // 15 segundos
+        User amigo = userRepository.findByUsername(username).orElse(null);
+        if (amigo == null) return ResponseEntity.badRequest().build();
+
+        // Combinamos la memoria RAM rápida con la base de datos persistente
+        long lastPingRam = LAST_PING.getOrDefault(username, 0L);
+        long lastPingDb = amigo.getLastSeen() != null ? amigo.getLastSeen() : 0L;
+        long lastPing = Math.max(lastPingRam, lastPingDb);
+
+        boolean isOnline = (System.currentTimeMillis() - lastPing) < 15000;
         Map<String, Object> res = new HashMap<>();
         res.put("online", isOnline);
         res.put("lastSeen", lastPing);
         return ResponseEntity.ok(res);
     }
 
-    // 🔥 ENDPOINTS DE CHAT PRIVADO (WHATSAPP) 🔥
     @PostMapping("/chat/{amigo}")
     public ResponseEntity<?> sendPrivateMessage(@RequestHeader("Authorization") String authHeader, @PathVariable String amigo, @RequestBody Map<String, String> payload) {
         String email = jwtService.extractEmail(authHeader.substring(7)).trim().toLowerCase();
@@ -269,20 +262,20 @@ public class AmistadController {
             return ResponseEntity.badRequest().build();
         }
 
-        Map<String, Object> chatMsg = new HashMap<>();
-        chatMsg.put("id", UUID.randomUUID().toString());
-        chatMsg.put("sender", sender.getUsername());
-        chatMsg.put("message", message.trim());
-        chatMsg.put("timestamp", System.currentTimeMillis());
-        chatMsg.put("isRead", false);
-        chatMsg.put("tempId", tempId); // Para el frontend
+        // 🔥 Creamos y guardamos el mensaje en PostgreSQL 🔥
+        ChatMessage chatMsg = new ChatMessage();
+        chatMsg.setSender(sender.getUsername());
+        chatMsg.setReceiver(amigo);
+        chatMsg.setMessage(message.trim());
+        chatMsg.setTimestamp(System.currentTimeMillis());
+        chatMsg.setIsRead(false);
+        chatMsg.setTempId(tempId);
 
-        String key = getChatKey(sender.getUsername(), amigo);
-        privateChats.computeIfAbsent(key, k -> new ArrayList<>()).add(chatMsg);
+        chatMessageRepository.save(chatMsg);
 
         messagingTemplate.convertAndSend("/topic/chat.private." + amigo, chatMsg);
         
-        return ResponseEntity.ok(chatMsg); // Devuelve al emisor que se ha guardado (Doble Tick Gris)
+        return ResponseEntity.ok(chatMsg);
     }
 
     @GetMapping("/chat/{amigo}")
@@ -290,9 +283,8 @@ public class AmistadController {
         String email = jwtService.extractEmail(authHeader.substring(7)).trim().toLowerCase();
         User sender = userRepository.findByEmail(email).orElseThrow();
         
-        String key = getChatKey(sender.getUsername(), amigo);
-        List<Map<String, Object>> history = privateChats.getOrDefault(key, new ArrayList<>());
-        
+        // 🔥 Recuperamos los mensajes desde la Base de Datos 🔥
+        List<ChatMessage> history = chatMessageRepository.findChatHistory(sender.getUsername(), amigo);
         return ResponseEntity.ok(history);
     }
 }

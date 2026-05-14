@@ -27,7 +27,6 @@ public class User {
     @Column(name = "puntos_totales")
     private Integer totalScore = 0;
 
-    // 🔥 NUEVO: Estadísticas y Foto de Perfil
     @Column(name = "partidas_ganadas")
     private Integer partidasGanadas = 0;
 
@@ -36,6 +35,10 @@ public class User {
 
     @Column(name = "foto_perfil", columnDefinition="TEXT")
     private String fotoPerfil;
+
+    // 🔥 NUEVO: Persistencia de última conexión 🔥
+    @Column(name = "ultimo_visto")
+    private Long lastSeen = 0L;
 
     public User() {}
 
@@ -58,4 +61,7 @@ public class User {
     public void setPreguntasAcertadas(Integer preguntasAcertadas) { this.preguntasAcertadas = preguntasAcertadas; }
     public String getFotoPerfil() { return fotoPerfil; }
     public void setFotoPerfil(String fotoPerfil) { this.fotoPerfil = fotoPerfil; }
+    
+    public Long getLastSeen() { return lastSeen; }
+    public void setLastSeen(Long lastSeen) { this.lastSeen = lastSeen; }
 }
