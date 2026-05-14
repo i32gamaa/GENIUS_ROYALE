@@ -1027,3 +1027,30 @@ html, body {
     background: #9C27B0;
     border-color: #9C27B0;
 }
+
+/* ==========================================
+   📱 FIX: SCROLL PARA EL ANFITRIÓN EN MODO KAHOOT (MÓVIL) 📱
+   ========================================== */
+#kr-host-view {
+    overflow-y: auto !important; /* Activa la barra de bajar si falta espacio */
+    justify-content: flex-start !important; /* Evita que el centrado corte la pregunta por arriba */
+    padding-top: 30px !important; /* Le da aire por arriba */
+    padding-bottom: 50px !important; /* Le da aire por abajo para que no se pegue al borde del móvil */
+    box-sizing: border-box !important;
+}
+
+/* 🔥 Diseño de la barrita de scroll (Estilo Genius Royale) 🔥 */
+#kr-host-view::-webkit-scrollbar {
+    width: 8px;
+}
+#kr-host-view::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+#kr-host-view::-webkit-scrollbar-thumb {
+    background: #03DAC6; /* Color cian a juego con la interfaz */
+    border-radius: 10px;
+}
+#kr-host-view::-webkit-scrollbar-thumb:hover {
+    background: #FFD700;
+}
