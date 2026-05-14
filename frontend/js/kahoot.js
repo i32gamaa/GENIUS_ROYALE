@@ -114,6 +114,30 @@ window.arrancarPartidaKahoot = function() {
 document.addEventListener('DOMContentLoaded', () => {
     window.history.pushState({kahootLock: true}, null, window.location.href);
 
+    // 🔥 NUEVO: RADAR DE INVITADOS POR QR 🔥
+    const urlParams = new URLSearchParams(window.location.search);
+    const pinDesdeUrl = urlParams.get('pin');
+    
+    // Si la URL trae un PIN y el jugador no está ya en una sala...
+    if (pinDesdeUrl && !sessionStorage.getItem('is_pin_room')) {
+        setTimeout(() => {
+            window.abrirModalInvitado();
+            const pinInput = document.getElementById('guest-pin-input');
+            const nickInput = document.getElementById('guest-nick-input');
+            
+            if (pinInput) {
+                pinInput.value = pinDesdeUrl;
+                pinInput.readOnly = true; // Lo bloqueamos para que no lo borre por accidente
+                pinInput.style.opacity = '0.7'; 
+            }
+            if (nickInput) {
+                nickInput.focus(); // Le ponemos el cursor directamente en el nombre
+            }
+            // Limpiamos la URL de arriba para que quede limpia y profesional
+            window.history.replaceState(null, null, window.location.pathname);
+        }, 500); 
+    }
+
     const isPinRoom = sessionStorage.getItem('is_pin_room') === 'true';
     if (isPinRoom) {
         const gameId = sessionStorage.getItem('current_game_id');
@@ -236,6 +260,16 @@ window.prepararVistaSalaKahoot = function(isHost, pin) {
         
         const display = document.getElementById('lobby-pin-display');
         if(display) display.innerText = pin;
+
+        // 🔥 NUEVO: GENERAR EL QR AL VUELO 🔥
+        const qrImg = document.getElementById('lobby-qr-code');
+        if (qrImg) {
+            // Creamos el link exacto de tu web pasándole el PIN por la URL
+            const joinUrl = window.location.origin + window.location.pathname + '?pin=' + pin;
+            // Usamos una API gratuita que nos devuelve la foto del QR al instante
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(joinUrl)}&color=000000&bgcolor=ffffff`;
+            qrImg.style.display = 'block';
+        }
 
         const catSelect = document.getElementById('pin-game-category'); 
         if (catSelect && catSelect.children.length <= 1) {
