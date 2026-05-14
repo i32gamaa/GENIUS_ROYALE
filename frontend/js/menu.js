@@ -12,7 +12,14 @@ window.addEventListener('beforeunload', () => {
 window.categoriasParaVotar = []; window.miVoto = null;
 window.waActiveFriend = null; 
 
-// 🔥 SISTEMA DE EMOJIS 🔥
+// 🔥 CIERRE INTELIGENTE DEL MENÚ DESPLEGABLE 🔥
+document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('chat-dropdown-menu');
+    if (dropdown && !dropdown.classList.contains('hidden') && !e.target.closest('#chat-dropdown-menu') && !e.target.matches('button[onclick*="chat-dropdown-menu"]')) {
+        dropdown.classList.add('hidden');
+    }
+});
+
 const emojisNativos = ['😀','😂','🥰','😎','😭','😡','👍','🙏','🔥','💀','🎲','🏆','👑','👀','💯'];
 window.toggleEmojiPicker = function(type) {
     const picker = document.getElementById('emoji-picker-' + type);
@@ -31,19 +38,16 @@ window.toggleEmojiPicker = function(type) {
     picker.classList.toggle('hidden');
 };
 
-// 🔥 BADGES DE CHAT PRIVADO 🔥
 window.unreadPrivates = {};
 
 window.actualizarBadgesAmigos = function() {
     let total = 0;
     for (let user in window.unreadPrivates) { total += window.unreadPrivates[user]; }
-    
     const badgeMenu = document.getElementById('sidebar-amigos-badge');
     if (badgeMenu) {
         if (total > 0) { badgeMenu.innerText = total; badgeMenu.style.display = 'inline-block'; } 
         else { badgeMenu.style.display = 'none'; }
     }
-    
     for (let user in window.unreadPrivates) {
         const fb = document.getElementById('wa-badge-' + user);
         if (fb) {
@@ -62,16 +66,12 @@ window.abrirSeleccionModoPublico = function() {
 window.unirseAPartidaPublica = function(modo) {
     const sPublic = document.getElementById('screen-public-modes'); const sLobby = document.getElementById('screen-lobby');
     if (typeof cambiarPantalla === "function") cambiarPantalla(sPublic, sLobby);
-    
     sessionStorage.setItem('is_public_room', 'true');
     sessionStorage.setItem('public_room_mode', modo);
-    
     document.getElementById('lobby-title').innerText = "Matchmaking Público"; document.getElementById('config-private-only').style.display = 'none'; document.getElementById('config-public-display').style.display = 'block'; document.getElementById('public-mode-label').innerText = modo.toUpperCase(); document.getElementById('lobby-add-friend-section').style.display = 'none'; document.getElementById('waiting-msg').innerText = "Buscando jugadores..."; 
     const list = document.getElementById('lobby-players-list'); if (list) list.innerHTML = "";
-    
     document.getElementById('global-chat-btn').style.display = 'flex';
     document.getElementById('room-chat-messages').innerHTML = ''; 
-    
     if (stompClient && stompClient.connected) stompClient.send("/app/game.public.join", {}, JSON.stringify({ gameMode: modo }));
 };
 
@@ -148,8 +148,10 @@ window.subirFotoPerfil = function(event) {
     reader.readAsDataURL(file);
 };
 
-// 🔥 WHATSAPP: PANEL DE AMIGOS Y CHAT 🔥
 window.abrirListaAmigosStats = function() {
+    const layout = document.querySelector('.wa-layout');
+    if (layout) layout.classList.remove('mobile-chat-open');
+
     const modal = document.getElementById('friends-stats-modal');
     modal.style.display = 'flex'; modal.classList.remove('hidden');
     
@@ -165,10 +167,7 @@ window.abrirListaAmigosStats = function() {
     .then(res => res.json())
     .then(amigos => {
         list.innerHTML = "";
-        if (amigos.length === 0) {
-            list.innerHTML = "<p style='text-align:center; color:#aaa; padding:20px;'>No tienes amigos aún.</p>";
-            return;
-        }
+        if (amigos.length === 0) { list.innerHTML = "<p style='text-align:center; color:#aaa; padding:20px;'>No tienes amigos aún.</p>"; return; }
         amigos.forEach(a => {
             let avatar = a.fotoPerfil || 'images/invitado.jpg';
             let unread = window.unreadPrivates[a.username] || a.unreadCount || 0;
@@ -198,10 +197,8 @@ window.actualizarEstadoAmigo = function() {
     .then(data => {
         const statusEl = document.getElementById('wa-chat-status');
         if (statusEl && statusEl.innerText !== "Escribiendo...") {
-            if(data.online) {
-                statusEl.innerText = "En línea";
-                statusEl.style.color = "#4CAF50";
-            } else {
+            if(data.online) { statusEl.innerText = "En línea"; statusEl.style.color = "#4CAF50"; } 
+            else {
                 let date = new Date(data.lastSeen);
                 let hours = date.getHours().toString().padStart(2, '0');
                 let mins = date.getMinutes().toString().padStart(2, '0');
@@ -212,22 +209,16 @@ window.actualizarEstadoAmigo = function() {
     });
 };
 
-// ==========================================
-// 🔥 SISTEMA DE RESPUESTAS (WHATSAPP STYLE) 🔥
-// ==========================================
 window.waReplyingTo = null;
 
 window.iniciarRespuesta = function(sender, btnElement) {
     const bubble = btnElement.closest('.msg-bubble');
     const clone = bubble.cloneNode(true);
-    
-    // Limpiamos el clon para quedarnos solo con el texto real
-    const rBtn = clone.querySelector('.reply-icon-btn');
-    if (rBtn) rBtn.remove();
-    const oldQuote = clone.querySelector('.replied-msg-bubble');
-    if (oldQuote) oldQuote.remove();
+    const rBtn = clone.querySelector('.reply-icon-btn'); if (rBtn) rBtn.remove();
+    const oldQuote = clone.querySelector('.replied-msg-bubble'); if (oldQuote) oldQuote.remove();
     
     let text = clone.innerText.replace(/✓✓/g, '').replace(/✓/g, '').trim();
+    if(clone.querySelector('img')) text = "📷 Foto";
 
     window.waReplyingTo = { sender: sender, text: text };
 
@@ -236,8 +227,6 @@ window.iniciarRespuesta = function(sender, btnElement) {
         previewArea = document.createElement('div');
         previewArea.id = 'wa-reply-preview';
         previewArea.className = 'wa-reply-preview';
-        
-        // Inyectar justo encima del input de escribir
         const inputArea = document.querySelector('.wa-chat-area .chat-input-area');
         inputArea.parentNode.insertBefore(previewArea, inputArea);
     }
@@ -259,9 +248,63 @@ window.cancelarRespuesta = function() {
     if (previewArea) previewArea.style.display = 'none';
 };
 
+// 🔥 NUEVO: CONTROL DEL VISOR DE IMÁGENES 🔥
+window.abrirVisorImagen = function(src) {
+    const modal = document.getElementById('image-viewer-modal');
+    const img = document.getElementById('image-viewer-img');
+    if (modal && img) {
+        img.src = src;
+        img.classList.remove('zoomed-in');
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+    }
+};
+
+window.cerrarVisorImagen = function(e) {
+    if(e) e.stopPropagation();
+    const modal = document.getElementById('image-viewer-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    }
+};
+
+// 🔥 GENERADOR DE BURBUJAS (Solo Texto e Imágenes) 🔥
+window.crearCuerpoMensaje = function(m) {
+    if (m.type === 'IMAGE') {
+        return `<img src="${m.message}" class="chat-image" onclick="window.abrirVisorImagen(this.src)">`;
+    } else {
+        return m.message;
+    }
+};
+
+window.renderizarHistorialChat = function(msgs) {
+    const chatBox = document.getElementById('wa-messages');
+    chatBox.innerHTML = "";
+    
+    if (!Array.isArray(msgs)) {
+        chatBox.innerHTML = `<p style="text-align:center; color:#F44336; margin-top:20px;">Error al cargar el historial.</p>`;
+        return;
+    }
+
+    const myName = sessionStorage.getItem('genius_username');
+    if (msgs.length === 0) {
+        chatBox.innerHTML = `<p style="text-align:center; color:#aaa; font-style:italic; margin-top:20px;">Empieza la conversación con ${window.waActiveFriend}</p>`;
+    } else {
+        msgs.forEach(m => {
+            const isOwn = m.sender === myName;
+            let tick = isOwn ? (m.isRead ? '<span class="msg-ticks msg-ticks-read">✓✓</span>' : '<span class="msg-ticks">✓✓</span>') : '';
+            let replyBtn = `<button class="reply-icon-btn" onclick="window.iniciarRespuesta('${m.sender}', this)" title="Responder">↩️</button>`;
+            
+            let msgContent = window.crearCuerpoMensaje(m);
+            chatBox.innerHTML += `<div class="msg-bubble ${isOwn ? 'msg-own-wa' : 'msg-other'}" id="msg-${m.tempId || m.id}">${replyBtn}${msgContent} ${tick}</div>`;
+        });
+    }
+    chatBox.scrollTop = chatBox.scrollHeight;
+};
+
 window.abrirChatAmigo = function(username, avatar) {
     window.waActiveFriend = username;
-    
     window.unreadPrivates[username] = 0;
     window.actualizarBadgesAmigos();
     
@@ -271,6 +314,9 @@ window.abrirChatAmigo = function(username, avatar) {
     document.querySelectorAll('.wa-friend-item').forEach(el => el.classList.remove('active'));
     const friendElement = document.getElementById(`wa-friend-${username}`);
     if(friendElement) friendElement.classList.add('active');
+
+    const layout = document.querySelector('.wa-layout');
+    if (layout) layout.classList.add('mobile-chat-open');
 
     document.getElementById('wa-chat-placeholder').style.display = 'none';
     document.getElementById('wa-active-chat').style.display = 'flex';
@@ -286,29 +332,88 @@ window.abrirChatAmigo = function(username, avatar) {
 
     const chatBox = document.getElementById('wa-messages');
     chatBox.innerHTML = "<div class='loader' style='margin:20px auto;'></div>";
+    chatBox.classList.remove('chat-crumbling'); 
     
-    window.cancelarRespuesta(); // Limpiamos respuestas previas
+    window.cancelarRespuesta(); 
 
     fetch(`${window.API_BASE_URL}/api/amistad/chat/${username}`, { headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}` } })
     .then(res => res.json())
     .then(msgs => {
-        chatBox.innerHTML = "";
-        const myName = sessionStorage.getItem('genius_username');
-        if (msgs.length === 0) {
-            chatBox.innerHTML = `<p style="text-align:center; color:#aaa; font-style:italic;">Empieza la conversación con ${username}</p>`;
+        window.renderizarHistorialChat(msgs);
+        if(stompClient && stompClient.connected) stompClient.send("/app/chat.read", {}, JSON.stringify({ sender: username }));
+    }).catch(e => {
+        chatBox.innerHTML = `<p style="text-align:center; color:#F44336; margin-top:20px;">Falló la conexión al servidor.</p>`;
+    });
+};
+
+window.volverAlMenuChatsMovil = function(e) {
+    if(e) e.stopPropagation(); 
+    const layout = document.querySelector('.wa-layout');
+    if (layout) layout.classList.remove('mobile-chat-open');
+    window.waActiveFriend = null;
+};
+
+const originalRecibirMensajePrivado = window.recibirMensajePrivado;
+window.recibirMensajePrivado = function(data) {
+    if (data.message === "[MULTIMEDIA_FETCH_REQUIRED]") {
+        if (window.waActiveFriend === data.sender) {
+            fetch(`${window.API_BASE_URL}/api/amistad/chat/${data.sender}`, { headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}` } })
+            .then(res => res.json()).then(msgs => window.renderizarHistorialChat(msgs));
         } else {
-            msgs.forEach(m => {
-                const isOwn = m.sender === myName;
-                let tick = isOwn ? (m.isRead ? '<span class="msg-ticks msg-ticks-read">✓✓</span>' : '<span class="msg-ticks">✓✓</span>') : '';
-                // 🔥 Inyectamos el botón de respuesta
-                let replyBtn = `<button class="reply-icon-btn" onclick="window.iniciarRespuesta('${m.sender}', this)" title="Responder">↩️</button>`;
-                chatBox.innerHTML += `<div class="msg-bubble ${isOwn ? 'msg-own-wa' : 'msg-other'}">${replyBtn}${m.message} ${tick}</div>`;
-            });
+            window.unreadPrivates[data.sender] = (window.unreadPrivates[data.sender] || 0) + 1;
+            window.actualizarBadgesAmigos();
+            window.mostrarToastInfo(`📷 Nuevo mensaje multimedia de ${data.sender}`);
         }
-        chatBox.scrollTop = chatBox.scrollHeight;
-        
-        if(stompClient && stompClient.connected) {
-            stompClient.send("/app/chat.read", {}, JSON.stringify({ sender: username }));
+        return;
+    }
+    if (originalRecibirMensajePrivado) originalRecibirMensajePrivado(data);
+};
+
+// 🔥 ENVÍO DE FOTOS DESDE EL CHAT 🔥
+window.enviarFotoChat = function(event) {
+    if (!window.waActiveFriend) return;
+    const file = event.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas'); const MAX = 600; let w = img.width, h = img.height;
+            if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } else { if (h > MAX) { w *= MAX / h; h = MAX; } }
+            canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+            window.enviarMensajeMultimedia(canvas.toDataURL('image/jpeg', 0.8), 'IMAGE');
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+};
+
+window.enviarMensajeMultimedia = function(base64Data, type) {
+    const chatBox = document.getElementById('wa-messages');
+    if(chatBox.innerHTML.includes("Empieza la conversación")) chatBox.innerHTML = "";
+    
+    let tempId = Date.now();
+    let replyBtn = `<button class="reply-icon-btn" onclick="window.iniciarRespuesta('Tú', this)" title="Responder">↩️</button>`;
+    
+    let fakeObj = { type: type, message: base64Data, tempId: tempId.toString() };
+    let preview = window.crearCuerpoMensaje(fakeObj);
+    
+    chatBox.innerHTML += `<div id="msg-${tempId}" class="msg-bubble msg-own-wa">${replyBtn}${preview} <span class="msg-ticks">✓</span></div>`;
+    chatBox.scrollTop = chatBox.scrollHeight;
+    
+    const snippetEl = document.getElementById(`wa-snippet-${window.waActiveFriend}`);
+    if(snippetEl) snippetEl.innerText = type === 'IMAGE' ? "Tú: 📷 Foto" : "Tú: 🎤 Audio";
+
+    fetch(`${window.API_BASE_URL}/api/amistad/chat/${window.waActiveFriend}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: base64Data, type: type, tempId: tempId.toString() })
+    })
+    .then(res => res.json())
+    .then(data => {
+        const msgElement = document.getElementById(`msg-${data.tempId}`);
+        if(msgElement) {
+            let realContent = window.crearCuerpoMensaje(data);
+            msgElement.innerHTML = `${replyBtn}${realContent} <span class="msg-ticks">✓✓</span>`;
         }
     });
 };
@@ -333,7 +438,6 @@ window.enviarMensajePrivado = function() {
     const msgTexto = input.value.trim();
     if (!msgTexto || !window.waActiveFriend) return;
 
-    // 🔥 Añadimos la burbuja de cita si hay respuesta pendiente
     let finalMsg = msgTexto;
     if (window.waReplyingTo) {
         finalMsg = `<div class="replied-msg-bubble"><strong>${window.waReplyingTo.sender}</strong><br>${window.waReplyingTo.text}</div>` + msgTexto;
@@ -350,7 +454,7 @@ window.enviarMensajePrivado = function() {
     input.value = "";
     document.getElementById('emoji-picker-wa').classList.add('hidden');
 
-    window.cancelarRespuesta(); // Ocultamos el modo respuesta
+    window.cancelarRespuesta(); 
 
     const snippetEl = document.getElementById(`wa-snippet-${window.waActiveFriend}`);
     if(snippetEl) snippetEl.innerText = "Tú: " + msgTexto;
@@ -358,7 +462,7 @@ window.enviarMensajePrivado = function() {
     fetch(`${window.API_BASE_URL}/api/amistad/chat/${window.waActiveFriend}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: finalMsg, tempId: tempId.toString() })
+        body: JSON.stringify({ message: finalMsg, type: "TEXT", tempId: tempId.toString() })
     })
     .then(res => res.json())
     .then(data => {
@@ -367,6 +471,45 @@ window.enviarMensajePrivado = function() {
             let rBtn = `<button class="reply-icon-btn" onclick="window.iniciarRespuesta('Tú', this)" title="Responder">↩️</button>`;
             msgElement.innerHTML = `${rBtn}${data.message} <span class="msg-ticks">✓✓</span>`;
         }
+    });
+};
+
+// 🔥 NUEVO: EJECUTOR INFALIBLE DEL MENÚ DESPLEGABLE 🔥
+window.ejecutarOpcionChat = function(opcion) {
+    document.getElementById('chat-dropdown-menu').classList.add('hidden');
+    if (opcion === 'perfil') {
+        window.verStatsAmigo();
+    } else if (opcion === 'vaciar') {
+        document.getElementById('clear-chat-modal').classList.remove('hidden');
+        document.getElementById('clear-chat-modal').style.display = 'flex';
+    }
+};
+
+window.vaciarChatConfirmado = function() {
+    if (!window.waActiveFriend) return;
+    const chatBox = document.getElementById('wa-messages');
+    document.getElementById('clear-chat-modal').classList.add('hidden');
+    document.getElementById('clear-chat-modal').style.display = 'none';
+
+    chatBox.classList.add('chat-crumbling');
+
+    fetch(`${window.API_BASE_URL}/api/amistad/chat/${window.waActiveFriend}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}` }
+    })
+    .then(res => {
+        if(!res.ok) throw new Error("Aún no tienes la Base de Datos actualizada");
+        return res.json();
+    })
+    .then(() => {
+        setTimeout(() => {
+            chatBox.innerHTML = `<p style="text-align:center; color:#aaa; font-style:italic;">Empieza la conversación con ${window.waActiveFriend}</p>`;
+            chatBox.classList.remove('chat-crumbling');
+        }, 600); 
+    })
+    .catch(e => {
+        chatBox.classList.remove('chat-crumbling');
+        window.mostrarToastError("⚠️ Error: " + e.message + ". Reinicia el servidor Spring Boot para aplicar los cambios.");
     });
 };
 

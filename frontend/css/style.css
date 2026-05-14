@@ -80,21 +80,19 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
 .msg-other { background: rgba(255,255,255,0.1); color: white; align-self: flex-start; border-bottom-left-radius: 0; border: 1px solid rgba(255,255,255,0.2); }
 .msg-author { font-size: 0.75rem; color: #FFD700; margin-bottom: 4px; font-weight: bold; }
 
-/* Layout WhatsApp Amigos */
 .wa-layout { display: flex; width: 100%; height: 65vh; background: rgba(0,0,0,0.4); border-radius: 15px; overflow: hidden; border: 1px solid #9C27B0; margin-top: 15px; }
 .wa-sidebar { width: 35%; border-right: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); display: flex; flex-direction: column; }
-.wa-chat-area { flex: 1; display: flex; flex-direction: column; position: relative; background: #0f0518; }
+.wa-chat-area { flex: 1; display: flex; flex-direction: column; position: relative; background: #0f0518; overflow: hidden; }
 .wa-friend-item { padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: background 0.2s; border-bottom: 1px solid rgba(255,255,255,0.05); position: relative; overflow: hidden; }
 .wa-friend-item:hover, .wa-friend-item.active { background: rgba(156, 39, 176, 0.3); border-left: 4px solid #FFD700; }
 .wa-friend-img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid #9C27B0; flex-shrink: 0; }
 
-/* 🔥 NUEVO: BADGES, TICKS, SNIPPETS Y EMOJIS 🔥 */
 .friend-unread-badge { background: #2196F3; color: white; border-radius: 50%; padding: 4px 8px; font-size: 0.8rem; font-weight: bold; box-shadow: 0 0 10px #2196F3; position: absolute; right: 15px; top: 30%; }
 .wa-friend-snippet { font-size: 0.8rem; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; display: block; }
 
 .msg-ticks { font-size: 0.75rem; margin-left: 8px; color: rgba(255,255,255,0.5); font-weight: bold; }
-.msg-ticks-read { color: #03A9F4 !important; text-shadow: 0 0 5px #03A9F4; } /* TICK AZUL MAGICO */
-.msg-own-wa .msg-ticks { color: #FFD700; } /* Amarillos por defecto en WhatsApp */
+.msg-ticks-read { color: #03A9F4 !important; text-shadow: 0 0 5px #03A9F4; } 
+.msg-own-wa .msg-ticks { color: #FFD700; } 
 .msg-own .msg-ticks { color: #1A0530; }
 
 .btn-emoji { background: transparent !important; border: none; font-size: 1.5rem !important; cursor: pointer; transition: transform 0.2s; padding: 0 10px; width: auto !important; height: auto !important; border-radius: 0 !important; margin-left: 0 !important; }
@@ -107,15 +105,9 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
 /* ==========================================
    🛡️ FIX DEFINITIVO: SCROLL, MODALES Y RESPONSIVE TOTAL 🛡️
    ========================================== */
+.modal-overlay { z-index: 9999999 !important; }
 
-/* 1. Z-INDEX SUPREMO PARA MODALES (Corrige Foto 2 - Modal detrás del menú) */
-.modal-overlay {
-    z-index: 9999999 !important;
-}
-
-/* 2. REPARACIÓN GLOBAL PARA EVITAR CORTES EN TABLET Y PC */
 .screen {
-    /* 🔥 HEMOS BORRADO EL DISPLAY: FLEX !IMPORTANT DE AQUÍ 🔥 */
     flex-direction: column !important;
     align-items: center !important;       
     justify-content: flex-start !important; 
@@ -127,195 +119,47 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
     padding: 40px 15px !important;        
 }
 
-#screen-public-modes h2 {
-    text-align: center !important;
-    width: 100% !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-}
+#screen-public-modes h2 { text-align: center !important; width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; }
+#screen-menu { flex-direction: row !important; align-items: stretch !important; padding: 0 !important; }
+.login-container, .lobby-container, #screen-public-modes > div, #screen-lobby-code > div { margin: auto !important; width: 100% !important; box-sizing: border-box; }
+#menu-sidebar { height: auto !important; min-height: 100vh !important; overflow-y: auto !important; }
 
-#screen-menu {
-    flex-direction: row !important;
-    align-items: stretch !important;
-    padding: 0 !important;
-}
-
-.login-container, 
-.lobby-container, 
-#screen-public-modes > div,
-#screen-lobby-code > div {
-    margin: auto !important;
-    width: 100% !important;
-    box-sizing: border-box;
-}
-
-#menu-sidebar {
-    height: auto !important;
-    min-height: 100vh !important;
-    overflow-y: auto !important;
-}
-
-/* 🔥 FIX PC: El contenedor de botones debe tomar solo el espacio sobrante (flex: 1) 🔥 */
 #screen-menu > div:last-child {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start !important; /* 🔥 LA MAGIA: Empieza desde arriba para NUNCA cortar el botón naranja 🔥 */
-    align-items: center;
-    flex: 1 !important; 
-    width: auto !important; 
-    padding: 60px 20px 40px 20px !important; /* Un poco más de aire arriba por si aparece el botón */
-    box-sizing: border-box;
-    overflow-y: auto !important; /* Activa el scroll natural de la parte derecha si hiciera falta */
+    display: flex; flex-direction: column; justify-content: flex-start !important; align-items: center;
+    flex: 1 !important; width: auto !important; padding: 60px 20px 40px 20px !important; box-sizing: border-box; overflow-y: auto !important; 
 }
-
-#main-grid-menu {
-    margin: auto !important; 
-    width: 100%;
-    max-width: 800px;
-}
+#main-grid-menu { margin: auto !important; width: 100%; max-width: 800px; }
 
 /* ==========================================
    📱 MODO MÓVIL Y PANTALLAS DIVIDIDAS (< 1100px)
    ========================================== */
-
 .mobile-menu-toggle { display: none; }
 .mobile-menu-close { display: none; }
 #mobile-menu-overlay { display: none; }
 
 @media (max-width: 1100px) {
-    
-    #screen-menu {
-        flex-direction: column !important;
-        align-items: center !important;
-    }
-    
-    /* 🔥 REGLA EXCLUSIVA DE MÓVIL: Aquí sí ocupa el 100% y empieza desde arriba 🔥 */
-    #screen-menu > div:last-child {
-        justify-content: flex-start !important; 
-        padding-top: 100px !important; 
-        padding-bottom: 50px !important;
-        min-height: 100vh !important;
-        width: 100% !important;
-        flex: none !important;
-        max-width: 500px !important;   
-    }
-
-    .mobile-menu-toggle {
-        display: block;
-        position: fixed; 
-        top: 15px;
-        left: 15px;
-        background: transparent;
-        border: 3px solid #03DAC6;
-        border-radius: 50%;
-        padding: 0;
-        cursor: pointer;
-        z-index: 500;
-        box-shadow: 0 0 20px rgba(3,218,198,0.6);
-        animation: pulso-logo 3s ease-in-out infinite;
-    }
+    #screen-menu { flex-direction: column !important; align-items: center !important; }
+    #screen-menu > div:last-child { justify-content: flex-start !important; padding-top: 100px !important; padding-bottom: 50px !important; min-height: 100vh !important; width: 100% !important; flex: none !important; max-width: 500px !important; }
+    .mobile-menu-toggle { display: block; position: fixed; top: 15px; left: 15px; background: transparent; border: 3px solid #03DAC6; border-radius: 50%; padding: 0; cursor: pointer; z-index: 500; box-shadow: 0 0 20px rgba(3,218,198,0.6); animation: pulso-logo 3s ease-in-out infinite; }
     .mobile-menu-toggle img { width: 55px; height: 55px; border-radius: 50%; display: block; }
-
-    #mobile-menu-overlay {
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.8);
-        z-index: 99998;
-        display: none;
-    }
+    #mobile-menu-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 99998; display: none; }
     #mobile-menu-overlay.active { display: block !important; }
-
-    #menu-sidebar {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        height: 100vh !important;
-        min-height: -webkit-fill-available !important; 
-        width: 320px !important;
-        max-width: 85vw !important; 
-        background: rgba(15, 5, 24, 0.98) !important;
-        backdrop-filter: blur(10px);
-        z-index: 99999 !important;
-        border-right: 2px solid #03DAC6 !important;
-        transform: translateX(-100%) !important;
-        transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1) !important;
-        box-shadow: 10px 0 30px rgba(0,0,0,0.8) !important;
-        overflow-y: auto !important;
-        padding-bottom: 40px !important;
-    }
-
+    #menu-sidebar { position: fixed !important; top: 0 !important; left: 0 !important; height: 100vh !important; min-height: -webkit-fill-available !important; width: 320px !important; max-width: 85vw !important; background: rgba(15, 5, 24, 0.98) !important; backdrop-filter: blur(10px); z-index: 99999 !important; border-right: 2px solid #03DAC6 !important; transform: translateX(-100%) !important; transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1) !important; box-shadow: 10px 0 30px rgba(0,0,0,0.8) !important; overflow-y: auto !important; padding-bottom: 40px !important; }
     #menu-sidebar.sidebar-open { transform: translateX(0) !important; }
-
-    .mobile-menu-close {
-        display: block;
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        background: transparent;
-        border: none;
-        color: #F44336;
-        font-size: 2.5rem;
-        font-weight: bold;
-        cursor: pointer;
-    }
-
-    #main-grid-menu {
-        grid-template-columns: 1fr !important;
-        gap: 15px !important;
-        width: 100% !important;
-        margin-top: 0 !important;
-    }
+    .mobile-menu-close { display: block; position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: #F44336; font-size: 2.5rem; font-weight: bold; cursor: pointer; }
+    #main-grid-menu { grid-template-columns: 1fr !important; gap: 15px !important; width: 100% !important; margin-top: 0 !important; }
     .grid-menu-btn { padding: 20px 15px !important; }
     .grid-menu-btn.btn-pin { grid-column: span 1 !important; }
-    
-    #screen-public-modes > div {
-        grid-template-columns: 1fr !important; 
-        gap: 15px !important;
-        width: 100% !important;
-        max-width: 450px !important;
-        margin: auto !important;
-    }
-    
-    .lobby-container {
-        max-width: 500px !important;
-        margin: auto !important;
-    }
-    .lobby-layout {
-        flex-direction: column !important;
-        align-items: center !important;
-        gap: 20px !important;
-    }
-    .panel {
-        width: 100% !important;
-        margin: 0 !important;
-        box-sizing: border-box !important;
-    }
-
-    /* 🔥 FIX FOTO 1: MENÚ WHATSAPP APRETUJADO 🔥 */
-    .wa-layout {
-        flex-direction: column !important;
-        height: 75vh !important;
-    }
-    .wa-sidebar {
-        width: 100% !important;
-        height: 40% !important;
-        border-right: none !important;
-        border-bottom: 2px solid rgba(255,255,255,0.1) !important;
-    }
-    .wa-chat-area {
-        height: 60% !important;
-    }
-
-    /* 🔥 FIX FOTO 4: TAMAÑO PIN KAHOOT 🔥 */
-    #lobby-code-pin, #lobby-pin-display {
-        font-size: clamp(2rem, 12vw, 4.5rem) !important;
-        letter-spacing: clamp(2px, 3vw, 10px) !important;
-        padding: 10px !important;
-        word-break: break-all;
-    }
+    #screen-public-modes > div { grid-template-columns: 1fr !important; gap: 15px !important; width: 100% !important; max-width: 450px !important; margin: auto !important; }
+    .lobby-container { max-width: 500px !important; margin: auto !important; }
+    .lobby-layout { flex-direction: column !important; align-items: center !important; gap: 20px !important; }
+    .panel { width: 100% !important; margin: 0 !important; box-sizing: border-box !important; }
+    .wa-layout { flex-direction: column !important; height: 75vh !important; }
+    .wa-sidebar { width: 100% !important; height: 40% !important; border-right: none !important; border-bottom: 2px solid rgba(255,255,255,0.1) !important; }
+    .wa-chat-area { height: 60% !important; }
+    #lobby-code-pin, #lobby-pin-display { font-size: clamp(2rem, 12vw, 4.5rem) !important; letter-spacing: clamp(2px, 3vw, 10px) !important; padding: 10px !important; word-break: break-all; }
 }
 
-/* Teléfonos muy pequeños (iPhone SE, etc) */
 @media (max-width: 480px) {
     .mobile-menu-toggle img { width: 45px; height: 45px; }
     .mobile-menu-toggle { top: 10px; left: 10px; }
@@ -325,740 +169,190 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
     #screen-menu > div:last-child { padding-top: 80px !important; }
 }
 
-/* ==========================================
-   🎮 RESPONSIVE: PANTALLA DE JUEGO (OPCIONES)
-   ========================================== */
 @media (max-width: 768px) {
     .responsive-question { font-size: clamp(1.2rem, 5vw, 1.8rem) !important; padding: 15px !important; margin-top: 40px !important; }
     .timer { font-size: clamp(1.2rem, 6vw, 2rem) !important; }
     .option-button { padding: 15px !important; font-size: 1.1rem !important; min-height: 70px; }
-    
-    #kg-guest-controls {
-        gap: 10px !important;
-        padding: 10px !important;
-    }
-    #kg-guest-controls button {
-        font-size: clamp(1rem, 5vw, 1.5rem) !important;
-        padding: 10px !important;
-    }
+    #kg-guest-controls { gap: 10px !important; padding: 10px !important; }
+    #kg-guest-controls button { font-size: clamp(1rem, 5vw, 1.5rem) !important; padding: 10px !important; }
     #kg-host-options { grid-template-columns: 1fr !important; height: auto !important; }
     .kahoot-ans-box { padding: 15px !important; font-size: 1.2rem !important; min-height: 80px; }
-
-    /* PODIO FINAL: Alturas reducidas para no salirse de la pantalla */
     .podium-col h2 { font-size: clamp(1.2rem, 5vw, 2rem) !important; }
     .podium-col-1 div { height: 200px !important; }
     .podium-col-2 div { height: 150px !important; }
     .podium-col-3 div { height: 100px !important; }
     .podium-col span { font-size: clamp(2rem, 8vw, 4rem) !important; }
+    #kg-host-question { font-size: clamp(1.2rem, 5vw, 1.6rem) !important; padding: 15px !important; margin-bottom: 10px !important; line-height: 1.3 !important; }
+    #kg-host-view > div:nth-child(2) { min-height: 120px !important; margin-bottom: 15px !important; }
+    #kg-host-view > div:nth-child(2) img { max-height: 15vh !important; width: auto !important; }
+    #kg-host-timer { width: 70px !important; height: 70px !important; font-size: 2rem !important; left: 5px !important; border-width: 2px !important; }
+    #kg-host-view > div:nth-child(2) > div:last-child { right: 5px !important; font-size: 1.5rem !important; }
+    #kg-host-answers-count { font-size: 2rem !important; }
+    #kg-host-view > div:nth-child(2) > div:last-child > div:last-child { font-size: 0.7rem !important; letter-spacing: 1px !important; }
+    #kr-host-view h1 { font-size: clamp(2rem, 8vw, 2.5rem) !important; text-align: center !important; margin-bottom: 20px !important; }
+    #kr-leaderboard-container { width: 100% !important; padding: 0 10px !important; box-sizing: border-box !important; }
+    #kr-leaderboard-container div { padding: 10px 15px !important; }
+    #kr-leaderboard-container span { font-size: 1.2rem !important; }
+    #btn-next-kahoot-question { font-size: 1.1rem !important; padding: 15px 30px !important; width: 90% !important; max-width: 300px !important; margin: 20px auto 0 auto !important; display: block !important; }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
-    #kg-guest-controls {
-        grid-template-columns: repeat(4, 1fr) !important;
-        grid-template-rows: 1fr !important;
-        height: 50vh !important;
-    }
-    #screen-game-code { padding-top: 5px !important; }
-    .responsive-question { margin-bottom: 10px !important; padding: 10px !important; }
-    .kahoot-ans-box { font-size: 1rem !important; padding: 10px !important; }
-}
-
-/* ==========================================
-   🎮 FIX DEFINITIVO: PANTALLA PARTIDA (HOST & GUEST) 🎮
-   ========================================== */
-
-/* --- 1. FOTO 1 (TABLET GUEST): Botones más grandes y proporcionados --- */
 @media (min-width: 768px) {
-    #kg-guest-controls {
-        gap: 25px !important;
-        padding: 40px !important;
-    }
-    #kg-guest-controls button {
-        font-size: clamp(2rem, 5vw, 3.5rem) !important;
-        border-width: 5px !important;
-        border-radius: 20px !important;
-    }
+    #kg-guest-controls { gap: 25px !important; padding: 40px !important; }
+    #kg-guest-controls button { font-size: clamp(2rem, 5vw, 3.5rem) !important; border-width: 5px !important; border-radius: 20px !important; }
 }
 
-/* --- 2. FOTOS 2 Y 3 (MÓVIL HOST): Evitar aplastamiento y centrar --- */
-@media (max-width: 768px) {
-    
-    /* FOTO 3: Ajuste de la Pregunta para que no sea gigante */
-    #kg-host-question {
-        font-size: clamp(1.2rem, 5vw, 1.6rem) !important;
-        padding: 15px !important;
-        margin-bottom: 10px !important;
-        line-height: 1.3 !important;
-    }
-    
-    /* FOTO 3: Reducir el Logo central y dar espacio a las respuestas */
-    #kg-host-view > div:nth-child(2) {
-        min-height: 120px !important;
-        margin-bottom: 15px !important;
-    }
-    #kg-host-view > div:nth-child(2) img {
-        max-height: 15vh !important; /* Logo central mucho más pequeño */
-        width: auto !important;
-    }
-    
-    /* FOTO 3: Temporizador (A la izquierda, más pequeño) */
-    #kg-host-timer {
-        width: 70px !important;
-        height: 70px !important;
-        font-size: 2rem !important;
-        left: 5px !important;
-        border-width: 2px !important;
-    }
-    
-    /* FOTO 3: Contador de Respuestas (A la derecha, más pequeño) */
-    #kg-host-view > div:nth-child(2) > div:last-child {
-        right: 5px !important;
-        font-size: 1.5rem !important;
-    }
-    #kg-host-answers-count {
-        font-size: 2rem !important;
-    }
-    #kg-host-view > div:nth-child(2) > div:last-child > div:last-child {
-        font-size: 0.7rem !important;
-        letter-spacing: 1px !important;
-    }
-
-    /* FOTO 2: Pantalla de Ranking de Genios (Título más pequeño y centrado) */
-    #kr-host-view h1 {
-        font-size: clamp(2rem, 8vw, 2.5rem) !important;
-        text-align: center !important;
-        margin-bottom: 20px !important;
-    }
-    
-    /* FOTO 2: Filas de jugadores ajustadas */
-    #kr-leaderboard-container {
-        width: 100% !important;
-        padding: 0 10px !important;
-        box-sizing: border-box !important;
-    }
-    #kr-leaderboard-container div {
-        padding: 10px 15px !important; 
-    }
-    #kr-leaderboard-container span {
-        font-size: 1.2rem !important; 
-    }
-    
-    /* FOTO 2: Botón de Siguiente Pregunta PERFECTAMENTE centrado */
-    #btn-next-kahoot-question {
-        font-size: 1.1rem !important;
-        padding: 15px 30px !important;
-        width: 90% !important;
-        max-width: 300px !important;
-        margin: 20px auto 0 auto !important; /* Magia para centrar horizontalmente */
-        display: block !important;
-    }
-}
-
-/* ==========================================
-   🛠️ FIX DEFINITIVO: CINEMÁTICAS, CENTRADOS EN PARTIDA Y FONDOS
-   ========================================== */
-
-/* 1. FOTO 5: Arreglar el corte morado del fondo (Background Fijo Universal) */
-html, body {
-    background: radial-gradient(circle, #2D0A4E, #000) !important;
-    background-attachment: fixed !important;
-    background-size: cover !important;
-    min-height: 100vh !important;
-}
-.screen {
-    background: transparent !important; /* Deja que el fondo universal del body brille */
-}
-
-/* 2. FOTO 1: Textos de la Intro Cinemática auto-ajustables (Móvil) */
+html, body { background: radial-gradient(circle, #2D0A4E, #000) !important; background-attachment: fixed !important; background-size: cover !important; min-height: 100vh !important; }
+.screen { background: transparent !important; }
 #dyn-intro-title, #intro-title { font-size: clamp(2.5rem, 8vw, 5rem) !important; line-height: 1.1 !important; }
 #dyn-intro-mode, #intro-mode { font-size: clamp(1.5rem, 5vw, 3rem) !important; }
 #dyn-intro-category, #intro-category { font-size: clamp(1.2rem, 4vw, 2.5rem) !important; }
 #dyn-intro-start, #intro-start { font-size: clamp(3rem, 10vw, 6rem) !important; margin-top: 20px !important; }
+#screen-game-code, #screen-result-code, #screen-game { padding: 0 !important; justify-content: center !important; }
+#kg-guest-view, #kr-guest-view, #kr-guest-final-view { min-height: 100vh !important; justify-content: center !important; padding: 20px !important; box-sizing: border-box !important; }
+#kg-guest-controls { align-content: center !important; flex: 1 !important; }
+#kg-guest-wait { justify-content: center !important; flex: 1 !important; }
 
-/* 3. FOTOS 2, 3 Y 4: Excepción de centrado para las pantallas de Partida */
-#screen-game-code, #screen-result-code, #screen-game {
-    padding: 0 !important; /* Quitamos el padding global que aplastaba el contenido */
-    justify-content: center !important; /* Permite centrar verticalmente de nuevo */
-}
-
-/* Hacer que las vistas de Invitado ocupen toda la pantalla y se centren */
-#kg-guest-view, #kr-guest-view, #kr-guest-final-view {
-    min-height: 100vh !important;
-    justify-content: center !important; 
-    padding: 20px !important;
-    box-sizing: border-box !important;
-}
-
-/* FOTO 2: Centrar los 4 botones en vertical y hacerlos respirar */
-#kg-guest-controls {
-    align-content: center !important; 
-    flex: 1 !important; 
-}
-
-/* FOTO 4: Centrar el mensaje de "Respuesta Enviada" en medio de la pantalla */
-#kg-guest-wait {
-    justify-content: center !important; 
-    flex: 1 !important;
-}
-
-/* 4. AJUSTES ESPECÍFICOS PARA TABLET VERTICAL (Portrait) */
 @media (min-width: 768px) and (orientation: portrait) {
-    /* FOTO 2: Los botones del Kahoot se vuelven más grandecillos y separados en Tablet */
-    #kg-guest-controls {
-        gap: 30px !important;
-        padding: 40px !important;
-    }
-    #kg-guest-controls button {
-        font-size: clamp(1.8rem, 4vw, 3rem) !important;
-        border-width: 5px !important;
-        border-radius: 20px !important;
-    }
-    
-    /* FOTO 3: El número "#1" se hace colosal en Tablet para más epicidad */
-    #kr-guest-rank {
-        font-size: 14rem !important; 
-        margin-bottom: 40px !important;
-    }
-    #kr-guest-motivational {
-        font-size: 3.5rem !important;
-    }
+    #kg-guest-controls { gap: 30px !important; padding: 40px !important; }
+    #kg-guest-controls button { font-size: clamp(1.8rem, 4vw, 3rem) !important; border-width: 5px !important; border-radius: 20px !important; }
+    #kr-guest-rank { font-size: 14rem !important; margin-bottom: 40px !important; }
+    #kr-guest-motivational { font-size: 3.5rem !important; }
 }
 
-/* ==========================================
-   🖥️ FIX PC: SCROLL INTELIGENTE EN LOGIN Y PRESENTACIÓN
-   ========================================== */
 @media (min-width: 1101px) {
-    
-    /* 1. Login y Registro: Centrado absoluto, pero PERMITIENDO SCROLL si el monitor es pequeño */
-    #screen-login, #screen-register {
-        height: auto !important; /* Deja que crezca si lo necesita */
-        min-height: 100vh !important;
-        overflow-y: auto !important; /* SCROLL INTELIGENTE: Solo sale si no cabe */
-        overflow-x: hidden !important;
-        padding: 40px 0 !important; /* Un poco de aire arriba y abajo para que no se pegue al techo */
-        justify-content: center !important;
-    }
-
-    /* Ajuste sutil del logo del login para que ocupe menos espacio vertical */
-    .app-logo {
-        max-width: 140px !important;
-        margin-bottom: 20px !important;
-    }
-
-    /* 2. Menú Principal y Cinemática: Bloqueo de scroll global (las cajas internas ya tienen su propio scroll) */
-    #screen-menu {
-        height: 100vh !important;
-        min-height: 100vh !important;
-        overflow: hidden !important;
-    }
-
-    /* 3. Redimensionado inteligente de la Intro para que encaje perfecto */
-    #cinematic-logo {
-        width: 120px !important;
-        height: 120px !important;
-        margin-bottom: 20px !important;
-    }
-    #cinematic-title {
-        font-size: clamp(4rem, 6vw, 6rem) !important;
-    }
-    #cinematic-subtitle {
-        font-size: clamp(1rem, 1.5vw, 1.5rem) !important;
-        margin-top: 10px !important;
-    }
+    #screen-login, #screen-register { height: auto !important; min-height: 100vh !important; overflow-y: auto !important; overflow-x: hidden !important; padding: 40px 0 !important; justify-content: center !important; }
+    .app-logo { max-width: 140px !important; margin-bottom: 20px !important; }
+    #screen-menu { height: 100vh !important; min-height: 100vh !important; overflow: hidden !important; }
+    #cinematic-logo { width: 120px !important; height: 120px !important; margin-bottom: 20px !important; }
+    #cinematic-title { font-size: clamp(4rem, 6vw, 6rem) !important; }
+    #cinematic-subtitle { font-size: clamp(1rem, 1.5vw, 1.5rem) !important; margin-top: 10px !important; }
 }
 
-/* ==========================================
-   🛡️ ESCUDO ABSOLUTO: PANTALLA PARTIDA Y RESULTADOS (TABLET Y MÓVIL) 🛡️
-   ========================================== */
+html, body { background-color: #05010a !important; }
+#screen-game-code, #screen-result-code { padding: 0 !important; justify-content: center !important; position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; height: auto !important; min-height: 0 !important; overflow: hidden !important; background: radial-gradient(circle, #2D0A4E, #000) !important; }
+#kg-guest-view, #kr-guest-view, #kr-guest-final-view, #kg-host-view, #kr-host-view { height: 100% !important; min-height: 100% !important; max-height: 100% !important; box-sizing: border-box !important; overflow: hidden !important; }
 
-/* 1. Muerte a la franja blanca de Safari (El "rebote" será negro, no blanco) */
-html, body {
-    background-color: #05010a !important; 
-}
+#screen-game { padding: 0 !important; justify-content: flex-start !important; position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; height: auto !important; min-height: 0 !important; overflow-y: auto !important; overflow-x: hidden !important; background: radial-gradient(circle, #2D0A4E, #000) !important; width: 100vw !important; box-sizing: border-box !important; }
+#game-ui { padding-top: 70px !important; padding-bottom: 120px !important; margin-top: 0 !important; min-height: 100vh !important; width: 100% !important; box-sizing: border-box !important; overflow-x: hidden !important; }
+#game-results { padding-top: 70px !important; padding-bottom: 120px !important; min-height: 100vh !important; width: 100% !important; flex-direction: column; justify-content: flex-start !important; align-items: center; box-sizing: border-box !important; overflow-x: hidden !important; }
 
-/* 2. Bloqueo de Pantalla Nativo EXCLUSIVO PARA KAHOOT */
-#screen-game-code, #screen-result-code {
-    padding: 0 !important; 
-    justify-content: center !important; 
-    position: fixed !important; 
-    top: 0 !important; 
-    left: 0 !important; 
-    right: 0 !important; 
-    bottom: 0 !important;
-    height: auto !important;
-    min-height: 0 !important;
-    overflow: hidden !important; /* Prohibido hacer scroll en Kahoot */
-    background: radial-gradient(circle, #2D0A4E, #000) !important;
-}
-
-/* 🔥 ESTA ES LA REGLA QUE TE FALTABA PARA QUE NO SE ROMPA EL HOST 🔥 */
-#kg-guest-view, #kr-guest-view, #kr-guest-final-view, #kg-host-view, #kr-host-view {
-    height: 100% !important; 
-    min-height: 100% !important;
-    max-height: 100% !important;
-    box-sizing: border-box !important;
-    overflow: hidden !important; 
-}
-
-/* 2.5. Ajuste Flexible para PARTIDAS PRIVADAS / PÚBLICAS */
-#screen-game {
-    padding: 0 !important; 
-    justify-content: flex-start !important; 
-    position: fixed !important; 
-    top: 0 !important; 
-    left: 0 !important; 
-    right: 0 !important; 
-    bottom: 0 !important;
-    height: auto !important;
-    min-height: 0 !important;
-    overflow-y: auto !important; 
-    overflow-x: hidden !important; /* 🔥 FIX: Muerte a los cortes horizontales */
-    background: radial-gradient(circle, #2D0A4E, #000) !important;
-    width: 100vw !important;
-    box-sizing: border-box !important;
-}
-
-/* Espaciado interno para que no se superponga al botón Abandonar ni al Chat Flotante */
-#game-ui {
-    padding-top: 70px !important; 
-    padding-bottom: 120px !important; /* 🔥 FIX FOTO 1: Espacio gigante para que puedas scrollear por encima del botón de chat */
-    margin-top: 0 !important;
-    min-height: 100vh !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-    overflow-x: hidden !important;
-}
-
-#game-results {
-    padding-top: 70px !important;
-    padding-bottom: 120px !important; 
-    min-height: 100vh !important;
-    width: 100% !important;
-    /* 🔥 ELIMINADO EL 'display: flex !important;' QUE ROMPÍA EL JUEGO 🔥 */
-    flex-direction: column;
-    justify-content: flex-start !important;
-    align-items: center;
-    box-sizing: border-box !important;
-    overflow-x: hidden !important;
-}
-
-/* ==========================================
-   📱 AJUSTES MÁGICOS MÓVIL HORIZONTAL (LANDSCAPE)
-   ========================================== */
 @media (max-height: 600px) and (orientation: landscape) {
-    /* Quitamos el colchón de espacio gigante de arriba porque en horizontal no sobra sitio */
-    #game-ui {
-        padding-top: 10px !important; 
-        padding-bottom: 80px !important; /* Espacio para el chat flotante */
-    }
+    #game-ui { padding-top: 10px !important; padding-bottom: 80px !important; }
+    .timer { font-size: 1rem !important; margin-bottom: 5px !important; margin-top: 5px !important; }
+    .question { font-size: 1rem !important; padding: 8px !important; margin-bottom: 10px !important; }
+    .options { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+    .option-button { min-height: 45px !important; padding: 5px !important; font-size: 0.9rem !important; }
+    #game-results { padding-top: 20px !important; padding-bottom: 60px !important; }
+    #personal-result-title { font-size: 1.5rem !important; margin-top: 10px !important; }
+    #btn-back-to-lobby { margin: 5px auto !important; }
     
-    .timer {
-        font-size: 1rem !important;
-        margin-bottom: 5px !important;
-        margin-top: 5px !important;
-    }
-    
-    .question {
-        font-size: 1rem !important;
-        padding: 8px !important;
-        margin-bottom: 10px !important;
-    }
-    
-    /* 🔥 MAGIA: En horizontal, los 4 botones se ponen en cuadrícula 2x2 🔥 */
-    .options {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important; 
-        gap: 8px !important;
-    }
-    
-    .option-button {
-        min-height: 45px !important;
-        padding: 5px !important;
-        font-size: 0.9rem !important;
-    }
-    
-    /* Resultados Privados/Públicos en Horizontal */
-    #game-results {
-        padding-top: 20px !important;
-        padding-bottom: 60px !important;
-    }
-    
-    #personal-result-title {
-        font-size: 1.5rem !important;
-        margin-top: 10px !important;
-    }
-    
-    #btn-back-to-lobby {
-        margin: 5px auto !important;
-    }
-}
-
-/* ==========================================
-   📱 AJUSTES MILIMÉTRICOS PARTIDA PRIVADA (MÓVIL)
-   ========================================== */
-@media (max-width: 768px) {
-    #game-ui, #game-results {
-        padding-left: 15px !important;
-        padding-right: 15px !important;
-        width: 100% !important;
-        max-width: 100vw !important;
-        box-sizing: border-box !important;
-    }
-    /* 🔥 FIX: Títulos largos del Lobby (Matchmaking Público) en móviles 🔥 */
-    .lobby-container h1, .lobby-container h2 {
-        font-size: clamp(2rem, 9vw, 3.5rem) !important;
-        line-height: 1.1 !important;
-        text-align: center !important;
-        word-wrap: break-word !important;
-        overflow-wrap: break-word !important;
-        width: 100% !important;
-        padding: 0 10px !important;
-        box-sizing: border-box !important;
-    }
-    .score {
-        font-size: 1rem !important;
-        padding: 8px 20px !important;
-        width: auto !important;
-        margin-bottom: 10px !important;
-    }
-    .timer {
-        font-size: 1.3rem !important;
-        margin-bottom: 15px !important;
-    }
-    .question {
-        font-size: clamp(1.1rem, 5vw, 1.5rem) !important;
-        padding: 15px !important;
-        width: 100% !important;
-        box-sizing: border-box !important; 
-        margin-bottom: 20px !important;
-        word-wrap: break-word !important; 
-    }
-    .options {
-        width: 100% !important;
-        gap: 10px !important; 
-        box-sizing: border-box !important;
-    }
-    .option-button {
-        padding: 12px !important;
-        font-size: clamp(0.9rem, 4vw, 1.2rem) !important;
-        min-height: 60px !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
-        word-wrap: break-word !important;
-    }
-    
-    #personal-result-title {
-        font-size: clamp(1.8rem, 7vw, 2.8rem) !important;
-        line-height: 1.2 !important;
-        text-align: center !important;
-        width: 100% !important;
-        word-wrap: break-word !important;
-        box-sizing: border-box !important;
-    }
-    #personal-result-message {
-        font-size: clamp(1rem, 5vw, 1.4rem) !important; 
-        text-align: center !important;
-        width: 100% !important;
-        word-wrap: break-word !important; 
-        box-sizing: border-box !important;
-        padding: 0 10px !important;
-        margin: 10px auto 20px auto !important;
-    }
-    #royale-leaderboard {
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-        padding: 15px !important;
-    }
-    
-    #btn-back-to-lobby, .btn-primary {
-        width: 100% !important;
-        max-width: 300px !important;
-        margin: 10px auto !important;
-        display: block !important;
-    }
-}
-
-/* 3. Distribución perfecta de la vista del jugador (Invitado) */
-#kg-guest-view {
-    flex-direction: column !important;
-    justify-content: space-between !important; 
-    padding: 0 !important; 
-}
-
-#kg-guest-view > div:first-child,
-#kg-guest-view > div:last-child {
-    flex-shrink: 0 !important; 
-    padding: 12px 15px !important;
-}
-
-#kg-guest-controls {
-    flex: 1 !important; 
-    min-height: 0 !important; 
-    padding: 15px !important;
-    gap: 15px !important;
-    align-content: stretch !important; 
-}
-
-#kg-guest-controls button {
-    height: 100% !important; 
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    word-break: break-word;
-    border-width: 4px !important;
-}
-
-/* 4. Reajuste Milimétrico para Tablet (Horizontal y Vertical) */
-@media (min-width: 768px) {
-    #kg-guest-controls {
-        padding: 25px !important;
-        gap: 20px !important;
-    }
-    #kg-guest-controls button {
-        font-size: clamp(1.8rem, 4vw, 2.5rem) !important; 
-        border-radius: 20px !important;
-    }
-    
-    #kr-guest-rank {
-        font-size: clamp(6rem, 12vw, 9rem) !important; 
-        margin-bottom: 20px !important;
-    }
-    #kr-guest-motivational {
-        font-size: clamp(2rem, 4vw, 3rem) !important;
-    }
-}
-
-/* ==========================================
-   📱 MODO HORIZONTAL MÓVIL (SCROLL LIBRE)
-   ========================================== */
-@media (max-height: 600px) and (orientation: landscape) {
-    
-    /* 🔥 Magia: Dejamos que el usuario pueda hacer scroll hacia abajo 🔥 */
-    #screen-game {
-        overflow-y: auto !important; 
-        height: auto !important;
-        min-height: 100vh !important;
-    }
-
-    #game-ui, #game-results {
-        height: auto !important;
-        min-height: 100vh !important;
-        padding-top: 20px !important;
-        padding-bottom: 90px !important; /* Espacio extra para que puedas bajar y ver el botón de chat/volver */
-        justify-content: flex-start !important;
-    }
-
-    /* Cinemática reducida para que no tengas que bajar 3 pantallas */
+    #screen-game { overflow-y: auto !important; height: auto !important; min-height: 100vh !important; }
+    #game-ui, #game-results { height: auto !important; min-height: 100vh !important; padding-top: 20px !important; padding-bottom: 90px !important; justify-content: flex-start !important; }
     #dyn-intro-title { font-size: 3rem !important; margin-bottom: 10px !important; }
     #dyn-intro-mode, #dyn-intro-category { font-size: 1.5rem !important; margin-top: 10px !important; }
     #dyn-intro-start { font-size: 3rem !important; margin-top: 20px !important; }
-
-    /* Los botones en 2x2 para aprovechar el ancho del móvil tumbado */
-    .options {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important; 
-        gap: 10px !important;
-    }
-    
-    .option-button {
-        min-height: 50px !important;
-        padding: 10px !important;
-        font-size: 1rem !important;
-    }
-
-    /* Chat flotante un poco más pequeño para que no estorbe */
-    .floating-chat-btn { 
-        transform: scale(0.8) !important; 
-        bottom: 10px !important; 
-        right: 10px !important; 
-    }
+    .floating-chat-btn { transform: scale(0.8) !important; bottom: 10px !important; right: 10px !important; }
 }
 
-/* ==========================================
-   🃏 ESTILOS PARA LOS COMODINES (POWER-UPS) 🃏
-   ========================================== */
-.wildcard-btn {
-    background: rgba(255,255,255,0.1);
-    border: 2px solid #FFD700;
-    color: white;
-    padding: 10px 15px;
+@media (max-width: 768px) {
+    #game-ui, #game-results { padding-left: 15px !important; padding-right: 15px !important; width: 100% !important; max-width: 100vw !important; box-sizing: border-box !important; }
+    .lobby-container h1, .lobby-container h2 { font-size: clamp(2rem, 9vw, 3.5rem) !important; line-height: 1.1 !important; text-align: center !important; word-wrap: break-word !important; overflow-wrap: break-word !important; width: 100% !important; padding: 0 10px !important; box-sizing: border-box !important; }
+    .score { font-size: 1rem !important; padding: 8px 20px !important; width: auto !important; margin-bottom: 10px !important; }
+    .timer { font-size: 1.3rem !important; margin-bottom: 15px !important; }
+    .question { font-size: clamp(1.1rem, 5vw, 1.5rem) !important; padding: 15px !important; width: 100% !important; box-sizing: border-box !important; margin-bottom: 20px !important; word-wrap: break-word !important; }
+    .options { width: 100% !important; gap: 10px !important; box-sizing: border-box !important; }
+    .option-button { padding: 12px !important; font-size: clamp(0.9rem, 4vw, 1.2rem) !important; min-height: 60px !important; width: 100% !important; box-sizing: border-box !important; word-wrap: break-word !important; }
+    #personal-result-title { font-size: clamp(1.8rem, 7vw, 2.8rem) !important; line-height: 1.2 !important; text-align: center !important; width: 100% !important; word-wrap: break-word !important; box-sizing: border-box !important; }
+    #personal-result-message { font-size: clamp(1rem, 5vw, 1.4rem) !important; text-align: center !important; width: 100% !important; word-wrap: break-word !important; box-sizing: border-box !important; padding: 0 10px !important; margin: 10px auto 20px auto !important; }
+    #royale-leaderboard { width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; padding: 15px !important; }
+    #btn-back-to-lobby, .btn-primary { width: 100% !important; max-width: 300px !important; margin: 10px auto !important; display: block !important; }
+}
+
+#kg-guest-view { flex-direction: column !important; justify-content: space-between !important; padding: 0 !important; }
+#kg-guest-view > div:first-child, #kg-guest-view > div:last-child { flex-shrink: 0 !important; padding: 12px 15px !important; }
+#kg-guest-controls { flex: 1 !important; min-height: 0 !important; padding: 15px !important; gap: 15px !important; align-content: stretch !important; }
+#kg-guest-controls button { height: 100% !important; display: flex; flex-direction: column; justify-content: center; align-items: center; word-break: break-word; border-width: 4px !important; }
+
+.wildcard-btn { background: rgba(255,255,255,0.1); border: 2px solid #FFD700; color: white; padding: 10px 15px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 15px; transition: all 0.2s ease-in-out; box-shadow: inset 0 0 10px rgba(255,215,0,0.1); }
+.wildcard-btn:hover { background: rgba(255,215,0,0.2); transform: scale(1.03); box-shadow: 0 0 15px rgba(255,215,0,0.4); }
+.wildcard-btn.used { opacity: 0.3; pointer-events: none; border-color: #555; filter: grayscale(1); }
+
+#kr-leaderboard-container { max-height: 50vh !important; overflow-y: auto !important; padding-right: 10px !important; gap: 8px !important; }
+#kr-leaderboard-container > div { padding: 8px 15px !important; }
+#kr-leaderboard-container > div > span:nth-child(1) { font-size: 1.5rem !important; width: 45px !important; }
+#kr-leaderboard-container > div > span:nth-child(2) { font-size: 1.3rem !important; }
+#kr-leaderboard-container > div > div > span[id^="lb-score"] { font-size: 1.6rem !important; }
+#kr-leaderboard-container > div > div > span[id^="lb-gained"] { font-size: 1.2rem !important; }
+#kr-leaderboard-container::-webkit-scrollbar { width: 8px; }
+#kr-leaderboard-container::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
+#kr-leaderboard-container::-webkit-scrollbar-thumb { background: #03DAC6; border-radius: 10px; }
+#kr-leaderboard-container::-webkit-scrollbar-thumb:hover { background: #FFD700; }
+
+.wa-layout, .wa-chat-area, #wa-active-chat { min-height: 0 !important; max-height: 100% !important; }
+#wa-messages { flex: 1 1 auto !important; min-height: 0 !important; overflow-y: auto !important; }
+#friend-stats-overlay { overflow-y: auto !important; justify-content: flex-start !important; padding-top: 50px !important; padding-bottom: 20px !important; box-sizing: border-box !important; }
+#wa-messages::-webkit-scrollbar, #friend-stats-overlay::-webkit-scrollbar { width: 6px; }
+#wa-messages::-webkit-scrollbar-track, #friend-stats-overlay::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
+#wa-messages::-webkit-scrollbar-thumb, #friend-stats-overlay::-webkit-scrollbar-thumb { background: #9C27B0; border-radius: 10px; }
+
+.wa-reply-preview { background: rgba(15, 5, 24, 0.95); padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #555; }
+.replied-msg-bubble { background: rgba(0, 0, 0, 0.4); border-left: 4px solid #03DAC6; padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; font-size: 0.85rem; color: #eee; display: block; }
+.msg-own-wa .replied-msg-bubble { border-left: 4px solid #FFD700; }
+.reply-icon-btn { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%; color: white; cursor: pointer; font-size: 0.8rem; padding: 5px; margin-right: 10px; margin-top: 2px; transition: all 0.2s; float: left; }
+.reply-icon-btn:hover { transform: scale(1.2); background: #9C27B0; border-color: #9C27B0; }
+
+#kr-host-view, #kg-host-view { overflow-y: auto !important; justify-content: flex-start !important; padding-top: 30px !important; padding-bottom: 50px !important; box-sizing: border-box !important; height: 100% !important; max-height: 100% !important; }
+#kg-host-options { height: auto !important; min-height: min-content !important; }
+#kr-host-view::-webkit-scrollbar, #kg-host-view::-webkit-scrollbar { width: 8px; }
+#kr-host-view::-webkit-scrollbar-track, #kg-host-view::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
+#kr-host-view::-webkit-scrollbar-thumb, #kg-host-view::-webkit-scrollbar-thumb { background: #03DAC6; border-radius: 10px; }
+#kr-host-view::-webkit-scrollbar-thumb:hover, #kg-host-view::-webkit-scrollbar-thumb:hover { background: #FFD700; }
+
+@media (max-width: 1100px) {
+    .wa-layout { position: relative !important; display: flex !important; flex-direction: row !important; overflow: hidden !important; height: 75vh !important; }
+    .wa-sidebar { width: 100% !important; height: 100% !important; flex-shrink: 0 !important; border: none !important; transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important; }
+    .wa-chat-area { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; transform: translateX(100%) !important; transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important; z-index: 10 !important; background: #0f0518 !important; }
+    .wa-layout.mobile-chat-open .wa-sidebar { transform: translateX(-30%) !important; opacity: 0.5; }
+    .wa-layout.mobile-chat-open .wa-chat-area { transform: translateX(0) !important; box-shadow: -5px 0 25px rgba(0,0,0,0.8); }
+    .wa-btn-back-mobile { display: block !important; }
+}
+
+@keyframes chat-crumble {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(0.9) translateY(20px); opacity: 0.5; }
+    100% { transform: scale(0) translateY(50px); opacity: 0; }
+}
+.chat-crumbling {
+    animation: chat-crumble 0.6s forwards cubic-bezier(0.5, -0.5, 0.5, 1.5);
+}
+
+.chat-image {
+    max-width: 220px;
     border-radius: 12px;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    transition: all 0.2s ease-in-out;
-    box-shadow: inset 0 0 10px rgba(255,215,0,0.1);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    transition: transform 0.2s;
 }
-.wildcard-btn:hover { 
-    background: rgba(255,215,0,0.2); 
-    transform: scale(1.03); 
-    box-shadow: 0 0 15px rgba(255,215,0,0.4);
-}
-.wildcard-btn.used {
-    opacity: 0.3; 
-    pointer-events: none; 
-    border-color: #555; 
-    filter: grayscale(1);
-}
+.chat-image:hover { transform: scale(1.02); }
 
-/* ==========================================
-   🏆 SCROLL Y AJUSTE DE TAMAÑO PARA EL TOP 10 DE KAHOOT 🏆
-   ========================================== */
-#kr-leaderboard-container {
-    max-height: 50vh !important; /* Tope de altura para que NUNCA se coma el botón */
-    overflow-y: auto !important; /* Activa la barra para bajar */
-    padding-right: 10px !important;
-    gap: 8px !important; /* Junta un poco más a los jugadores */
-}
-
-/* 🔥 Domando los tamaños gigantes que vienen del JavaScript 🔥 */
-#kr-leaderboard-container > div {
-    padding: 8px 15px !important; /* Filas más finas */
-}
-#kr-leaderboard-container > div > span:nth-child(1) {
-    font-size: 1.5rem !important; /* El número de posición (#1) */
-    width: 45px !important;
-}
-#kr-leaderboard-container > div > span:nth-child(2) {
-    font-size: 1.3rem !important; /* El nombre del jugador */
-}
-#kr-leaderboard-container > div > div > span[id^="lb-score"] {
-    font-size: 1.6rem !important; /* Los puntos totales */
-}
-#kr-leaderboard-container > div > div > span[id^="lb-gained"] {
-    font-size: 1.2rem !important; /* Los puntos ganados (+800) */
-}
-
-/* 🔥 Diseño personalizado de la barra de Scroll (Estilo Gamer) 🔥 */
-#kr-leaderboard-container::-webkit-scrollbar {
-    width: 8px;
-}
-#kr-leaderboard-container::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05); 
-    border-radius: 10px;
-}
-#kr-leaderboard-container::-webkit-scrollbar-thumb {
-    background: #03DAC6; 
-    border-radius: 10px;
-}
-#kr-leaderboard-container::-webkit-scrollbar-thumb:hover {
-    background: #FFD700; 
-}
-
-/* ==========================================
-   📱 FIX DEFINITIVO: CHAT WHATSAPP Y ESTADÍSTICAS (MÓVIL) 📱
-   ========================================== */
-
-/* 1. Muro de contención para que el chat no empuje la caja de texto hacia abajo */
-.wa-layout, .wa-chat-area, #wa-active-chat {
-    min-height: 0 !important; 
-    max-height: 100% !important;
-}
-
-#wa-messages {
-    flex: 1 1 auto !important;
-    min-height: 0 !important; /* 🔥 La magia que evita que la caja crezca al infinito 🔥 */
-    overflow-y: auto !important; /* Activa el scroll vertical para los mensajes antiguos */
-}
-
-/* 2. Reparación del perfil de estadísticas para que no se corte por arriba */
-#friend-stats-overlay {
-    overflow-y: auto !important; /* Permite bajar si la pantalla es muy pequeña */
-    justify-content: flex-start !important; /* Obliga al contenido a empezar desde arriba */
-    padding-top: 50px !important; /* Deja espacio para no pisar la X de cerrar */
-    padding-bottom: 20px !important;
-    box-sizing: border-box !important;
-}
-
-/* 3. Diseño de la barrita de scroll (Estilo WhatsApp/Genius Royale) */
-#wa-messages::-webkit-scrollbar, #friend-stats-overlay::-webkit-scrollbar {
-    width: 6px;
-}
-#wa-messages::-webkit-scrollbar-track, #friend-stats-overlay::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-}
-#wa-messages::-webkit-scrollbar-thumb, #friend-stats-overlay::-webkit-scrollbar-thumb {
-    background: #9C27B0; /* El color morado de la interfaz */
-    border-radius: 10px;
-}
-
-/* ==========================================
-   💬 SISTEMA DE RESPUESTAS (WHATSAPP STYLE) 💬
-   ========================================== */
-.wa-reply-preview {
-    background: rgba(15, 5, 24, 0.95);
-    padding: 10px 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-top: 1px solid #555;
-}
-.replied-msg-bubble {
-    background: rgba(0, 0, 0, 0.4);
-    border-left: 4px solid #03DAC6;
-    padding: 8px 12px;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    font-size: 0.85rem;
-    color: #eee;
-    display: block;
-}
-.msg-own-wa .replied-msg-bubble {
-    border-left: 4px solid #FFD700;
-}
-.reply-icon-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    color: white;
-    cursor: pointer;
-    font-size: 0.8rem;
-    padding: 5px;
-    margin-right: 10px;
-    margin-top: 2px;
-    transition: all 0.2s;
-    float: left;
-}
-.reply-icon-btn:hover {
-    transform: scale(1.2);
-    background: #9C27B0;
-    border-color: #9C27B0;
-}
-
-/* ==========================================
-   📱 FIX DEFINITIVO: SCROLL PARA EL ANFITRIÓN EN MODO KAHOOT (PREGUNTAS Y RESULTADOS) 📱
-   ========================================== */
-#kr-host-view, #kg-host-view {
-    overflow-y: auto !important; /* Activa la barra de bajar si falta espacio */
-    justify-content: flex-start !important; /* Evita que el centrado corte la pregunta por arriba */
-    padding-top: 30px !important; /* Le da aire por arriba */
-    padding-bottom: 50px !important; /* Le da aire por abajo para que no se pegue al borde del móvil */
-    box-sizing: border-box !important;
+/* 🔥 VISOR DE FOTOS: SOLO OCUPA EL RECUADRO DEL CHAT 🔥 */
+.chat-inner-overlay {
+    position: absolute !important;
+    top: 0 !important; 
+    left: 0 !important; 
+    width: 100% !important; 
     height: 100% !important;
-    max-height: 100% !important;
+    background: rgba(15, 5, 24, 0.6) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    z-index: 9999 !important; /* Por encima de los mensajes, por debajo de notificaciones globales */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0 15px 15px 0;
+    overflow: hidden;
 }
-
-/* 🔥 Quitar la altura fija de las opciones para que el scroll fluya bien en horizontal 🔥 */
-#kg-host-options {
-    height: auto !important;
-    min-height: min-content !important;
-}
-
-/* 🔥 Diseño de la barrita de scroll (Estilo Genius Royale) 🔥 */
-#kr-host-view::-webkit-scrollbar, #kg-host-view::-webkit-scrollbar {
-    width: 8px;
-}
-#kr-host-view::-webkit-scrollbar-track, #kg-host-view::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-}
-#kr-host-view::-webkit-scrollbar-thumb, #kg-host-view::-webkit-scrollbar-thumb {
-    background: #03DAC6; /* Color cian a juego con la interfaz */
-    border-radius: 10px;
-}
-#kr-host-view::-webkit-scrollbar-thumb:hover, #kg-host-view::-webkit-scrollbar-thumb:hover {
-    background: #FFD700;
+@media (max-width: 1100px) {
+    .chat-inner-overlay { border-radius: 0 !important; } /* En móvil no tiene bordes redondos a la derecha */
 }

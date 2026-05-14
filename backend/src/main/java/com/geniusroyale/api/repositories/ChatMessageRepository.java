@@ -11,13 +11,24 @@ import java.util.List;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Integer> {
     
-    // Recupera todo el historial entre dos amigos ordenado por fecha
-    @Query("SELECT m FROM ChatMessage m WHERE (m.sender = :user1 AND m.receiver = :user2) OR (m.sender = :user2 AND m.receiver = :user1) ORDER BY m.timestamp ASC")
-    List<ChatMessage> findChatHistory(@Param("user1") String user1, @Param("user2") String user2);
+    // 🔥 NUEVO: Solo carga los mensajes que NO han sido borrados por este usuario
+    @Query("SELECT m FROM ChatMessage m WHERE (m.sender = :me AND m.receiver = :amigo AND m.deletedBySender = false) OR (m.sender = :amigo AND m.receiver = :me AND m.deletedByReceiver = false) ORDER BY m.timestamp ASC")
+    List<ChatMessage> findChatHistoryForUser(@Param("me") String me, @Param("amigo") String amigo);
 
-    // Marca todos los mensajes como leídos de un plumazo
     @Modifying
     @Transactional
     @Query("UPDATE ChatMessage m SET m.isRead = true WHERE m.sender = :sender AND m.receiver = :receiver AND m.isRead = false")
     void markAsRead(@Param("sender") String sender, @Param("receiver") String receiver);
+
+    // 🔥 NUEVO: Ocultar los mensajes que yo envié
+    @Modifying
+    @Transactional
+    @Query("UPDATE ChatMessage m SET m.deletedBySender = true WHERE m.sender = :me AND m.receiver = :amigo")
+    void clearMySentMessages(@Param("me") String me, @Param("amigo") String amigo);
+
+    // 🔥 NUEVO: Ocultar los mensajes que yo recibí
+    @Modifying
+    @Transactional
+    @Query("UPDATE ChatMessage m SET m.deletedByReceiver = true WHERE m.sender = :amigo AND m.receiver = :me")
+    void clearMyReceivedMessages(@Param("me") String me, @Param("amigo") String amigo);
 }

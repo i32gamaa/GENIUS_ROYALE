@@ -16,8 +16,12 @@ public class ChatMessage {
     @Column(nullable = false)
     private String receiver;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(nullable = false)
     private String message;
+
+    // 🔥 NUEVO: Columna secreta para que Postgres acepte fotos y audios gigantes
+    @Column(name = "contenido_largo", columnDefinition = "TEXT")
+    private String contenidoLargo;
 
     @Column(nullable = false)
     private Long timestamp;
@@ -25,7 +29,16 @@ public class ChatMessage {
     @Column(nullable = false)
     private Boolean isRead = false;
 
-    private String tempId; // Referencia temporal para el frontend
+    private String tempId; 
+
+    @Column(name = "tipo_mensaje")
+    private String type = "TEXT"; 
+
+    @Column(name = "borrado_por_emisor")
+    private Boolean deletedBySender = false;
+
+    @Column(name = "borrado_por_receptor")
+    private Boolean deletedByReceiver = false;
 
     public ChatMessage() {}
 
@@ -35,12 +48,32 @@ public class ChatMessage {
     public void setSender(String sender) { this.sender = sender; }
     public String getReceiver() { return receiver; }
     public void setReceiver(String receiver) { this.receiver = receiver; }
-    public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
+    
+    // 🔥 MAGIA: Si el mensaje es largo, lo saca de la columna de texto infinito
+    public String getMessage() { 
+        return (contenidoLargo != null && !contenidoLargo.isEmpty()) ? contenidoLargo : message; 
+    }
+    
+    public void setMessage(String message) { 
+        if (message != null && message.length() > 250) {
+            this.message = message.substring(0, 250); // Evita crashear el VARCHAR(255)
+            this.contenidoLargo = message; // Guarda el audio real aquí
+        } else {
+            this.message = message;
+            this.contenidoLargo = message;
+        }
+    }
+
     public Long getTimestamp() { return timestamp; }
     public void setTimestamp(Long timestamp) { this.timestamp = timestamp; }
     public Boolean getIsRead() { return isRead; }
     public void setIsRead(Boolean isRead) { this.isRead = isRead; }
     public String getTempId() { return tempId; }
     public void setTempId(String tempId) { this.tempId = tempId; }
-} 
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
+    public Boolean getDeletedBySender() { return deletedBySender; }
+    public void setDeletedBySender(Boolean deletedBySender) { this.deletedBySender = deletedBySender; }
+    public Boolean getDeletedByReceiver() { return deletedByReceiver; }
+    public void setDeletedByReceiver(Boolean deletedByReceiver) { this.deletedByReceiver = deletedByReceiver; }
+}

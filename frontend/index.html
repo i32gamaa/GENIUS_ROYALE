@@ -13,8 +13,6 @@
             window.location.replace(window.location.pathname + window.location.search + '#screen-lobby');
         }
         
-        // 🔥 ESCUDO ANTI-PARPADEO DE F5 🔥
-        // Si el jugador está en partida, anulamos visualmente el menú ANTES de que el navegador intente dibujarlo.
         if (sessionStorage.getItem('is_pin_room') === 'true') {
             document.write('<style>#screen-menu, #screen-login, #screen-register, #screen-public-modes, #screen-lobby { display: none !important; }</style>');
         }
@@ -43,7 +41,6 @@
         .stat-box { background: rgba(0,0,0,0.5); border: 1px solid #03DAC6; border-radius: 10px; padding: 15px; flex: 1; text-align: center; }
         .stat-number { font-size: 2rem; color: #FFD700; font-weight: bold; margin: 5px 0; }
         select option { background-color: #1a0b2e; color: #ffffff; font-weight: bold; }
-        /* 🔥 CSS KAHOOT 🔥 */
         .grid-menu-btn.btn-pin { grid-column: span 2; border-color: #00E676; background: linear-gradient(135deg, rgba(0,200,83,0.8), rgba(0,150,136,0.8)); }
         .grid-menu-btn.btn-pin:hover { box-shadow: 0 15px 40px rgba(0, 230, 118, 0.4); }
         #screen-login, #screen-register { background: radial-gradient(circle, #2D0A4E, #000) !important; display: flex; justify-content: center; align-items: center; }
@@ -319,24 +316,47 @@
                     </div>
 
                     <div id="wa-active-chat" style="display:none; position:relative; z-index:2; flex:1; flex-direction:column;">
-                        <div class="chat-header" style="background: rgba(156, 39, 176, 0.8); color:white; cursor:pointer;" onclick="window.verStatsAmigo()" title="Ver Estadísticas">
-                            <div style="display:flex; align-items:center; gap:10px;">
+                        
+                        <div class="chat-header" style="background: rgba(156, 39, 176, 0.8); color:white; display:flex; justify-content:space-between; align-items:center; padding: 10px 15px; position:relative; z-index:10;">
+                            
+                            <div style="display:flex; align-items:center; gap:10px; cursor:pointer; flex:1;" onclick="window.verStatsAmigo()" title="Ver Estadísticas">
+                                <button class="wa-btn-back-mobile" onclick="event.stopPropagation(); window.volverAlMenuChatsMovil(event)" style="background:transparent; border:none; color:white; font-size:1.8rem; cursor:pointer; display:none; padding:0; margin-right:5px; transition: transform 0.2s;">⬅️</button>
                                 <img id="wa-chat-avatar" src="images/invitado.jpg" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid #FFD700;">
                                 <div style="display:flex; flex-direction:column;">
-                                    <span id="wa-chat-name" style="font-size:1.2rem; line-height:1;">Amigo</span>
+                                    <span id="wa-chat-name" style="font-size:1.2rem; line-height:1; font-weight:bold;">Amigo</span>
                                     <span id="wa-chat-status" style="font-size:0.8rem; color:#ccc; font-weight:normal;">Cargando...</span>
                                 </div>
                             </div>
-                            <span style="font-size:0.8rem; opacity:0.8; align-self:center;">📊 Ver Perfil</span>
+                            
+                            <div style="position:relative; z-index: 1000;">
+                                <button onclick="document.getElementById('chat-dropdown-menu').classList.toggle('hidden')" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; padding:0 10px;">⋮</button>
+                                <div id="chat-dropdown-menu" class="hidden" style="position:absolute; right:0; top:40px; background:#1A0530; border:1px solid #9C27B0; border-radius:8px; padding:5px 0; z-index:999999; min-width:140px; box-shadow: 0 5px 15px rgba(0,0,0,0.8);">
+                                    <button onclick="window.ejecutarOpcionChat('perfil')" style="width:100%; text-align:left; background:transparent; border:none; padding:10px 15px; cursor:pointer; font-size:0.9rem; border-bottom:1px solid rgba(255,255,255,0.1); color: white;">📊 Ver Perfil</button>
+                                    <button onclick="window.ejecutarOpcionChat('vaciar')" style="width:100%; text-align:left; background:transparent; border:none; padding:10px 15px; cursor:pointer; font-size:0.9rem; color:#F44336;">🗑️ Vaciar Chat</button>
+                                </div>
+                            </div>
                         </div>
                         
                         <div id="wa-messages" class="chat-messages" style="flex:1;"></div>
                         
-                        <div class="chat-input-area" style="position: relative;">
+                        <div class="chat-input-area" style="position: relative; align-items:center;">
                             <button class="btn-emoji" onclick="window.toggleEmojiPicker('wa')">😀</button>
+                            
+                            <button class="btn-emoji" onclick="document.getElementById('chat-file-input').click()" style="margin-left:5px;">📷</button>
+                            <input type="file" id="chat-file-input" accept="image/*" style="display:none;" onchange="window.enviarFotoChat(event)">
+                            
                             <div id="emoji-picker-wa" class="emoji-picker hidden"></div>
+                            
                             <input type="text" id="wa-chat-input" placeholder="Escribe un mensaje..." onkeypress="if(event.key==='Enter') window.enviarMensajePrivado()">
-                            <button onclick="window.enviarMensajePrivado()" style="background:#9C27B0; color:white;">➤</button>
+                            
+                            <button id="btn-chat-send" onclick="window.enviarMensajePrivado()" style="background:#9C27B0; color:white;">➤</button>
+                        </div>
+                        
+                        <div id="image-viewer-modal" class="chat-inner-overlay hidden" style="display: none;">
+                            <div style="width: 100%; padding: 15px; position: absolute; top: 0; left: 0; display: flex; justify-content: flex-start; z-index: 10;">
+                                <button onclick="window.cerrarVisorImagen(event)" style="background: rgba(0,0,0,0.5); border: 1px solid #03DAC6; border-radius: 50%; width: 40px; height: 40px; color: white; font-size: 1.2rem; cursor: pointer; transition: transform 0.2s; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">⬅️</button>
+                            </div>
+                            <img id="image-viewer-img" src="" style="max-width: 90%; max-height: 80%; object-fit: contain; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); cursor: zoom-in; transition: transform 0.3s ease;" onclick="this.classList.toggle('zoomed-in')">
                         </div>
                     </div>
 
@@ -359,6 +379,17 @@
                         <p style="color:#aaa; font-size:0.9rem; margin-top:20px;">Miembro desde: <span id="friend-detail-date" style="color:white; font-weight:bold;">--</span></p>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="clear-chat-modal" class="modal-overlay hidden" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 100000; justify-content: center; align-items: center;">
+        <div class="modal-content" style="background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; text-align: center; color: black;">
+            <h2 style="color: #F44336; margin-top:0;">⚠️ Vaciar Chat</h2>
+            <p style="color: #555; margin-bottom: 20px; font-weight: bold;">¿Estás seguro de que quieres eliminar todos los mensajes de esta conversación? (El otro usuario los seguirá viendo)</p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="window.vaciarChatConfirmado()" class="btn-primary btn-modal-style" style="background: #F44336;">Sí, vaciar chat</button>
+                <button onclick="document.getElementById('clear-chat-modal').classList.add('hidden'); document.getElementById('clear-chat-modal').style.display='none';" class="btn-secondary btn-modal-style" style="background: #555;">Cancelar</button>
             </div>
         </div>
     </div>
