@@ -1,7 +1,7 @@
 {
   "name": "Genius Royale",
   "short_name": "Genius Royale",
-  "description": "El mejor juego de preguntas en tiempo real.",
+  "description": "El mejor juego de preguntas.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#2D0A4E",
@@ -9,12 +9,7 @@
   "icons": [
     {
       "src": "images/logo.jpeg",
-      "sizes": "192x192",
-      "type": "image/jpeg"
-    },
-    {
-      "src": "images/logo.jpeg",
-      "sizes": "512x512",
+      "sizes": "any",
       "type": "image/jpeg"
     }
   ]
