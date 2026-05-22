@@ -105,13 +105,19 @@ public class GameLobbyController {
     }
 
     // =======================================================
-    // 🔥 EL EXORCISTA DE CLONES FANTASMAS (SISTEMA ANTI-BUG F5) 🔥
+    // 🔥 EL EXORCISTA DE CLONES FANTASMAS Y PORTERO DE AFORO 🔥
     // =======================================================
     @MessageMapping("/game.public.join")
     @Transactional
     public synchronized void joinPublicGame(Principal principal, @Payload Map<String, String> payload) {
         String mode = payload.get("gameMode");
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+
+        // 🔥 FIX SUPREMO: Limpiamos los textos para que un espacio no rompa el límite a 10 jugadores 🔥
+        String safeMode = mode != null ? mode.trim().toLowerCase() : "";
+        boolean isDuelo = safeMode.contains("1v1") || safeMode.contains("1vs1") || safeMode.contains("1 v 1") || safeMode.contains("duelo");
+        
+        int maxPlayers = isDuelo ? 2 : 10;
 
         // 1. ANTES DE NADA: Buscamos si el usuario ya estaba en alguna sala
         Game oldRoom = buscarSalaPorIdEnCualquierLado(user.getId());
@@ -138,21 +144,14 @@ public class GameLobbyController {
             }
         }
 
-        // =======================================================
-        // 🔥 FIX SUPREMO: DETECCIÓN INTELIGENTE DEL MODO 1V1 🔥
-        // =======================================================
-        boolean isDuelo = mode != null && (
-            mode.equalsIgnoreCase("1v1") || 
-            mode.equalsIgnoreCase("1vs1") || 
-            mode.toLowerCase().contains("1 vs 1") || 
-            mode.toLowerCase().contains("1 v 1") ||
-            mode.toLowerCase().contains("duelo")
-        );
-        
-        int maxPlayers = isDuelo ? 2 : 10;
-
+        // 2. BUSCAR UNA SALA CON EL AFORO BLINDADO
         Game sala = SALAS_PUBLICAS.values().stream()
-                .filter(g -> g.getGameMode().equalsIgnoreCase(mode) && g.getPlayers().size() < maxPlayers && "WAITING_FOR_PLAYER".equals(g.getGameState()))
+                .filter(g -> {
+                    String gMode = g.getGameMode() != null ? g.getGameMode().trim().toLowerCase() : "";
+                    boolean gIsDuelo = gMode.contains("1v1") || gMode.contains("1vs1") || gMode.contains("duelo");
+                    boolean matchMode = isDuelo ? gIsDuelo : gMode.equalsIgnoreCase(safeMode);
+                    return matchMode && g.getPlayers().size() < maxPlayers && "WAITING_FOR_PLAYER".equals(g.getGameState());
+                })
                 .findFirst().orElse(null);
 
         if (sala == null) {
@@ -165,7 +164,7 @@ public class GameLobbyController {
             SALAS_PUBLICAS.put(sala.getId(), sala);
         }
 
-        // 3. CANDADO FINAL: Comprobación de aforo con el maxPlayers dinámico
+        // 3. CANDADO FINAL ESTRICTO: Si hay hueco, pasa. Si no, le creamos su propia sala.
         if (!sala.getPlayers().stream().anyMatch(p -> p.getUsername().equals(user.getUsername()))) {
             if (sala.getPlayers().size() < maxPlayers) {
                 sala.getPlayers().add(user);
@@ -175,6 +174,18 @@ public class GameLobbyController {
                 for (Map<String, Object> msg : history) {
                     messagingTemplate.convertAndSend("/topic/chat.room." + user.getUsername(), msg);
                 }
+            } else {
+                // 🛡️ ESCUDO: Si por milisegundos de concurrencia la sala se llenó justo ahora, 
+                // jamás lo meteremos. Le abrimos una sala VIP vacía para él solo.
+                sala = new Game();
+                sala.setId(UUID.randomUUID().toString());
+                sala.setGameMode(mode);
+                sala.setGameState("WAITING_FOR_PLAYER");
+                sala.setPlayers(new ArrayList<>());
+                sala.setScores(new HashMap<>());
+                sala.getPlayers().add(user);
+                sala.getScores().put(user.getUsername(), 0);
+                SALAS_PUBLICAS.put(sala.getId(), sala);
             }
         }
 
