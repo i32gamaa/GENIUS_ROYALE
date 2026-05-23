@@ -169,7 +169,7 @@ window.usarComodin = function(id) {
     if (stompClient && stompClient.connected && lobbyId) {
         stompClient.send("/app/chat.room", {}, JSON.stringify({ 
             gameId: lobbyId, 
-            message: `🤖 SISTEMA: ¡${myName} ha utilizado el comodín ${wc.icon} ${wc.name}!` 
+            message: `¡${myName} ha utilizado el comodín ${wc.icon} ${wc.name}!` 
         }));
     }
 

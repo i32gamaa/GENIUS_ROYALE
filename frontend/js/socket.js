@@ -388,17 +388,23 @@ function conectarWebSocket(token, username) {
             
             if (data.type === "KICKED" || data.type === "ROOM_CLOSED") {
                 // 🔥 FIX: Distinguimos entre salida VOLUNTARIA y expulsión REAL.
-                // Si el usuario pulsó 'Salir de la Sala', last_voluntary_game_id ya está guardado.
-                // En ese caso, este ROOM_CLOSED es la respuesta normal del servidor al lobby.leave
-                // y NO debemos borrar last_voluntary_game_id ni mostrar error al usuario.
+                // KICKED siempre es una expulsión activa del host → limpiamos todo y avisamos,
+                // aunque el jugador hubiera salido voluntariamente antes (en ese caso el botón
+                // "Volver a tu Sala Activa" debe desaparecer porque ya no puede entrar).
+                // ROOM_CLOSED puede ser la respuesta normal al lobby.leave voluntario → solo
+                // mostramos el error si last_voluntary_game_id NO está guardado.
                 const fueVoluntario = sessionStorage.getItem('last_voluntary_game_id') !== null;
+                const esExpulsionReal = data.type === "KICKED" || !fueVoluntario;
 
-                if (!fueVoluntario) {
-                    // Expulsión real o sala cerrada por el host
+                if (esExpulsionReal) {
+                    // Expulsión real o sala cerrada sin haber salido antes: avisamos y limpiamos
                     if(data.type === "KICKED") window.mostrarToastError("❌ Has sido expulsado de la sala.");
                     if(data.type === "ROOM_CLOSED") window.mostrarToastError(`❌ La sala ha sido cerrada.`); 
                     sessionStorage.removeItem('last_voluntary_game_id');
                     sessionStorage.removeItem('last_voluntary_public_mode');
+                    // Ocultamos el botón de rejoin inmediatamente para que no sea clicable
+                    const btnRejoin = document.getElementById('btn-rejoin-lobby');
+                    if (btnRejoin) btnRejoin.style.display = 'none';
                 }
                 // En ambos casos limpiamos el estado activo de la sala
                 sessionStorage.removeItem('current_game_id');
