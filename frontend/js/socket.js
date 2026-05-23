@@ -245,14 +245,12 @@ window.recibirMensajePrivado = function(data) {
     
     if (panelAmigos && panelAmigos.style.display !== 'none' && window.waActiveFriend === data.sender) {
         if (chatBox) {
-            // 🔥 Añadimos el botón de respuesta al mensaje que acaba de llegar 🔥
             let replyBtn = `<button class="reply-icon-btn" onclick="window.iniciarRespuesta('${data.sender}', this)" title="Responder">↩️</button>`;
             chatBox.innerHTML += `<div class="msg-bubble msg-other">${replyBtn}${data.message}</div>`;
             chatBox.scrollTop = chatBox.scrollHeight;
         }
         
         const snippetEl = document.getElementById(`wa-snippet-${data.sender}`);
-        // Limpiamos el HTML para que el snippet no muestre código raro
         let plainSnippet = data.message.replace(/<[^>]*>?/gm, '').trim();
         if (snippetEl) snippetEl.innerText = plainSnippet;
         
@@ -269,8 +267,6 @@ window.recibirMensajePrivado = function(data) {
         if (snippetEl) snippetEl.innerText = plainSnippet;
 
         if (typeof window.actualizarBadgesAmigos === "function") window.actualizarBadgesAmigos();
-        
-        // El Toast muestra solo texto limpio sin HTML
         window.mostrarToastInfo(`💬 Mensaje de ${data.sender}: ${plainSnippet.substring(0, 30)}...`);
     }
 };
@@ -309,12 +305,20 @@ function conectarWebSocket(token, username) {
         }
 
         if (sessionStorage.getItem('is_public_room') === 'true') {
-            const modoPublico = sessionStorage.getItem('public_room_mode') || 'Battle Royale';
-            setTimeout(() => {
-                if (stompClient && stompClient.connected) {
-                    stompClient.send("/app/game.public.join", {}, JSON.stringify({ gameMode: modoPublico }));
-                }
-            }, 500);
+            // 🛡️ FIX F5 EN PARTIDA PÚBLICA: Si el jugador recarga estando en #screen-game,
+            // el servidor ya le mandará un game.reconnect automáticamente al conectarse.
+            // NO debemos mandar game.public.join porque el servidor lo interpretaría como
+            // "quiero buscar sala nueva", lo sacaría de la partida y rompería el flujo
+            // del contrincante (que recibiría un LOBBY_UPDATE inesperado).
+            const estaEnPartida = window.location.hash === '#screen-game';
+            if (!estaEnPartida) {
+                const modoPublico = sessionStorage.getItem('public_room_mode') || 'Battle Royale';
+                setTimeout(() => {
+                    if (stompClient && stompClient.connected) {
+                        stompClient.send("/app/game.public.join", {}, JSON.stringify({ gameMode: modoPublico }));
+                    }
+                }, 500);
+            }
         }
 
         setInterval(() => {
@@ -358,13 +362,47 @@ function conectarWebSocket(token, username) {
 
         stompClient.subscribe(`/topic/invites.${currentUser}`, function (message) { window.mostrarToastInvitacion(JSON.parse(message.body)); });
 
+        // 🔥 NUEVO: SUSCRIPCIÓN PARA RECUPERAR PARTIDAS IN_PROGRESS 🔥
+        stompClient.subscribe(`/topic/game.reconnect.${currentUser}`, function (message) {
+            const reconnectData = JSON.parse(message.body);
+            
+            // 🔒 El servidor confirma partida activa: instalamos el bloqueo de ⬅️ ahora,
+            // no antes, para no interferir con el arranque del WebSocket en el F5.
+            if (typeof window.instalarBloqueoNavegacionJuego === 'function') {
+                window.instalarBloqueoNavegacionJuego();
+            }
+
+            // 🔥 FIX: NO ocultamos el overlay genérico aquí. Dejamos que game.js se encargue
+            // de la transición fluida para evitar el parpadeo.
+            if (typeof window.rehidratarJuego === "function") {
+                window.rehidratarJuego(reconnectData);
+            }
+        });
+
         stompClient.subscribe(`/topic/lobby.guest.joined.${currentUser}`, function (message) {
             const data = JSON.parse(message.body);
             
+            // Si llega aquí, es que no estás en partida, así que apagamos el overlay.
+            const overlay = document.getElementById('loading-overlay');
+            if(overlay) overlay.style.display = 'none';
+            
             if (data.type === "KICKED" || data.type === "ROOM_CLOSED") {
-                if(data.type === "KICKED") window.mostrarToastError("❌ Has sido expulsado de la sala.");
-                if(data.type === "ROOM_CLOSED") window.mostrarToastError(`❌ La sala ha sido cerrada.`); 
-                sessionStorage.removeItem('current_game_id'); sessionStorage.removeItem('current_host_name'); sessionStorage.removeItem('last_voluntary_game_id'); 
+                // 🔥 FIX: Distinguimos entre salida VOLUNTARIA y expulsión REAL.
+                // Si el usuario pulsó 'Salir de la Sala', last_voluntary_game_id ya está guardado.
+                // En ese caso, este ROOM_CLOSED es la respuesta normal del servidor al lobby.leave
+                // y NO debemos borrar last_voluntary_game_id ni mostrar error al usuario.
+                const fueVoluntario = sessionStorage.getItem('last_voluntary_game_id') !== null;
+
+                if (!fueVoluntario) {
+                    // Expulsión real o sala cerrada por el host
+                    if(data.type === "KICKED") window.mostrarToastError("❌ Has sido expulsado de la sala.");
+                    if(data.type === "ROOM_CLOSED") window.mostrarToastError(`❌ La sala ha sido cerrada.`); 
+                    sessionStorage.removeItem('last_voluntary_game_id');
+                    sessionStorage.removeItem('last_voluntary_public_mode');
+                }
+                // En ambos casos limpiamos el estado activo de la sala
+                sessionStorage.removeItem('current_game_id');
+                sessionStorage.removeItem('current_host_name');
                 sessionStorage.removeItem('is_public_room');
                 sessionStorage.removeItem('public_room_mode');
 
@@ -379,7 +417,25 @@ function conectarWebSocket(token, username) {
 
             if (data.type === "LOBBY_UPDATE") {
                 const currentHash = window.location.hash;
-                if (currentHash === '#screen-game' || currentHash === '#screen-voting') return;
+                if (currentHash === '#screen-game' || currentHash === '#screen-voting') {
+                    // 🔥 FIX: Rescatar la tabla de resultados tras un F5 🔥
+                    const savedGameOver = sessionStorage.getItem('saved_game_over_data');
+                    if (savedGameOver) {
+                        const overlay = document.getElementById('loading-overlay');
+                        if (overlay) overlay.style.display = 'none';
+                        if (typeof mostrarPodioFinal === "function") {
+                            // 🔥 FIX: skipAnimation=true para no re-ejecutar la animación
+                            // de dados tras un F5. El resultado ya está decidido.
+                            const podioData = JSON.parse(savedGameOver);
+                            podioData.skipAnimation = true;
+                            mostrarPodioFinal(podioData);
+                        }
+                    } else {
+                        // Si no hay podio guardado (partida abortada en medio), te devuelve a la sala
+                        window.location.hash = '#screen-lobby';
+                    }
+                    return;
+                }
 
                 if (data.gameId !== "" && currentHash === '#screen-menu') {
                     const btnRejoin = document.getElementById('btn-rejoin-lobby');
@@ -500,9 +556,13 @@ function conectarWebSocket(token, username) {
         stompClient.subscribe(`/topic/game.start.${currentUser}`, function (message) {
             const gameData = JSON.parse(message.body);
             sessionStorage.removeItem('last_voluntary_game_id'); 
-            sessionStorage.removeItem('is_public_room');
-            sessionStorage.removeItem('public_room_mode');
-            sessionStorage.setItem('current_game_mode', gameData.gameMode || "Quizziz"); sessionStorage.setItem('current_game_category', gameData.category || "Cultura General"); sessionStorage.setItem('current_game_players', JSON.stringify(gameData.players));
+
+            window._transicionAJuegoEnCurso = true;
+            setTimeout(() => { window._transicionAJuegoEnCurso = false; }, 3000);
+            
+            sessionStorage.setItem('current_game_mode', gameData.gameMode || "Quizziz"); 
+            sessionStorage.setItem('current_game_category', gameData.category || "Cultura General"); 
+            sessionStorage.setItem('current_game_players', JSON.stringify(gameData.players));
             document.getElementById('global-chat-btn').style.display = 'flex';
             irAPantallaDeJuego(gameData.players, gameData.gameMode); 
             if (typeof inicializarJuego === "function") inicializarJuego(gameData);

@@ -56,10 +56,52 @@ function enrutarPantalla() {
         targetScreen.classList.remove('hidden');
         targetScreen.style.display = (hash === '#screen-game') ? 'block' : 'flex'; 
     }
+    
 }
 
 // Escuchador que se dispara cuando se usan las flechas "Atrás/Adelante"
 window.addEventListener("hashchange", enrutarPantalla);
+
+// ==========================================
+// 🔒 BLOQUEO DE FLECHA ⬅️ DURANTE PARTIDA ACTIVA
+// Instala una entrada "ancla" en el historial del navegador sobre #screen-game.
+// Cuando el usuario pulsa ⬅️, choca contra el ancla en vez de salir de la pantalla.
+// El popstate la repone al instante, creando un muro infranqueable.
+// Se reactiva automáticamente tras F5 si current_game_id sigue en sessionStorage.
+// ==========================================
+window.instalarBloqueoNavegacionJuego = function() {
+    history.replaceState({ bloqueadoEnJuego: true }, '', '#screen-game');
+    history.pushState({ bloqueadoEnJuego: true }, '', '#screen-game');
+};
+
+// ==========================================
+// 🛡️ INTERCEPTOR DE FLECHA ATRÁS (LOBBY + PARTIDA)
+// ==========================================
+window.addEventListener("popstate", function() {
+    const hash = window.location.hash;
+    const isPinRoom = sessionStorage.getItem('is_pin_room') === 'true';
+    const hayPartidaActiva = sessionStorage.getItem('current_game_id') !== null;
+
+    // 🔒 BLOQUEO DURANTE PARTIDA: si hay partida activa y seguimos en #screen-game,
+    // cualquier ⬅️ se neutraliza reponiendo el ancla. Cubre intro animada,
+    // preguntas y podio final. Se desactiva solo cuando el botón de salir
+    // del podio limpia current_game_id antes de cambiar de pantalla.
+    if (!isPinRoom && hayPartidaActiva && hash === '#screen-game') {
+        history.pushState({ bloqueadoEnJuego: true }, '', '#screen-game');
+        return;
+    }
+
+    // 🛡️ FIX transición lobby→juego: ignorar el popstate del cambio de hash legítimo
+    if (window._transicionAJuegoEnCurso) return;
+
+    // ⬅️ DESDE LOBBY: ejecutar salida limpia si venimos del lobby normal
+    // (no del modo Kahoot PIN, que tiene su propio sistema en kahoot.js)
+    if (!isPinRoom && hayPartidaActiva && hash !== '#screen-lobby') {
+        if (typeof window.ejecutarSalidaLobby === 'function') {
+            window.ejecutarSalidaLobby();
+        }
+    }
+});
 
 // Ejecutamos el enrutador nada más cargar la página web
 enrutarPantalla();
@@ -78,3 +120,16 @@ window.cambiarPantalla = function(pantallaOcultar, pantallaMostrar) {
         }
     }
 };
+
+// 🔥 CONTROL DEL OVERLAY DE RECONEXIÓN 🔥
+document.addEventListener('DOMContentLoaded', () => {
+    const token = sessionStorage.getItem('genius_token');
+    const savedRoomId = sessionStorage.getItem('current_game_id');
+    const isPlaying = sessionStorage.getItem('is_pin_room') === 'true' || savedRoomId;
+
+    // Si NO hay sesión (estás en login) o NO estás en partida, quitamos el cartel inmediatamente.
+    if (!token || !isPlaying) {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) overlay.style.display = 'none';
+    }
+});

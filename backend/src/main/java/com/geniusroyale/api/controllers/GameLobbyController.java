@@ -104,22 +104,17 @@ public class GameLobbyController {
         broadcastLobbyUpdate(sala);
     }
 
-    // =======================================================
-    // 🔥 EL EXORCISTA DE CLONES FANTASMAS Y PORTERO DE AFORO 🔥
-    // =======================================================
     @MessageMapping("/game.public.join")
     @Transactional
     public synchronized void joinPublicGame(Principal principal, @Payload Map<String, String> payload) {
         String mode = payload.get("gameMode");
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
 
-        // 🔥 FIX SUPREMO: Limpiamos los textos para que un espacio no rompa el límite a 10 jugadores 🔥
         String safeMode = mode != null ? mode.trim().toLowerCase() : "";
         boolean isDuelo = safeMode.contains("1v1") || safeMode.contains("1vs1") || safeMode.contains("1 v 1") || safeMode.contains("duelo");
         
         int maxPlayers = isDuelo ? 2 : 10;
 
-        // 1. ANTES DE NADA: Buscamos si el usuario ya estaba en alguna sala
         Game oldRoom = buscarSalaPorIdEnCualquierLado(user.getId());
         if (oldRoom != null) {
             if (SALAS_PUBLICAS.containsKey(oldRoom.getId()) 
@@ -128,7 +123,7 @@ public class GameLobbyController {
                 
                 ESTADOS_SALA.computeIfAbsent(oldRoom.getId(), k -> new ConcurrentHashMap<>()).put(user.getUsername(), "Listo");
                 broadcastLobbyUpdate(oldRoom);
-                return; // ⛔ CORTAMOS AQUÍ. Previene las duplicaciones de jugadores.
+                return; 
             } else {
                 oldRoom.getPlayers().removeIf(p -> p.getId().equals(user.getId()));
                 oldRoom.getScores().remove(user.getUsername());
@@ -144,7 +139,6 @@ public class GameLobbyController {
             }
         }
 
-        // 2. BUSCAR UNA SALA CON EL AFORO BLINDADO
         Game sala = SALAS_PUBLICAS.values().stream()
                 .filter(g -> {
                     String gMode = g.getGameMode() != null ? g.getGameMode().trim().toLowerCase() : "";
@@ -164,7 +158,6 @@ public class GameLobbyController {
             SALAS_PUBLICAS.put(sala.getId(), sala);
         }
 
-        // 3. CANDADO FINAL ESTRICTO: Si hay hueco, pasa. Si no, le creamos su propia sala.
         if (!sala.getPlayers().stream().anyMatch(p -> p.getUsername().equals(user.getUsername()))) {
             if (sala.getPlayers().size() < maxPlayers) {
                 sala.getPlayers().add(user);
@@ -175,8 +168,6 @@ public class GameLobbyController {
                     messagingTemplate.convertAndSend("/topic/chat.room." + user.getUsername(), msg);
                 }
             } else {
-                // 🛡️ ESCUDO: Si por milisegundos de concurrencia la sala se llenó justo ahora, 
-                // jamás lo meteremos. Le abrimos una sala VIP vacía para él solo.
                 sala = new Game();
                 sala.setId(UUID.randomUUID().toString());
                 sala.setGameMode(mode);
@@ -557,6 +548,40 @@ public class GameLobbyController {
         try {
             User user = userRepository.findByEmail(principal.getName()).orElse(null);
             if (user == null) return;
+
+            // 🔥 NUEVO: REHIDRATACIÓN DE PARTIDA EN CURSO 🔥
+            List<Game> allGames = new ArrayList<>();
+            gameRepository.findAll().forEach(allGames::add);
+            Game activeDbGame = allGames.stream()
+                .filter(g -> "IN_PROGRESS".equals(g.getGameState()))
+                .filter(g -> g.getPlayers().stream().anyMatch(p -> p.getId().equals(user.getId())))
+                .findFirst().orElse(null);
+
+            if (activeDbGame != null) {
+                Map<String, Object> reconnectInfo = new HashMap<>();
+                reconnectInfo.put("type", "GAME_RECONNECT");
+                reconnectInfo.put("gameId", activeDbGame.getId());
+                reconnectInfo.put("gameMode", activeDbGame.getGameMode());
+                reconnectInfo.put("category", activeDbGame.getCategory() != null ? activeDbGame.getCategory().getName() : "Cultura General");
+                reconnectInfo.put("currentQuestionIndex", activeDbGame.getCurrentQuestionIndex());
+                reconnectInfo.put("scores", activeDbGame.getScores());
+                reconnectInfo.put("eliminatedPlayers", activeDbGame.getEliminatedPlayers());
+                List<String> playerNames = activeDbGame.getPlayers().stream().map(User::getUsername).collect(Collectors.toList());
+                reconnectInfo.put("players", playerNames);
+                reconnectInfo.put("isEliminated", activeDbGame.getEliminatedPlayers().contains(user.getUsername()));
+
+                messagingTemplate.convertAndSend("/topic/game.reconnect." + user.getUsername(), reconnectInfo);
+
+                // Restaurar también el chat de la sala si existe en memoria
+                Game salaEncontrada = buscarSalaPorIdEnCualquierLado(user.getId());
+                if (salaEncontrada != null) {
+                    List<Map<String, Object>> history = HISTORIAL_CHAT_SALA.getOrDefault(salaEncontrada.getId(), new ArrayList<>());
+                    for (Map<String, Object> msg : history) {
+                        messagingTemplate.convertAndSend("/topic/chat.room." + user.getUsername(), msg);
+                    }
+                }
+                return; // ⛔ Evitamos que se envíe LOBBY_UPDATE y te saque a la sala
+            }
 
             boolean inRoom = false;
             Game salaEncontrada = buscarSalaPorIdEnCualquierLado(user.getId());

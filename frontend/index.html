@@ -6,9 +6,7 @@
     <title>Genius Royale</title>
 
     <link rel="icon" type="image/jpeg" href="images/logo.jpeg">
-    
     <link rel="apple-touch-icon" href="images/logo.jpeg">
-    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -19,10 +17,7 @@
     <link rel="stylesheet" href="css/game.css">
     
     <script>
-        if (window.location.hash === '#screen-game') {
-            window.location.replace(window.location.pathname + window.location.search + '#screen-lobby');
-        }
-        
+        // 🔥 FIX: Se ha eliminado la redirección forzosa a #screen-lobby que causaba el parpadeo (Imagen 1)
         if (sessionStorage.getItem('is_pin_room') === 'true') {
             document.write('<style>#screen-menu, #screen-login, #screen-register, #screen-public-modes, #screen-lobby { display: none !important; }</style>');
         }
@@ -70,9 +65,41 @@
         .vote-card.selected { border-color: #03DAC6; background: rgba(3,218,198,0.2); transform: scale(1.05); }
         .vote-card.highlight { animation: flash-vote 0.2s infinite; }
         @keyframes flash-vote { 0% { border-color: #FFD700; background: rgba(255,215,0,0.3); } 50% { border-color: transparent; background: rgba(255,255,255,0.05); } 100% { border-color: #FFD700; background: rgba(255,215,0,0.3); } }
-    </style>
+        
+        @keyframes anim-dots {
+            0% { content: ""; }
+            25% { content: "."; }
+            50% { content: ".."; }
+            75% { content: "..."; }
+            100% { content: ""; }
+        }
+        .animated-dots::after {
+            content: "";
+            display: inline-block;
+            width: 1.5em; /* Reserva espacio para que el texto no salte */
+            text-align: left;
+            animation: anim-dots 1.5s infinite steps(1);
+        }
+   </style>
 </head>
 <body>
+
+    <div id="loading-overlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:#2D0A4E; z-index:99999; display:flex; flex-direction:column; justify-content:center; align-items:center; color:white; font-family: 'Montserrat', sans-serif;">
+        <h2 class="cinematic-title" style="color:#FFD700; margin-bottom: 10px; font-size: 2.5rem;">RECONECTANDO...</h2>
+        <p style="font-size: 1.2rem; color: #ccc;">Sincronizando estado...</p>
+    </div>
+    
+    <script>
+        if (window.location.hash === '#screen-game' && sessionStorage.getItem('current_game_id')) {
+            document.getElementById('loading-overlay').innerHTML = `
+                <div style="text-align: center; width: 100%; padding: 0 20px; box-sizing: border-box;">
+                    <h1 class="responsive-title cinematic-title" style="color: #03DAC6; font-size: clamp(2rem, 5vw, 3.5rem); text-shadow: 0 0 20px rgba(3,218,198,0.5); margin: 0 auto 20px auto; line-height: 1.2;">¡RECONECTANDO AL CAMPO DE BATALLA!</h1>
+                    <p style="font-size: 1.5rem; color: #ccc; margin: 0 auto;">Sincronizando estado y preguntas<span class="animated-dots"></span></p>
+                    <div class="loader" style="margin: 30px auto; border-top-color: #FFD700;"></div>
+                </div>
+            `;
+        }
+    </script>
 
     <div id="screen-login" class="screen hidden" style="display:none;">
         <div class="login-container">
@@ -256,11 +283,13 @@
 
     <div id="screen-game" class="screen hidden" style="display: none; background: radial-gradient(circle, #2D0A4E, #000); height: 100%; min-height: 100vh; width: 100vw; position: fixed; top:0; left:0; z-index: 9999; overflow-y: auto;">
         <button id="btn-abandon-game" onclick="window.abrirModalAbandonar()" style="position: absolute; top: 15px; right: 15px; background: #F44336; color: white; border: 2px solid white; border-radius: 8px; padding: 8px 15px; font-weight: bold; cursor: pointer; z-index: 99999; box-shadow: 0 4px 6px rgba(0,0,0,0.5);">🚪 Abandonar</button>
-        <div id="game-loading" style="display: none; text-align: center; padding-top: 20vh; padding: 20px;">
+        
+        <div id="game-loading" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: radial-gradient(circle, #2D0A4E, #000); z-index: 99990; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
             <h1 class="responsive-title cinematic-title" style="color: #FFD700; font-size: 3rem; text-shadow: 0 0 20px rgba(255,215,0,0.5);">¡PREPARANDO DUELO!</h1>
             <p id="opponent-name" style="font-size: 1.5rem; color: #ccc;"></p>
             <div class="loader" style="margin: 30px auto; border-top-color: #03DAC6;"></div>
         </div>
+
         <div id="game-ui" class="game-container" style="display: none; width: 100%; flex-direction: column; align-items: center; padding: 20px; margin-top: 40px;">
             <div class="score" style="font-size: 1.2rem; margin-bottom: 10px; color: #FF9800; font-weight: bold; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 10px; width: 90%; max-width: 600px; text-align: center; border: 1px solid #FF9800;">Puntuación: 0</div>
             <div class="timer" style="font-size: 1.5rem; margin-bottom: 20px; color: #03DAC6; font-weight: bold; text-align: center; text-shadow: 0 0 10px #03DAC6;">Cargando...</div>
