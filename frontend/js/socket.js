@@ -72,11 +72,18 @@ window.mostrarToastInvitacion = function(inv) {
     if (!container) return;
     const senderName = inv.senderUsername || inv.sender || "Un amigo";
     const idInv = inv.inviteId || inv.id;
+    // 🔥 FIX AVATAR: el backend ahora envía fotoPerfil en el DTO — lo guardamos en el mapa
+    const senderAvatar = inv.fotoPerfil || 'images/invitado.jpg';
+    if (!window._friendAvatarMap) window._friendAvatarMap = {};
+    window._friendAvatarMap[senderName] = senderAvatar;
+    // Guardamos el avatar dentro del objeto inv para que el buzón lo use al renderizar
+    inv._avatar = senderAvatar;
+
     const toast = document.createElement('div');
     toast.className = 'toast toast-invite';
     toast.id = `toast-inv-${idInv}`;
     toast.innerHTML = `
-        <img src="images/logo.jpeg" class="toast-logo" alt="Logo">
+        <img src="${senderAvatar}" class="toast-logo" alt="Logo" onerror="this.src='images/logo.jpeg'" style="border-radius:50%;object-fit:cover;">
         <div class="toast-content">
             Has recibido una invitación a sala de <strong>${senderName}</strong>
         </div>
@@ -268,6 +275,36 @@ window.recibirMensajePrivado = function(data) {
 
         if (typeof window.actualizarBadgesAmigos === "function") window.actualizarBadgesAmigos();
         window.mostrarToastInfo(`💬 Mensaje de ${data.sender}: ${plainSnippet.substring(0, 30)}...`);
+
+    if (typeof window.agregarAlBuzon === 'function') {
+    const avatarMap = window._friendAvatarMap || {};
+    const friendImgEl = document.querySelector(`#wa-friend-${data.sender} img`);
+    let senderAvatar = avatarMap[data.sender]
+        || (friendImgEl ? friendImgEl.src : null)
+        || data.senderAvatar
+        || 'images/invitado.jpg';
+    
+    window.agregarAlBuzon('chat', {
+        sender: data.sender,
+        texto: plainSnippet,
+        avatar: senderAvatar
+    });
+    
+    // Si no tenemos avatar cacheado, lo obtenemos del servidor
+    if (!avatarMap[data.sender] && !friendImgEl && !data.senderAvatar) {
+    fetch(`${window.API_BASE_URL}/api/amistad/amigo/${data.sender}/stats`, {
+        headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}` }
+    })
+    .then(res => res.json())
+    .then(stats => {
+        if (stats.fotoPerfil) {
+            window._friendAvatarMap[data.sender] = stats.fotoPerfil;
+            // Actualizar el avatar en el buzón
+            window.actualizarBandejaMensajes();
+        }
+    }).catch(err => console.error("Error obteniendo avatar:", err));
+}
+}
     }
 };
 
@@ -305,13 +342,13 @@ function conectarWebSocket(token, username) {
         }
 
         if (sessionStorage.getItem('is_public_room') === 'true') {
-            // 🛡️ FIX F5 EN PARTIDA PÚBLICA: Si el jugador recarga estando en #screen-game,
-            // el servidor ya le mandará un game.reconnect automáticamente al conectarse.
-            // NO debemos mandar game.public.join porque el servidor lo interpretaría como
-            // "quiero buscar sala nueva", lo sacaría de la partida y rompería el flujo
-            // del contrincante (que recibiría un LOBBY_UPDATE inesperado).
+            // 🛡️ FIX F5 EN PARTIDA PÚBLICA
             const estaEnPartida = window.location.hash === '#screen-game';
-            if (!estaEnPartida) {
+            // 🛡️ FIX F5 EN SELECCIÓN DE MODOS: si el usuario recargó mientras elegía modo,
+            // no mandamos game.public.join — ya no está en ningún lobby, solo en la pantalla
+            // de selección. El enrutador de app.js ya habrá restaurado #screen-public-modes.
+            const estaEligiendoModo = sessionStorage.getItem('in_public_mode_selection') === 'true';
+            if (!estaEnPartida && !estaEligiendoModo) {
                 const modoPublico = sessionStorage.getItem('public_room_mode') || 'Battle Royale';
                 setTimeout(() => {
                     if (stompClient && stompClient.connected) {
@@ -388,23 +425,17 @@ function conectarWebSocket(token, username) {
             
             if (data.type === "KICKED" || data.type === "ROOM_CLOSED") {
                 // 🔥 FIX: Distinguimos entre salida VOLUNTARIA y expulsión REAL.
-                // KICKED siempre es una expulsión activa del host → limpiamos todo y avisamos,
-                // aunque el jugador hubiera salido voluntariamente antes (en ese caso el botón
-                // "Volver a tu Sala Activa" debe desaparecer porque ya no puede entrar).
-                // ROOM_CLOSED puede ser la respuesta normal al lobby.leave voluntario → solo
-                // mostramos el error si last_voluntary_game_id NO está guardado.
+                // Si el usuario pulsó 'Salir de la Sala', last_voluntary_game_id ya está guardado.
+                // En ese caso, este ROOM_CLOSED es la respuesta normal del servidor al lobby.leave
+                // y NO debemos borrar last_voluntary_game_id ni mostrar error al usuario.
                 const fueVoluntario = sessionStorage.getItem('last_voluntary_game_id') !== null;
-                const esExpulsionReal = data.type === "KICKED" || !fueVoluntario;
 
-                if (esExpulsionReal) {
-                    // Expulsión real o sala cerrada sin haber salido antes: avisamos y limpiamos
+                if (!fueVoluntario) {
+                    // Expulsión real o sala cerrada por el host
                     if(data.type === "KICKED") window.mostrarToastError("❌ Has sido expulsado de la sala.");
                     if(data.type === "ROOM_CLOSED") window.mostrarToastError(`❌ La sala ha sido cerrada.`); 
                     sessionStorage.removeItem('last_voluntary_game_id');
                     sessionStorage.removeItem('last_voluntary_public_mode');
-                    // Ocultamos el botón de rejoin inmediatamente para que no sea clicable
-                    const btnRejoin = document.getElementById('btn-rejoin-lobby');
-                    if (btnRejoin) btnRejoin.style.display = 'none';
                 }
                 // En ambos casos limpiamos el estado activo de la sala
                 sessionStorage.removeItem('current_game_id');

@@ -40,8 +40,15 @@ function enrutarPantalla() {
 
     // 🔥 ESCUDO ANTI-SECUESTROS: 
     // Si es la primera carga y auth.js intenta forzarnos al Menú, pero nosotros queríamos el Lobby... ¡Lo bloqueamos!
-    if (primeraCarga && token && hash === '#screen-menu' && (rutaInicialF5 === '#screen-lobby' || rutaInicialF5 === '#screen-game' || rutaInicialF5 === '#screen-lobby-code')) {        window.location.hash = rutaInicialF5; // Devolvemos el golpe y mantenemos la ruta original
+    if (primeraCarga && token && hash === '#screen-menu' && (rutaInicialF5 === '#screen-lobby' || rutaInicialF5 === '#screen-game' || rutaInicialF5 === '#screen-lobby-code' || rutaInicialF5 === '#screen-public-modes')) {        window.location.hash = rutaInicialF5; // Devolvemos el golpe y mantenemos la ruta original
         return;
+    }
+
+    // 🛡️ LIMPIEZA DE BANDERA DE MODOS PÚBLICOS:
+    // Si el usuario está en el menú o en cualquier pantalla que no sea #screen-public-modes,
+    // limpiamos la bandera. Cubre tanto el F5 desde el menú como la navegación con botón.
+    if (hash !== '#screen-public-modes') {
+        sessionStorage.removeItem('in_public_mode_selection');
     }
 
     // Ocultar todas las pantallas completamente
@@ -94,7 +101,20 @@ window.addEventListener("popstate", function() {
     // 🛡️ FIX transición lobby→juego: ignorar el popstate del cambio de hash legítimo
     if (window._transicionAJuegoEnCurso) return;
 
-    // ⬅️ DESDE LOBBY: ejecutar salida limpia si venimos del lobby normal
+    // ⬅️ DESDE LOBBY PÚBLICO → volver a selección de modos (no salir completamente)
+    // Si venimos de un lobby público y el hash es #screen-public-modes,
+    // hacemos lobby.leave silencioso y mostramos la pantalla de selección
+    // sin limpiar la sesión ni redirigir al menú.
+    const esLobbyPublico = sessionStorage.getItem('is_public_room') === 'true';
+    if (!isPinRoom && hayPartidaActiva && hash === '#screen-public-modes' && esLobbyPublico) {
+        // Salida limpia del lobby sin redirigir — el usuario sigue en la app
+        if (typeof window.ejecutarSalidaLobbyPublicoSilencioso === 'function') {
+            window.ejecutarSalidaLobbyPublicoSilencioso();
+        }
+        return;
+    }
+
+    // ⬅️ DESDE LOBBY NORMAL: ejecutar salida limpia completa
     // (no del modo Kahoot PIN, que tiene su propio sistema en kahoot.js)
     if (!isPinRoom && hayPartidaActiva && hash !== '#screen-lobby') {
         if (typeof window.ejecutarSalidaLobby === 'function') {
@@ -114,7 +134,7 @@ setTimeout(() => { primeraCarga = false; }, 1000);
 window.cambiarPantalla = function(pantallaOcultar, pantallaMostrar) {
     if (pantallaMostrar) {
         // Doble validación del escudo por si se llama directamente a esta función al arrancar
-    if (primeraCarga && pantallaMostrar.id === 'screen-menu' && (rutaInicialF5 === '#screen-lobby' || rutaInicialF5 === '#screen-game' || rutaInicialF5 === '#screen-lobby-code')) {            window.location.hash = rutaInicialF5;
+    if (primeraCarga && pantallaMostrar.id === 'screen-menu' && (rutaInicialF5 === '#screen-lobby' || rutaInicialF5 === '#screen-game' || rutaInicialF5 === '#screen-lobby-code' || rutaInicialF5 === '#screen-public-modes')) {            window.location.hash = rutaInicialF5;
         } else {
             window.location.hash = '#' + pantallaMostrar.id;
         }

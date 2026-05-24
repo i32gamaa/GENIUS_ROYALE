@@ -61,11 +61,14 @@ window.abrirSeleccionModoPublico = function() {
     const sMenu = document.getElementById('screen-menu'); const sPublic = document.getElementById('screen-public-modes');
     if (typeof cambiarPantalla === "function") cambiarPantalla(sMenu, sPublic);
     document.getElementById('global-chat-btn').style.display = 'none';
+    // 🛡️ Guardamos flag para que F5 en esta pantalla restaure la selección de modos
+    sessionStorage.setItem('in_public_mode_selection', 'true');
 };
 
 window.unirseAPartidaPublica = function(modo) {
     const sPublic = document.getElementById('screen-public-modes'); const sLobby = document.getElementById('screen-lobby');
     if (typeof cambiarPantalla === "function") cambiarPantalla(sPublic, sLobby);
+    sessionStorage.removeItem('in_public_mode_selection'); // ya seleccionó modo, no es necesario
     sessionStorage.setItem('is_public_room', 'true');
     sessionStorage.setItem('public_room_mode', modo);
     document.getElementById('lobby-title').innerText = "Matchmaking Público"; document.getElementById('config-private-only').style.display = 'none'; document.getElementById('config-public-display').style.display = 'block'; document.getElementById('public-mode-label').innerText = modo.toUpperCase(); document.getElementById('lobby-add-friend-section').style.display = 'none'; document.getElementById('waiting-msg').innerText = "Buscando jugadores..."; 
@@ -83,19 +86,218 @@ window.verificarBotonReconexion = function() {
     }
 };
 
+// ==========================================
+// ✉️ BUZÓN DE MENSAJES — lógica unificada
+// Gestiona: invitaciones a sala + mensajes privados de amigos
+// ==========================================
+
+// Almacén persistente en memoria (se reconstruye con cada carga de página)
+if (!window.buzonMensajes) window.buzonMensajes = [];
+
+// Añadir un mensaje al buzón (llamado desde recibirMensajePrivado y desde la llegada de invitaciones)
+window.agregarAlBuzon = function(tipo, datos) {
+    // tipo: 'invite' | 'chat'
+    const entry = {
+        id: Date.now() + Math.random(),
+        tipo,
+        timestamp: new Date().toISOString(),
+        ...datos
+    };
+    window.buzonMensajes.unshift(entry); // más reciente primero
+    window.actualizarNotificacionMensajes();
+    // 🔥 Actualización en tiempo real: si el modal está abierto, repintamos al instante
+    const modal = document.getElementById('messages-modal');
+    if (modal && modal.style.display !== 'none') {
+        window.actualizarBandejaMensajes();
+    }
+};
+
+// Eliminar un mensaje del buzón por id
+window.eliminarDelBuzon = function(id) {
+    window.buzonMensajes = window.buzonMensajes.filter(m => m.id !== id);
+    window.actualizarBandejaMensajes();
+    window.actualizarNotificacionMensajes();
+};
+
+// Vaciar todo el buzón
+window.vaciarBuzon = function() {
+    window.buzonMensajes = [];
+    window.actualizarBandejaMensajes();
+    window.actualizarNotificacionMensajes();
+};
+
+// Mostrar confirm antes de vaciar
+window.pedirConfirmacionVaciar = function() {
+    const modal = document.getElementById('confirm-clear-inbox');
+    if (modal) { modal.style.display = 'flex'; }
+};
+
+// Cerrar el menú contextual de los 3 puntos si se hace clic fuera
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.msg-context-menu') && !e.target.closest('.msg-kebab-btn')) {
+        document.querySelectorAll('.msg-context-menu').forEach(m => m.remove());
+    }
+});
+
 window.actualizarBandejaMensajes = function() {
-    const mList = document.getElementById('messages-list'); if (!mList) return;
-    if (!window.invitacionesPendientes || window.invitacionesPendientes.length === 0) { mList.innerHTML = '<li style="color: #555;">No tienes invitaciones de sala pendientes.</li>'; return; }
-    mList.innerHTML = "";
-    window.invitacionesPendientes.forEach(inv => {
-        const idInv = inv.inviteId || inv.id; const senderName = inv.senderUsername || inv.sender || "Un amigo";
-        mList.innerHTML += `<li style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #eee;"><span>Sala de <strong>${senderName}</strong></span><div><button class="btn-primary btn-modal-style" style="padding:6px 12px; font-size:1.1rem; margin-right:5px;" onclick="window.responderInvitacion(${idInv}, true, '${senderName}', null); document.getElementById('messages-modal').style.display='none';">✔️</button><button class="btn-secondary btn-modal-style" style="padding:6px 12px; font-size:1.1rem;" onclick="window.responderInvitacion(${idInv}, false, '${senderName}', null)">❌</button></div></li>`;
+    const mList = document.getElementById('messages-list');
+    if (!mList) return;
+
+    // Combinar invitaciones pendientes (siempre al principio) + mensajes del buzón
+    const invItems = (window.invitacionesPendientes || []).map(inv => ({
+        id: 'inv_' + (inv.inviteId || inv.id),
+        tipo: 'invite',
+        senderName: inv.senderUsername || inv.sender || 'Un amigo',
+        inviteId: inv.inviteId || inv.id
+    }));
+
+    const allItems = [...invItems, ...window.buzonMensajes];
+
+    if (allItems.length === 0) {
+        mList.innerHTML = `
+            <div style="text-align:center; padding:40px 20px; color:#666;">
+                <div style="font-size:2.5rem; margin-bottom:10px;">📭</div>
+                <div style="font-size:0.95rem;">No tienes mensajes.</div>
+            </div>`;
+        return;
+    }
+
+    mList.innerHTML = '';
+
+    allItems.forEach(item => {
+        const el = document.createElement('div');
+        el.style.cssText = `
+            display:flex; align-items:center; gap:12px;
+            padding:12px 18px;
+            border-bottom:1px solid rgba(255,255,255,0.06);
+            cursor:pointer; transition:background 0.15s;
+            position:relative;
+        `;
+        el.onmouseover = () => el.style.background = 'rgba(255,255,255,0.05)';
+        el.onmouseout  = () => el.style.background = 'transparent';
+
+        if (item.tipo === 'invite') {
+            // — INVITACIÓN A SALA — con avatar real del remitente
+            const invAvatar = item._avatar || (window._friendAvatarMap && window._friendAvatarMap[item.senderName]) || null;
+            const invAvatarHtml = invAvatar
+                ? `<img src="${invAvatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.style.display='none';this.parentNode.innerHTML='🎮'">`
+                : '🎮';
+            el.innerHTML = `
+                <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#7B1FA2,#4A148C);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.3rem;overflow:hidden;">${invAvatarHtml}</div>
+                <div style="flex:1;min-width:0;">
+                    <div style="color:#fff;font-size:0.9rem;font-weight:600;">Invitación de <span style="color:#CE93D8;">${item.senderName}</span></div>
+                    <div style="color:#aaa;font-size:0.8rem;margin-top:2px;">Te ha invitado a su sala privada</div>
+                </div>
+                <div style="display:flex;gap:6px;flex-shrink:0;">
+                    <button onclick="event.stopPropagation(); window.responderInvitacion(${item.inviteId}, true, '${item.senderName}', null); document.getElementById('messages-modal').style.display='none';"
+                        style="background:#4CAF50;border:none;border-radius:8px;color:#fff;padding:6px 10px;cursor:pointer;font-size:1rem;" title="Aceptar">✔️</button>
+                    <button onclick="event.stopPropagation(); window.responderInvitacion(${item.inviteId}, false, '${item.senderName}', null);"
+                        style="background:#F44336;border:none;border-radius:8px;color:#fff;padding:6px 10px;cursor:pointer;font-size:1rem;" title="Rechazar">❌</button>
+                </div>
+            `;
+        } else {
+            // — MENSAJE PRIVADO —
+            const snippet = (item.texto || '').length > 55
+                ? (item.texto || '').substring(0, 55) + '…'
+                : (item.texto || '📷 Multimedia');
+            const hora = item.timestamp
+                ? new Date(item.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+                : '';
+
+            el.onclick = () => {
+                document.getElementById('messages-modal').style.display = 'none';
+                const avatarSrc = item.avatar || window._friendAvatarMap[item.sender] || 'images/invitado.jpg';
+                // 🔥 FIX: cargamos la lista de amigos antes de abrir el chat
+                // para que no aparezca vacía al pulsar la flecha ⬅️
+                window.abrirListaAmigosStats();
+                setTimeout(() => {
+                    if (typeof window.abrirChatAmigo === 'function') window.abrirChatAmigo(item.sender, avatarSrc);
+                }, 300);
+            };
+
+            // Intenta obtener el avatar del mapa de amigos si no viene en el item
+            // Intenta obtener el avatar del mapa de amigos si no viene en el item
+            const avatarUrl = item.avatar || (window._friendAvatarMap && window._friendAvatarMap[item.sender]) || 'images/invitado.jpg';
+            el.innerHTML = `
+                <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#1565C0,#0D47A1);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.2rem;overflow:hidden;">
+                    <img src="${avatarUrl}"
+                        style="width:100%;height:100%;border-radius:50%;object-fit:cover;border:2px solid #03DAC6;"
+                        onerror="this.style.display='none';this.parentNode.innerHTML='💬'">
+                </div>
+                <div style="flex:1;min-width:0;">
+                    <div style="color:#fff;font-size:0.9rem;font-weight:600;">${item.sender}</div>
+                    <div style="color:#aaa;font-size:0.8rem;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${snippet}</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                    <span style="color:#666;font-size:0.75rem;">${hora}</span>
+                    <button class="msg-kebab-btn" onclick="event.stopPropagation(); window._abrirMenuBuzon(event, '${item.id}')"
+                        style="background:none;border:none;color:#aaa;font-size:1.2rem;cursor:pointer;padding:2px 6px;border-radius:6px;line-height:1;"
+                        title="Opciones">⋮</button>
+                </div>
+            `;
+        }
+
+        mList.appendChild(el);
     });
 };
 
+// Menú contextual de 3 puntos — z-index por encima del modal (10000) para que sea clicable
+window._abrirMenuBuzon = function(event, msgId) {
+    document.querySelectorAll('.msg-context-menu').forEach(m => m.remove());
+    const menu = document.createElement('div');
+    menu.className = 'msg-context-menu';
+    menu.style.cssText = `
+        position:fixed; background:#1e1e2e; border:1px solid rgba(255,255,255,0.15);
+        border-radius:10px; box-shadow:0 4px 24px rgba(0,0,0,0.8);
+        z-index:10000000; overflow:hidden; min-width:165px;
+    `;
+    // Posicionar — si no cabe abajo, abre hacia arriba
+    const rect = event.target.getBoundingClientRect();
+    const menuH = 88; // altura estimada del menú
+    const top = (rect.bottom + menuH > window.innerHeight)
+        ? rect.top - menuH - 4
+        : rect.bottom + 4;
+    menu.style.top  = top + 'px';
+    // Calculamos left para que no se salga por la derecha ni por la izquierda
+    const leftPos = rect.right - 165; // anclar a la derecha del botón ⋮
+    menu.style.left = Math.max(8, Math.min(leftPos, window.innerWidth - 175)) + 'px';
+
+    const optStyle = `display:block;width:100%;padding:11px 16px;background:none;border:none;color:#fff;text-align:left;cursor:pointer;font-size:0.9rem;transition:background 0.15s;box-sizing:border-box;`;
+    menu.innerHTML = `
+        <button style="${optStyle}" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"
+            onclick="window._verMensajeBuzon('${msgId}')">💬 Ver mensaje</button>
+        <button style="${optStyle}color:#F44336;" onmouseover="this.style.background='rgba(244,67,54,0.12)'" onmouseout="this.style.background='none'"
+            onclick="window.eliminarDelBuzon(parseFloat('${msgId}'))">🗑️ Eliminar</button>
+    `;
+    document.body.appendChild(menu);
+};
+
+window._verMensajeBuzon = function(msgId) {
+    document.querySelectorAll('.msg-context-menu').forEach(m => m.remove());
+    const item = window.buzonMensajes.find(m => String(m.id) === String(msgId));
+    if (!item) return;
+    
+    document.getElementById('messages-modal').style.display = 'none';
+    
+    // Primero cargar la lista de amigos
+    window.abrirListaAmigosStats();
+    
+    // Luego abrir el chat del amigo
+    const avatarSrc = item.avatar || 'images/default-profile.png';
+    if (typeof window.abrirChatAmigo === 'function') {
+        setTimeout(() => {
+            window.abrirChatAmigo(item.sender, avatarSrc);
+        }, 100);
+    }
+};
+
 window.actualizarNotificacionMensajes = function() {
-    const badge = document.getElementById('messages-badge'); if (!badge) return;
-    if (window.invitacionesPendientes && window.invitacionesPendientes.length > 0) { badge.innerText = window.invitacionesPendientes.length; badge.style.display = 'inline-block'; } 
+    const badge = document.getElementById('messages-badge');
+    if (!badge) return;
+    const totalInv = (window.invitacionesPendientes || []).length;
+    const totalMsg = (window.buzonMensajes || []).length;
+    const total = totalInv + totalMsg;
+    if (total > 0) { badge.innerText = total; badge.style.display = 'inline-block'; }
     else { badge.style.display = 'none'; }
 };
 
@@ -154,6 +356,8 @@ window.abrirListaAmigosStats = function() {
 
     const modal = document.getElementById('friends-stats-modal');
     modal.style.display = 'flex'; modal.classList.remove('hidden');
+    // 🛡️ Ancla de historial: ⬅️ cerrará el modal en vez de salir de la sesión
+    history.pushState({ modal: 'friends' }, '', '#screen-menu');
     
     document.getElementById('wa-chat-placeholder').style.display = 'flex';
     document.getElementById('wa-active-chat').style.display = 'none';
@@ -168,8 +372,11 @@ window.abrirListaAmigosStats = function() {
     .then(amigos => {
         list.innerHTML = "";
         if (amigos.length === 0) { list.innerHTML = "<p style='text-align:center; color:#aaa; padding:20px;'>No tienes amigos aún.</p>"; return; }
+        // Guardamos avatares en mapa global para que el buzón los use aunque la lista no esté visible
+        if (!window._friendAvatarMap) window._friendAvatarMap = {};
         amigos.forEach(a => {
             let avatar = a.fotoPerfil || 'images/invitado.jpg';
+            window._friendAvatarMap[a.username] = avatar;
             let unread = window.unreadPrivates[a.username] || a.unreadCount || 0;
             if(a.unreadCount && !window.unreadPrivates[a.username]) window.unreadPrivates[a.username] = a.unreadCount;
             let displayBadge = unread > 0 ? 'inline-block' : 'none';
@@ -347,10 +554,18 @@ window.abrirChatAmigo = function(username, avatar) {
 };
 
 window.volverAlMenuChatsMovil = function(e) {
-    if(e) e.stopPropagation(); 
+    if(e) e.stopPropagation();
     const layout = document.querySelector('.wa-layout');
     if (layout) layout.classList.remove('mobile-chat-open');
     window.waActiveFriend = null;
+    // 🔥 FIX: recargamos la lista de amigos para que no aparezca vacía
+    // al volver atrás desde un chat abierto directamente desde el buzón.
+    const waFriendList = document.getElementById('wa-friend-list');
+    if (waFriendList && waFriendList.innerHTML.trim() === '') {
+        if (typeof window.abrirListaAmigosStats === 'function') {
+            window.abrirListaAmigosStats();
+        }
+    }
 };
 
 const originalRecibirMensajePrivado = window.recibirMensajePrivado;
@@ -631,6 +846,26 @@ function inicializarMenu() {
         btnLeaveLobby.onclick = window.ejecutarSalidaLobby;
     }
 
+    // 🛡️ Versión silenciosa para cuando el usuario pulsa ⬅️ desde lobby público.
+    // Hace lobby.leave y limpia el estado pero NO redirige — el usuario queda
+    // en #screen-public-modes para elegir otro modo.
+    window.ejecutarSalidaLobbyPublicoSilencioso = function() {
+        const gameId = sessionStorage.getItem('current_game_id');
+        if (gameId && typeof stompClient !== 'undefined' && stompClient && stompClient.connected) {
+            stompClient.send("/app/lobby.leave", {}, JSON.stringify({ gameId: gameId }));
+        }
+        sessionStorage.removeItem('current_game_id');
+        sessionStorage.removeItem('is_public_room');
+        sessionStorage.removeItem('public_room_mode');
+        sessionStorage.removeItem('last_voluntary_game_id');
+        // Mostramos la pantalla de selección de modos
+        document.querySelectorAll('.screen').forEach(s => { s.classList.add('hidden'); s.style.display = 'none'; });
+        const sPublic = document.getElementById('screen-public-modes');
+        if (sPublic) { sPublic.classList.remove('hidden'); sPublic.style.display = 'flex'; }
+        sessionStorage.setItem('in_public_mode_selection', 'true');
+    };
+
+
     if (btnRejoin) {
         btnRejoin.onclick = () => {
             const lastGameId = sessionStorage.getItem('last_voluntary_game_id');
@@ -738,11 +973,11 @@ function inicializarMenu() {
         };
     }
 
-    if (btnMessages) { btnMessages.onclick = () => { if (messagesModal) { messagesModal.classList.remove('hidden'); messagesModal.style.display = 'flex'; window.actualizarBandejaMensajes(); } }; }
+    if (btnMessages) { btnMessages.onclick = () => { if (messagesModal) { messagesModal.classList.remove('hidden'); messagesModal.style.display = 'flex'; window.actualizarBandejaMensajes(); history.pushState({ modal: 'messages' }, '', '#screen-menu'); } }; }
     if (closeMessages) { closeMessages.onclick = () => { if (messagesModal) { messagesModal.classList.add('hidden'); messagesModal.style.display = 'none'; } }; }
-    if (btnAddMenu) { btnAddMenu.onclick = () => { if (addFriendModal) { addFriendModal.classList.remove('hidden'); addFriendModal.style.display = 'flex'; if (modalFriendUsername) modalFriendUsername.focus(); } }; }
+    if (btnAddMenu) { btnAddMenu.onclick = () => { if (addFriendModal) { addFriendModal.classList.remove('hidden'); addFriendModal.style.display = 'flex'; if (modalFriendUsername) modalFriendUsername.focus(); history.pushState({ modal: 'add-friend' }, '', '#screen-menu'); } }; }
     if (btnCloseAddFriend) { btnCloseAddFriend.onclick = () => { addFriendModal.classList.add('hidden'); addFriendModal.style.display = 'none'; }; }
-    if (btnRequests) { btnRequests.onclick = () => { if (requestsModal) { requestsModal.classList.remove('hidden'); requestsModal.style.display = 'flex'; window.actualizarBandeja(); } }; }
+    if (btnRequests) { btnRequests.onclick = () => { if (requestsModal) { requestsModal.classList.remove('hidden'); requestsModal.style.display = 'flex'; window.actualizarBandeja(); history.pushState({ modal: 'requests' }, '', '#screen-menu'); } }; }
     if (closeReq) { closeReq.onclick = () => { requestsModal.classList.add('hidden'); requestsModal.style.display = 'none'; }; }
     if (btnSendFriendReq) { btnSendFriendReq.onclick = () => enviarSolicitud(modalFriendUsername.value.trim()); }
     if (btnAddLobby && inputFriendName) { btnAddLobby.onclick = () => enviarSolicitud(inputFriendName.value.trim()); }
@@ -792,16 +1027,55 @@ window.aceptarSol = function(id) { fetch(`${window.API_BASE_URL}/api/amistad/ace
 window.rechazarSol = function(id) { fetch(`${window.API_BASE_URL}/api/amistad/rechazar/${id}`, { method: 'POST', headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}` } }).then(res => res.json()).then(data => { window.mostrarToastInfo(data.message); window.actualizarBandeja(); }); };
 
 window.actualizarBandeja = function() {
-    const rList = document.getElementById('requests-list'); const badge = document.getElementById('requests-badge');
-    if (rList) rList.innerHTML = "<li>Cargando...</li>";
-    fetch(`${window.API_BASE_URL}/api/amistad/pendientes`, { headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}` } })
+    const rList = document.getElementById('requests-list');
+    const badge = document.getElementById('requests-badge');
+    if (rList) rList.innerHTML = `
+        <div style="text-align:center; padding:20px; color:#666; font-size:0.9rem;">Cargando...</div>`;
+
+    fetch(`${window.API_BASE_URL}/api/amistad/pendientes`, {
+        headers: { 'Authorization': `Bearer ${sessionStorage.getItem('genius_token')}` }
+    })
     .then(res => res.json())
     .then(data => {
-        if (badge) { if (data.length > 0) { badge.innerText = data.length; badge.style.display = 'inline-block'; } else { badge.style.display = 'none'; } }
+        if (badge) {
+            if (data.length > 0) { badge.innerText = data.length; badge.style.display = 'inline-block'; }
+            else { badge.style.display = 'none'; }
+        }
         if (!rList) return;
-        if (data.length === 0) { rList.innerHTML = `<li style="color: #555;">No tienes peticiones pendientes.</li>`; return; }
-        rList.innerHTML = "";
-        data.forEach(r => { rList.innerHTML += `<li style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #eee;"><strong>${r.senderUsername}</strong> <div><button class="btn-primary btn-modal-style" style="padding:6px 12px; margin-right:5px;" onclick="window.aceptarSol(${r.id})">✅</button> <button class="btn-secondary btn-modal-style" style="padding:6px 12px;" onclick="window.rechazarSol(${r.id})">❌</button></div></li>`; });
+        if (data.length === 0) {
+            rList.innerHTML = `
+                <div style="text-align:center; padding:40px 20px; color:#666;">
+                    <div style="font-size:2.5rem; margin-bottom:10px;">📭</div>
+                    <div style="font-size:0.9rem;">No tienes peticiones pendientes.</div>
+                </div>`;
+            return;
+        }
+        rList.innerHTML = '';
+        data.forEach(r => {
+            const el = document.createElement('div');
+            el.style.cssText = `
+                display:flex; align-items:center; gap:12px;
+                padding:12px 18px;
+                border-bottom:1px solid rgba(255,255,255,0.06);
+                transition:background 0.15s;
+            `;
+            el.onmouseover = () => el.style.background = 'rgba(255,255,255,0.05)';
+            el.onmouseout  = () => el.style.background = 'transparent';
+            el.innerHTML = `
+                <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#7B1FA2,#4A148C);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.3rem;">🤝</div>
+                <div style="flex:1;min-width:0;">
+                    <div style="color:#fff;font-size:0.9rem;font-weight:600;">${r.senderUsername}</div>
+                    <div style="color:#aaa;font-size:0.8rem;margin-top:2px;">Quiere ser tu amigo</div>
+                </div>
+                <div style="display:flex;gap:6px;flex-shrink:0;">
+                    <button onclick="window.aceptarSol(${r.id})"
+                        style="background:#4CAF50;border:none;border-radius:8px;color:#fff;padding:6px 10px;cursor:pointer;font-size:1rem;" title="Aceptar">✅</button>
+                    <button onclick="window.rechazarSol(${r.id})"
+                        style="background:#F44336;border:none;border-radius:8px;color:#fff;padding:6px 10px;cursor:pointer;font-size:1rem;" title="Rechazar">❌</button>
+                </div>
+            `;
+            rList.appendChild(el);
+        });
     });
 };
 

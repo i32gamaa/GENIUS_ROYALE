@@ -486,28 +486,33 @@ window.addEventListener('beforeunload', (e) => {
     }
 });
 
-// 🔥 MURO NUCLEAR: Bloqueo inquebrantable de la flecha de atrás. Nada de auto-salirDeKahoot(true). 🔥
+// 🔥 MURO NUCLEAR + SALIDA LIMPIA DESDE LOBBY
 window.addEventListener('popstate', (e) => {
-    if (kahootIsQuitting || kahootJustLoaded) return; 
-    
+    if (kahootIsQuitting || kahootJustLoaded) return;
+
     const isPinRoom = sessionStorage.getItem('is_pin_room') === 'true';
-    if (isPinRoom) {
-        let targetHash = '#screen-lobby-code';
-        const inGame = sessionStorage.getItem('current_game_mode') !== null;
+    if (!isPinRoom) return;
 
-        if (inGame) {
-            const resultsActive = 
-                document.getElementById('kr-host-view').style.display === 'flex' || 
-                document.getElementById('kr-guest-view').style.display === 'flex' ||
-                document.getElementById('kr-guest-final-view').style.display === 'flex' ||
-                document.getElementById('kr-host-podium').style.display === 'flex';
-            
-            targetHash = resultsActive ? '#screen-result-code' : '#screen-game-code';
-        }
+    const inGame = sessionStorage.getItem('current_game_mode') !== null;
 
-        window.history.pushState({kahootLock: true}, null, targetHash);
-        window.history.pushState({kahootLock: true}, null, targetHash);
+    if (!inGame) {
+        // 🚪 LOBBY KAHOOT: ⬅️ equivale a pulsar "Salir de la Sala".
+        // Llamamos a salirDeKahoot(true) que avisa al servidor, limpia el estado
+        // y redirige al menú — exactamente igual que el botón btn-leave-pin-lobby.
+        window.salirDeKahoot(true);
+        return;
     }
+
+    // 🔒 DURANTE PARTIDA o RESULTADOS: bloqueamos la flecha igual que antes.
+    const resultsActive =
+        document.getElementById('kr-host-view').style.display === 'flex' ||
+        document.getElementById('kr-guest-view').style.display === 'flex' ||
+        document.getElementById('kr-guest-final-view').style.display === 'flex' ||
+        document.getElementById('kr-host-podium').style.display === 'flex';
+
+    const targetHash = resultsActive ? '#screen-result-code' : '#screen-game-code';
+    window.history.pushState({kahootLock: true}, null, targetHash);
+    window.history.pushState({kahootLock: true}, null, targetHash);
 });
 
 window.invitadoVolverSala = function() {
