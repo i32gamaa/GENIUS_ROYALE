@@ -18,7 +18,7 @@
 Para facilitar la prueba técnica sin necesidad de crear una cuenta nueva, puedes utilizar las siguientes credenciales de pruebas:
 * **Usuario:** `b`
 * **Contraseña:** `b`
-* Enlace aplicacion web desplegada: [geniusroyale.vercel.app](url)
+* Enlace aplicacion web desplegada: https://geniusroyale.vercel.app/
 
 ---
 
