@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Spring_Boot-F2F4F9?style=for-the-badge&logo=spring-boot" alt="Spring Boot">
   <img src="https://img.shields.io/badge/WebSockets-STOMP-03DAC6?style=for-the-badge" alt="WebSockets">
   <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL">
-  <img src="https://img.shields.io/badge/Vanilla_JS-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="javaScript JS">
+  <img src="https://img.shields.io/badge/JavaScript_JS-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="javaScript JS">
 </div>
 
 <br>
