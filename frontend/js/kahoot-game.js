@@ -3,7 +3,7 @@
 // ==========================================
 
 let kahootTimerInterval;
-let kahootTimeRemaining = 15;
+let kahootTimeRemaining = 30;
 let kahootTotalPlayers = 0;
 let kahootHostWaitingResults = false;
 
@@ -227,7 +227,7 @@ window.procesarMensajeJuegoKahoot = function(data, isRestore = false) {
             document.getElementById('kg-host-answers-count').innerText = (isRestore || data.isReconnect) ? "?" : "0";
             
             if (!(isRestore || data.isReconnect)) {
-                kahootTimeRemaining = 15;
+                kahootTimeRemaining = 30;
                 document.getElementById('kg-host-timer').innerText = kahootTimeRemaining;
                 if(kahootTimerInterval) clearInterval(kahootTimerInterval);
                 kahootTimerInterval = setInterval(() => {
@@ -288,7 +288,7 @@ window.procesarMensajeJuegoKahoot = function(data, isRestore = false) {
                 document.getElementById('kg-guest-wait').style.display = 'none';
                 
                 if (!(isRestore || data.isReconnect)) {
-                    kahootTimeRemaining = 15;
+                    kahootTimeRemaining = 30;
                     if(kahootTimerInterval) clearInterval(kahootTimerInterval);
                     kahootTimerInterval = setInterval(() => { kahootTimeRemaining--; }, 1000);
                 }
